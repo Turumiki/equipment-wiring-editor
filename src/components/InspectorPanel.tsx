@@ -115,39 +115,39 @@ export default function InspectorPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-gray-100">
       {/* ヘッダー */}
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-black">インスペクター</h2>
-        <p className="text-sm text-black">{selectedObject.name}</p>
+      <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
+        <h2 className="text-sm font-bold text-black uppercase tracking-wide">Inspector</h2>
+        <p className="text-xs text-black">{selectedObject.name}</p>
       </div>
 
       {/* タブ */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-400">
         <button
           onClick={() => setActiveTab('properties')}
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
+          className={`flex-1 px-2 py-1 text-xs font-bold border-r border-gray-400 ${
             activeTab === 'properties'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-black hover:text-gray-700'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-300 text-black hover:bg-gray-400'
           }`}
         >
-          プロパティ
+          PROPERTIES
         </button>
         <button
           onClick={() => setActiveTab('components')}
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
+          className={`flex-1 px-2 py-1 text-xs font-bold ${
             activeTab === 'components'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-black hover:text-gray-700'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-300 text-black hover:bg-gray-400'
           }`}
         >
-          コンポーネント
+          COMPONENTS
         </button>
       </div>
 
       {/* コンテンツ */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-1">
         {activeTab === 'properties' && (
           <div className="space-y-4">
             {propertyComponent?.data.properties && Object.entries(propertyComponent.data.properties).map(([key, prop]) => (
@@ -225,23 +225,24 @@ export default function InspectorPanel() {
             </div>
 
             {/* ポート管理 */}
-            <div className="pt-4 border-t border-gray-200">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-medium text-black">接続ポート</h3>
+            <div className="pt-2 border-t border-gray-400">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="text-xs font-bold text-black uppercase">CONNECTION PORTS</h3>
                 <button
                   onClick={handleAddPort}
-                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-2 py-1 text-xs bg-blue-600 text-white border border-blue-800 hover:bg-blue-700 font-bold"
                 >
-                  ポート追加
+                  ADD PORT
                 </button>
               </div>
               <div className="space-y-2">
                 {portComponents.map(port => (
-                  <div key={port.id} className="p-3 bg-gray-50 rounded text-sm space-y-2">
+                  <div key={port.id} className="p-2 bg-gray-200 border border-gray-400 text-xs space-y-2">
                     <div className="flex justify-between items-start">
-                      <div className="text-black flex-1">
-                        <div className="mb-2">
-                          <label className="block text-xs font-medium text-black mb-1">ラベル</label>
+                      <div className="text-black flex-1 space-y-2">
+                        {/* ラベル */}
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">LABEL</label>
                           <input
                             type="text"
                             value={port.data.label || ''}
@@ -258,19 +259,128 @@ export default function InspectorPanel() {
                               )
                               updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
                             }}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded text-black"
-                            placeholder="ポート名を入力"
+                            className="w-full px-1 py-1 text-xs border border-gray-400 bg-white text-black"
+                            placeholder="Port name"
                           />
                         </div>
-                        <div><strong className="text-black">タイプ:</strong> {getPortTypeDisplayName(port.data.portType)}</div>
-                        <div><strong className="text-black">方向:</strong> {port.data.direction === 'input' ? '入力' : port.data.direction === 'output' ? '出力' : '双方向'}</div>
-                        <div><strong className="text-black">位置:</strong> {port.data.position.side} ({port.data.position.offset}%)</div>
+
+                        {/* ポートタイプ */}
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">TYPE</label>
+                          <select
+                            value={port.data.portType}
+                            onChange={(e) => {
+                              const updatedPort = {
+                                ...port,
+                                data: {
+                                  ...port.data,
+                                  portType: e.target.value as PortType
+                                }
+                              }
+                              const updatedComponents = selectedObject.components.map(comp =>
+                                comp.id === port.id ? updatedPort : comp
+                              )
+                              updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                            }}
+                            className="w-full px-1 py-1 text-xs border border-gray-400 bg-white text-black"
+                          >
+                            {Object.values(PortType).map(type => (
+                              <option key={type} value={type}>
+                                {getPortTypeDisplayName(type)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* 方向 */}
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">DIRECTION</label>
+                          <select
+                            value={port.data.direction}
+                            onChange={(e) => {
+                              const updatedPort = {
+                                ...port,
+                                data: {
+                                  ...port.data,
+                                  direction: e.target.value as PortDirection
+                                }
+                              }
+                              const updatedComponents = selectedObject.components.map(comp =>
+                                comp.id === port.id ? updatedPort : comp
+                              )
+                              updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                            }}
+                            className="w-full px-1 py-1 text-xs border border-gray-400 bg-white text-black"
+                          >
+                            <option value={PortDirection.INPUT}>INPUT</option>
+                            <option value={PortDirection.OUTPUT}>OUTPUT</option>
+                            <option value={PortDirection.BIDIRECTIONAL}>BIDIRECTIONAL</option>
+                          </select>
+                        </div>
+
+                        {/* 位置 */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs font-bold text-black mb-1">SIDE</label>
+                            <select
+                              value={port.data.position.side}
+                              onChange={(e) => {
+                                const updatedPort = {
+                                  ...port,
+                                  data: {
+                                    ...port.data,
+                                    position: {
+                                      ...port.data.position,
+                                      side: e.target.value as Side
+                                    }
+                                  }
+                                }
+                                const updatedComponents = selectedObject.components.map(comp =>
+                                  comp.id === port.id ? updatedPort : comp
+                                )
+                                updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                              }}
+                              className="w-full px-1 py-1 text-xs border border-gray-400 bg-white text-black"
+                            >
+                              <option value={Side.TOP}>TOP</option>
+                              <option value={Side.RIGHT}>RIGHT</option>
+                              <option value={Side.BOTTOM}>BOTTOM</option>
+                              <option value={Side.LEFT}>LEFT</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-black mb-1">OFFSET (%)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={port.data.position.offset}
+                              onChange={(e) => {
+                                const updatedPort = {
+                                  ...port,
+                                  data: {
+                                    ...port.data,
+                                    position: {
+                                      ...port.data.position,
+                                      offset: Number(e.target.value)
+                                    }
+                                  }
+                                }
+                                const updatedComponents = selectedObject.components.map(comp =>
+                                  comp.id === port.id ? updatedPort : comp
+                                )
+                                updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                              }}
+                              className="w-full px-1 py-1 text-xs border border-gray-400 bg-white text-black"
+                            />
+                          </div>
+                        </div>
                       </div>
                       <button
                         onClick={() => handleRemovePort(port.id)}
-                        className="text-red-500 hover:text-red-700 ml-2"
+                        className="text-black hover:bg-gray-300 px-1 py-1 text-xs font-bold ml-1"
                       >
-                        ✕
+                        ×
                       </button>
                     </div>
                   </div>
