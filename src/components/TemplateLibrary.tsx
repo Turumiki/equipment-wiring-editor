@@ -152,30 +152,8 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
   }
 
   const getShapeForTemplate = (templateId: string): ShapeType => {
-    switch (templateId) {
-      case 'audio-interface':
-        return ShapeType.RECTANGLE
-      case 'microphone':
-        return ShapeType.CIRCLE
-      case 'computer':
-        return ShapeType.RECTANGLE
-      case 'switching-hub':
-        return ShapeType.RECTANGLE
-      case 'dante-mixer':
-        return ShapeType.RECTANGLE
-      case 'camera':
-        return ShapeType.TRIANGLE
-      case 'display':
-        return ShapeType.RECTANGLE
-      case 'speaker':
-        return ShapeType.TRIANGLE
-      case 'headphones':
-        return ShapeType.CIRCLE
-      case 'video-switcher':
-        return ShapeType.RECTANGLE
-      default:
-        return ShapeType.RECTANGLE
-    }
+    // 全て四角形で統一
+    return ShapeType.RECTANGLE
   }
 
   const getColorForTemplate = (templateId: string): string => {
@@ -206,40 +184,40 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-gray-100">
       {/* ヘッダー */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-black">テンプレートライブラリ</h2>
+      <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-sm font-bold text-black uppercase tracking-wide">Template Library</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-black hover:bg-gray-300 px-2 py-1 text-xs font-bold"
           >
-            ✕
+            ×
           </button>
         </div>
         
         {/* 検索 */}
         <input
           type="text"
-          placeholder="テンプレートを検索..."
+          placeholder="Search templates..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          className="w-full px-2 py-1 border border-gray-400 bg-white text-black text-xs focus:outline-none focus:border-black"
         />
       </div>
 
       {/* カテゴリフィルター */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex flex-wrap gap-2">
+      <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
+        <div className="flex flex-wrap gap-1">
           {categories.map(category => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
+              className={`px-2 py-1 text-xs font-bold border ${
                 selectedCategory === category
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-black hover:bg-gray-300'
+                  ? 'bg-blue-600 text-white border-blue-800'
+                  : 'bg-gray-300 text-black border-gray-500 hover:bg-gray-400'
               }`}
             >
               {category}
@@ -249,32 +227,32 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
       </div>
 
       {/* テンプレート一覧 */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-1 gap-3">
+      <div className="flex-1 overflow-y-auto p-1">
+        <div className="grid grid-cols-1 gap-1">
           {filteredTemplates.map(template => (
             <div
               key={template.id}
-              className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
+              className="border border-gray-400 bg-white p-2 hover:bg-gray-50 cursor-pointer"
               onClick={() => handleAddTemplate(template)}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {/* テンプレートアイコン */}
                 <div 
-                  className="w-12 h-8 rounded flex items-center justify-center text-white text-xs font-medium"
+                  className="w-8 h-6 border border-gray-600 flex items-center justify-center text-white text-xs font-bold"
                   style={{ backgroundColor: getColorForTemplate(template.id) }}
                 >
                   {template.name.charAt(0)}
                 </div>
                 
                 {/* テンプレート情報 */}
-                <div className="flex-1">
-                  <h3 className="font-medium text-sm text-black">{template.name}</h3>
-                  <p className="text-xs text-gray-700">{template.description}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-xs text-black truncate">{template.name}</h3>
+                  <p className="text-xs text-gray-600 truncate">{template.description}</p>
                   <div className="flex gap-1 mt-1">
-                    {template.tags.slice(0, 2).map(tag => (
+                    {template.tags.slice(0, 3).map(tag => (
                       <span
                         key={tag}
-                        className="px-2 py-0.5 bg-gray-100 text-black text-xs rounded"
+                        className="px-1 py-0 bg-gray-200 text-black text-xs border border-gray-400"
                       >
                         {tag}
                       </span>

@@ -221,13 +221,13 @@ export default function WiringDiagramEditor() {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
-            className="bg-gray-50"
+            className="bg-gray-200"
             multiSelectionKeyCode="Shift"
             deleteKeyCode="Delete"
           >
             <Controls />
             <MiniMap />
-            <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+            <Background variant={BackgroundVariant.Lines} gap={20} size={1} color="#999" />
 
             {/* ツールバー */}
             <Panel position="top-left">
@@ -241,7 +241,7 @@ export default function WiringDiagramEditor() {
       </div>
 
       {/* サイドパネル */}
-      <div className="w-full lg:w-80 h-64 lg:h-full bg-white border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col">
+      <div className="w-full lg:w-80 h-64 lg:h-full bg-gray-100 border-t lg:border-t-0 lg:border-l border-gray-400 flex flex-col">
         {/* インスペクターパネル */}
         <div className="flex-1 min-h-0">
           <InspectorPanel />
@@ -250,7 +250,7 @@ export default function WiringDiagramEditor() {
 
       {/* テンプレートライブラリ */}
       {showTemplateLibrary && (
-        <div className="absolute top-0 left-0 w-full lg:w-80 h-full bg-white border-r border-gray-200 z-10 shadow-lg">
+        <div className="absolute top-0 left-0 w-full lg:w-80 h-full bg-gray-100 border-r border-gray-400 z-10">
           <TemplateLibrary
             onClose={() => setShowTemplateLibrary(false)}
             onAddEquipment={(_template) => {
@@ -262,7 +262,7 @@ export default function WiringDiagramEditor() {
 
       {/* テーブルエディタ */}
       {showTableEditor && (
-        <div className="absolute bottom-0 left-0 right-0 lg:right-80 h-80 bg-white border-t border-gray-200 z-10 shadow-lg">
+        <div className="absolute bottom-0 left-0 right-0 lg:right-80 h-80 bg-gray-100 border-t border-gray-400 z-10">
           <TableEditor onClose={() => setShowTableEditor(false)} />
         </div>
       )}
