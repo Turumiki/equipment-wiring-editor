@@ -9,6 +9,9 @@ import {
 interface SettingsState {
   settings: ConnectionSettings
   
+  // UI設定
+  showPortLabels: 'always' | 'hover' | 'selected'
+  
   // Actions
   addPortType: (portType: PortTypeDefinition) => void
   updatePortType: (id: string, updates: Partial<PortTypeDefinition>) => void
@@ -20,6 +23,7 @@ interface SettingsState {
   getPortTypeById: (id: string) => PortTypeDefinition | undefined
   getWireTypeById: (id: string) => WireTypeDefinition | undefined
   arePortTypesCompatible: (sourceId: string, targetId: string) => boolean
+  setShowPortLabels: (mode: 'always' | 'hover' | 'selected') => void
   resetToDefaults: () => void
 }
 
@@ -209,6 +213,7 @@ const createDefaultSettings = (): ConnectionSettings => ({
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: createDefaultSettings(),
+  showPortLabels: 'hover',
 
   addPortType: (portType) => set((state) => ({
     settings: {
@@ -286,7 +291,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     return settings.compatibilityMatrix[sourceId]?.includes(targetId) || false
   },
 
+  setShowPortLabels: (mode) => set({ showPortLabels: mode }),
+
   resetToDefaults: () => set({
-    settings: createDefaultSettings()
+    settings: createDefaultSettings(),
+    showPortLabels: 'hover'
   })
 }))

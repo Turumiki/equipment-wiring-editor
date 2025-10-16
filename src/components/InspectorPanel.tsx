@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useHistoryStore } from '@/store/useHistoryStore'
+import { useSettingsStore } from '@/store/useSettingsStore'
 import { useDebounce } from '@/hooks/useDebounce'
 import { 
   getRenderComponent, 
@@ -389,6 +390,8 @@ export default function InspectorPanel() {
             </div>
           </div>
         )}
+
+
       </div>
     </div>
   )

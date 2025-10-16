@@ -7,6 +7,7 @@ import {
   getPropertyComponent,
   calculatePortPosition
 } from '@/utils/componentSystem'
+import { useSettingsStore } from '@/store/useSettingsStore'
 
 interface EquipmentNodeData {
   equipmentObject: EquipmentObject
@@ -19,6 +20,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
   const renderComponent = getRenderComponent(equipmentObject)
   const portComponents = getConnectionPortComponents(equipmentObject)
   const propertyComponent = getPropertyComponent(equipmentObject)
+  const { showPortLabels } = useSettingsStore()
 
   // ポートラベルを表示するかどうか（選択時またはホバー時）
   const [showLabels, setShowLabels] = useState(false)
@@ -198,12 +200,16 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           )}
 
           {/* ポートラベル */}
-          {portLabel && (selected || showLabels) && (
+          {portLabel && (
+            showPortLabels === 'always' || 
+            (showPortLabels === 'selected' && selected) ||
+            (showPortLabels === 'hover' && (selected || showLabels))
+          ) && (
             <div
               className={labelClasses}
               style={labelStyle}
             >
-              <span className="text-gray-700 text-xs">{portLabel}</span>
+              <span className="text-black text-xs font-bold">{portLabel}</span>
             </div>
           )}
         </div>

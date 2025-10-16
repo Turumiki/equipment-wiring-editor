@@ -17,10 +17,12 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
     updateWireType,
     removeWireType,
     updateCompatibility,
-    resetToDefaults
+    resetToDefaults,
+    showPortLabels,
+    setShowPortLabels
   } = useSettingsStore()
   
-  const [activeTab, setActiveTab] = useState<'portTypes' | 'wireTypes' | 'compatibility'>('portTypes')
+  const [activeTab, setActiveTab] = useState<'ui' | 'portTypes' | 'wireTypes' | 'compatibility'>('ui')
   const [editingPortType, setEditingPortType] = useState<PortTypeDefinition | null>(null)
   const [editingWireType, setEditingWireType] = useState<WireTypeDefinition | null>(null)
 
@@ -92,6 +94,16 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
         {/* タブ */}
         <div className="flex border-b border-gray-200">
           <button
+            onClick={() => setActiveTab('ui')}
+            className={`flex-1 px-6 py-3 text-sm font-medium ${
+              activeTab === 'ui'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-black hover:text-gray-700'
+            }`}
+          >
+            UI設定
+          </button>
+          <button
             onClick={() => setActiveTab('portTypes')}
             className={`flex-1 px-6 py-3 text-sm font-medium ${
               activeTab === 'portTypes'
@@ -125,6 +137,29 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
 
         {/* コンテンツ */}
         <div className="flex-1 overflow-hidden">
+          {activeTab === 'ui' && (
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-black mb-6">UI設定</h3>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-black mb-2">ポートラベル表示</label>
+                  <select
+                    value={showPortLabels}
+                    onChange={(e) => setShowPortLabels(e.target.value as 'always' | 'hover' | 'selected')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                  >
+                    <option value="always">常に表示</option>
+                    <option value="selected">選択時のみ表示</option>
+                    <option value="hover">ホバー時のみ表示</option>
+                  </select>
+                  <p className="text-sm text-gray-600 mt-1">
+                    機材ノードのポートラベルをいつ表示するかを設定します
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'portTypes' && (
             <div className="h-full flex">
               {/* ポートタイプ一覧 */}
