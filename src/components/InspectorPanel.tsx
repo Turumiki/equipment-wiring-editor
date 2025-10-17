@@ -193,6 +193,110 @@ export default function InspectorPanel() {
                 </div>
               </div>
             </div>
+
+            {/* サイズ情報 */}
+            {renderComponent && (
+              <div className="pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-medium text-black mb-2">サイズ</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-black font-medium">幅</label>
+                    <input
+                      type="number"
+                      min="50"
+                      max="400"
+                      value={renderComponent.data.size.width}
+                      onChange={(e) => {
+                        const newWidth = Number(e.target.value)
+                        const updatedRenderComponent = {
+                          ...renderComponent,
+                          data: {
+                            ...renderComponent.data,
+                            size: {
+                              ...renderComponent.data.size,
+                              width: newWidth
+                            }
+                          }
+                        }
+                        const updatedComponents = selectedObject.components.map(comp =>
+                          comp.id === renderComponent.id ? updatedRenderComponent : comp
+                        )
+                        updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                      }}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-black font-medium">高さ</label>
+                    <input
+                      type="number"
+                      min="30"
+                      max="300"
+                      value={renderComponent.data.size.height}
+                      onChange={(e) => {
+                        const newHeight = Number(e.target.value)
+                        const updatedRenderComponent = {
+                          ...renderComponent,
+                          data: {
+                            ...renderComponent.data,
+                            size: {
+                              ...renderComponent.data.size,
+                              height: newHeight
+                            }
+                          }
+                        }
+                        const updatedComponents = selectedObject.components.map(comp =>
+                          comp.id === renderComponent.id ? updatedRenderComponent : comp
+                        )
+                        updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                      }}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => {
+                      const updatedRenderComponent = {
+                        ...renderComponent,
+                        data: {
+                          ...renderComponent.data,
+                          size: { width: 100, height: 60 }
+                        }
+                      }
+                      const updatedComponents = selectedObject.components.map(comp =>
+                        comp.id === renderComponent.id ? updatedRenderComponent : comp
+                      )
+                      updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                    }}
+                    className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                  >
+                    デフォルト
+                  </button>
+                  <button
+                    onClick={() => {
+                      const currentSize = renderComponent.data.size
+                      const aspectRatio = currentSize.width / currentSize.height
+                      const newHeight = Math.round(currentSize.width / aspectRatio)
+                      const updatedRenderComponent = {
+                        ...renderComponent,
+                        data: {
+                          ...renderComponent.data,
+                          size: { ...currentSize, height: newHeight }
+                        }
+                      }
+                      const updatedComponents = selectedObject.components.map(comp =>
+                        comp.id === renderComponent.id ? updatedRenderComponent : comp
+                      )
+                      updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                    }}
+                    className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    比率維持
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

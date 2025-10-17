@@ -8,6 +8,8 @@ import {
   calculatePortPosition
 } from '@/utils/componentSystem'
 import { useSettingsStore } from '@/store/useSettingsStore'
+import { useProjectStore } from '@/store/useProjectStore'
+import ResizableNodeSelected from './ResizableNodeSelected'
 
 interface EquipmentNodeData {
   equipmentObject: EquipmentObject
@@ -21,9 +23,30 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
   const portComponents = getConnectionPortComponents(equipmentObject)
   const propertyComponent = getPropertyComponent(equipmentObject)
   const { showPortLabels } = useSettingsStore()
+  const { updateEquipmentObject } = useProjectStore()
 
   // ポートラベルを表示するかどうか（選択時またはホバー時）
   const [showLabels, setShowLabels] = useState(false)
+
+  // リサイズハンドラー
+  const handleResize = (width: number, height: number) => {
+    if (renderComponent) {
+      const updatedComponents = equipmentObject.components.map(comp => {
+        if (comp.id === renderComponent.id) {
+          return {
+            ...comp,
+            data: {
+              ...comp.data,
+              size: { width, height }
+            }
+          }
+        }
+        return comp
+      })
+      
+      updateEquipmentObject(equipmentObject.id, { components: updatedComponents })
+    }
+  }
 
   if (!renderComponent) {
     return <div className="w-20 h-12 bg-gray-300 rounded">No Render</div>
@@ -226,31 +249,40 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
   }
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setShowLabels(true)}
-      onMouseLeave={() => setShowLabels(false)}
+    <ResizableNodeSelected
+      isSelected={selected}
+      onResize={handleResize}
+      minWidth={50}
+      minHeight={30}
+      maxWidth={400}
+      maxHeight={300}
     >
-      {/* メイン図形 */}
-      <div className="relative flex items-center justify-center">
-        {renderShape()}
+      <div
+        className="relative"
+        onMouseEnter={() => setShowLabels(true)}
+        onMouseLeave={() => setShowLabels(false)}
+      >
+        {/* メイン図形 */}
+        <div className="relative flex items-center justify-center">
+          {renderShape()}
 
-        {/* ラベル */}
-        {label && (
-          <div
-            className="absolute text-xs font-medium pointer-events-none select-none"
-            style={{
-              color: label.color,
-              fontSize: label.fontSize
-            }}
-          >
-            {name}
-          </div>
-        )}
+          {/* ラベル */}
+          {label && (
+            <div
+              className="absolute text-xs font-medium pointer-events-none select-none"
+              style={{
+                color: label.color,
+                fontSize: label.fontSize
+              }}
+            >
+              {name}
+            </div>
+          )}
+        </div>
+
+        {/* ポートハンドル */}
+        {renderPorts()}
       </div>
-
-      {/* ポートハンドル */}
-      {renderPorts()}
-    </div>
+    </ResizableNodeSelected>
   )
 }
