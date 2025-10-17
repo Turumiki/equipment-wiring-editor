@@ -309,8 +309,8 @@ export default function InspectorPanel() {
 
 
       {/* コンテンツ */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-4">
+      <div className="flex-1 overflow-y-auto p-3">
+        <div className="space-y-2">
           {/* プロパティ */}
           {propertyComponent?.data.properties && Object.entries(propertyComponent.data.properties).map(([key, prop]) => (
             <div key={key}>
@@ -327,10 +327,10 @@ export default function InspectorPanel() {
           ))}
 
           {/* 位置情報 */}
-          <div className="pt-4 border-t border-gray-200">
+          <div className={`border-t border-gray-200 ${collapsedSections.has('position') ? 'pt-2' : 'pt-4'}`}>
             <button
               onClick={() => toggleSectionCollapse('position')}
-              className="flex items-center justify-between w-full text-left mb-2 hover:bg-gray-50 p-1 rounded"
+              className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('position') ? 'mb-1' : 'mb-2'}`}
             >
               <h3 className="text-sm font-medium text-black">位置</h3>
               <span className="text-xs text-gray-500">
@@ -367,10 +367,10 @@ export default function InspectorPanel() {
 
           {/* サイズ情報 */}
           {renderComponent && (
-            <div className="pt-4 border-t border-gray-200">
+            <div className={`border-t border-gray-200 ${collapsedSections.has('size') ? 'pt-2' : 'pt-4'}`}>
               <button
                 onClick={() => toggleSectionCollapse('size')}
-                className="flex items-center justify-between w-full text-left mb-2 hover:bg-gray-50 p-1 rounded"
+                className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('size') ? 'mb-1' : 'mb-2'}`}
               >
                 <h3 className="text-sm font-medium text-black">サイズ</h3>
                 <span className="text-xs text-gray-500">
@@ -482,10 +482,10 @@ export default function InspectorPanel() {
           )}
 
           {/* コンポーネント管理 */}
-          <div className="pt-4 border-t border-gray-200">
+          <div className={`border-t border-gray-200 ${collapsedSections.has('components') ? 'pt-2' : 'pt-4'}`}>
             <button
               onClick={() => toggleSectionCollapse('components')}
-              className="flex items-center justify-between w-full text-left mb-3 hover:bg-gray-50 p-1 rounded"
+              className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('components') ? 'mb-1' : 'mb-3'}`}
             >
               <h3 className="text-sm font-medium text-black">コンポーネント</h3>
               <span className="text-xs text-gray-500">
@@ -506,18 +506,18 @@ export default function InspectorPanel() {
                 </div>
 
                 {/* 全コンポーネント表示 */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {selectedObject.components.map(component => {
                     if (component.type === ComponentType.CONNECTION_PORT) {
                       // ポートコンポーネントの詳細表示
                       const port = component as any
                       const isCollapsed = collapsedComponents.has(component.id)
                       return (
-                        <div key={component.id} className="p-3 bg-blue-50 border border-blue-200 rounded">
-                          <div className="flex justify-between items-start mb-2">
+                        <div key={component.id} className={`bg-blue-50 border border-blue-200 rounded ${isCollapsed ? 'p-2' : 'p-3'}`}>
+                          <div className={`flex justify-between items-start ${isCollapsed ? 'mb-0' : 'mb-2'}`}>
                             <button
                               onClick={() => toggleComponentCollapse(component.id)}
-                              className="flex items-center gap-2 flex-1 text-left hover:bg-blue-100 p-1 rounded"
+                              className="flex items-center gap-2 flex-1 text-left hover:bg-blue-100 px-1 py-0.5 rounded"
                             >
                               <span className="text-xs text-gray-500">
                                 {isCollapsed ? '▶' : '▼'}
@@ -689,10 +689,10 @@ export default function InspectorPanel() {
                       // その他のコンポーネント（RENDER、PROPERTY等）
                       const isCollapsed = collapsedComponents.has(component.id)
                       return (
-                        <div key={component.id} className="p-3 bg-gray-50 border border-gray-200 rounded">
+                        <div key={component.id} className={`bg-gray-50 border border-gray-200 rounded ${isCollapsed ? 'p-2' : 'p-3'}`}>
                           <button
                             onClick={() => toggleComponentCollapse(component.id)}
-                            className="flex items-center justify-between w-full text-left hover:bg-gray-100 p-1 rounded"
+                            className="flex items-center justify-between w-full text-left hover:bg-gray-100 px-1 py-0.5 rounded"
                           >
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-gray-500">
