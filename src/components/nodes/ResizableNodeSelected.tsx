@@ -4,6 +4,7 @@ import { NodeResizer } from 'reactflow'
 interface ResizableNodeSelectedProps {
   isSelected: boolean
   onResize?: (width: number, height: number) => void
+  onResizeEnd?: (width: number, height: number) => void
   minWidth?: number
   minHeight?: number
   maxWidth?: number
@@ -15,6 +16,7 @@ interface ResizableNodeSelectedProps {
 export default function ResizableNodeSelected({
   isSelected,
   onResize,
+  onResizeEnd,
   minWidth = 50,
   minHeight = 30,
   maxWidth = 500,
@@ -23,19 +25,24 @@ export default function ResizableNodeSelected({
   children
 }: ResizableNodeSelectedProps) {
   const [isResizing, setIsResizing] = useState(false)
+  const [lastSize, setLastSize] = useState<{width: number, height: number} | null>(null)
 
   const handleResizeStart = useCallback(() => {
     setIsResizing(true)
   }, [])
 
-  const handleResizeEnd = useCallback(() => {
+  const handleResizeEnd = useCallback((event: any, data: any) => {
     setIsResizing(false)
-  }, [])
+    if (onResizeEnd && data) {
+      onResizeEnd(data.width, data.height)
+    }
+  }, [onResizeEnd])
 
   const handleResize = useCallback((event: any, data: any) => {
     if (onResize) {
       onResize(data.width, data.height)
     }
+    setLastSize({ width: data.width, height: data.height })
   }, [onResize])
 
   return (

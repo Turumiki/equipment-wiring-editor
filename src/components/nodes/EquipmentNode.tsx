@@ -29,12 +29,12 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
 
   // ポートが接続されているかどうかをチェック
   const isPortConnected = (portId: string) => {
-    return project.wires.some(wire => 
+    return project.wires.some(wire =>
       wire.sourcePortId === portId || wire.targetPortId === portId
     )
   }
 
-  // リサイズハンドラー
+  // リサイズハンドラー（リアルタイム更新、履歴保存スキップ）
   const handleResize = (width: number, height: number) => {
     if (renderComponent) {
       const updatedComponents = equipmentObject.components.map(comp => {
@@ -49,8 +49,28 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
         }
         return comp
       })
-      
-      updateEquipmentObject(equipmentObject.id, { components: updatedComponents })
+
+      updateEquipmentObject(equipmentObject.id, { components: updatedComponents }, true) // 履歴保存をスキップ
+    }
+  }
+
+  // リサイズ終了時ハンドラー（履歴に保存）
+  const handleResizeEnd = (width: number, height: number) => {
+    if (renderComponent) {
+      const updatedComponents = equipmentObject.components.map(comp => {
+        if (comp.id === renderComponent.id) {
+          return {
+            ...comp,
+            data: {
+              ...comp.data,
+              size: { width, height }
+            }
+          }
+        }
+        return comp
+      })
+
+      updateEquipmentObject(equipmentObject.id, { components: updatedComponents }) // 履歴に保存
     }
   }
 
@@ -230,27 +250,27 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
 
           {/* ポートラベル */}
           {portLabel && (
-            showPortLabels === 'always' || 
+            showPortLabels === 'always' ||
             (showPortLabels === 'connected' && isPortConnected(portComponent.id)) ||
             (showPortLabels === 'connectedHover' && (isPortConnected(portComponent.id) || (selected || showLabels))) ||
             (showPortLabels === 'selected' && selected) ||
             (showPortLabels === 'hover' && (selected || showLabels))
           ) && (
-            <div
-              className={labelClasses}
-              style={labelStyle}
-            >
-              <span 
-                className="text-gray-700 text-xs font-semibold" 
-                style={{ 
-                  fontSize: '7px',
-                  textShadow: '0 0 2px white, 0 0 2px white, 0 0 2px white'
-                }}
+              <div
+                className={labelClasses}
+                style={labelStyle}
               >
-                {portLabel}
-              </span>
-            </div>
-          )}
+                <span
+                  className="text-gray-700 text-xs font-semibold"
+                  style={{
+                    fontSize: '7px',
+                    textShadow: '0 0 2px white, 0 0 2px white, 0 0 2px white'
+                  }}
+                >
+                  {portLabel}
+                </span>
+              </div>
+            )}
         </div>
       )
     })
@@ -260,6 +280,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
     <ResizableNodeSelected
       isSelected={selected}
       onResize={handleResize}
+      onResizeEnd={handleResizeEnd}
       minWidth={50}
       minHeight={30}
       maxWidth={400}
