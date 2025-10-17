@@ -30,6 +30,8 @@ import { getRenderComponent, getConnectionPortComponents } from '@/utils/compone
 import { validateConnection } from '@/utils/connectionValidation'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import ContextMenu from '@/components/ContextMenu'
+import AutoLayoutDialog from '@/components/AutoLayoutDialog'
+import { autoLayout, LayoutOptions } from '@/utils/autoLayout'
 
 const nodeTypes = {
   equipment: EquipmentNode,
@@ -44,6 +46,7 @@ export default function WiringDiagramEditor() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [showTableEditor, setShowTableEditor] = useState(false)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
+  const [showAutoLayout, setShowAutoLayout] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -329,6 +332,16 @@ export default function WiringDiagramEditor() {
     }
   }, [contextMenu, selectedObjectIds, setSelectedObjects, duplicateSelected, removeEquipmentObject, removeWire])
 
+  // 自動レイアウトの適用
+  const handleAutoLayout = useCallback((options: LayoutOptions) => {
+    const layoutResult = autoLayout(project.objects, project.wires, options)
+    
+    // 各オブジェクトの位置を更新
+    Object.entries(layoutResult.positions).forEach(([objectId, position]) => {
+      updateEquipmentObject(objectId, { position })
+    })
+  }, [project.objects, project.wires, updateEquipmentObject])
+
   // 接続の事前バリデーション
   const isValidConnection = useCallback((connection: Connection) => {
     const DEBUG = process.env.NODE_ENV === 'development' && false // falseに設定してログを無効化
@@ -399,6 +412,7 @@ export default function WiringDiagramEditor() {
               <Toolbar
                 onToggleTemplateLibrary={() => setShowTemplateLibrary(!showTemplateLibrary)}
                 onToggleTableEditor={() => setShowTableEditor(!showTableEditor)}
+                onToggleAutoLayout={() => setShowAutoLayout(!showAutoLayout)}
               />
             </Panel>
           </ReactFlow>
@@ -431,6 +445,13 @@ export default function WiringDiagramEditor() {
           <TableEditor onClose={() => setShowTableEditor(false)} />
         </div>
       )}
+
+      {/* 自動レイアウトダイアログ */}
+      <AutoLayoutDialog
+        isOpen={showAutoLayout}
+        onClose={() => setShowAutoLayout(false)}
+        onApply={handleAutoLayout}
+      />
 
       {/* コンテキストメニュー */}
       {contextMenu && (

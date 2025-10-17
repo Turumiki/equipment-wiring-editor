@@ -7,9 +7,10 @@ import SettingsDialog from './SettingsDialog'
 interface ToolbarProps {
   onToggleTemplateLibrary: () => void
   onToggleTableEditor: () => void
+  onToggleAutoLayout: () => void
 }
 
-export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor }: ToolbarProps) {
+export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, onToggleAutoLayout }: ToolbarProps) {
   const { 
     saveProject, 
     loadProject, 
@@ -138,6 +139,16 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor }
         >
           <span className="hidden lg:inline">テーブル</span>
           <span className="lg:hidden">📊</span>
+        </button>
+        
+        <button
+          onClick={onToggleAutoLayout}
+          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-teal-500 text-white rounded hover:bg-teal-600 transition-colors"
+          title="自動レイアウト"
+          aria-label="自動レイアウトを開く"
+        >
+          <span className="hidden lg:inline">レイアウト</span>
+          <span className="lg:hidden">🔄</span>
         </button>
       </div>
 
