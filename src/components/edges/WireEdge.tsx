@@ -1,5 +1,5 @@
 import React from 'react'
-import { EdgeProps, getBezierPath, EdgeLabelRenderer, ConnectionLineType } from 'reactflow'
+import { EdgeProps, getSmoothStepPath, EdgeLabelRenderer, ConnectionLineType } from 'reactflow'
 import { Wire, WireType } from '@/types'
 import { useSettingsStore } from '@/store/useSettingsStore'
 
@@ -28,7 +28,7 @@ export default function WireEdge({
   const { wire } = data
   const { style, label, wireType } = wire
 
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -90,7 +90,6 @@ export default function WireEdge({
         className="react-flow__edge-path"
         d={edgePath}
         style={getWireStyle()}
-        markerEnd="url(#arrowhead)"
       />
 
       {/* Reconnectハンドル（選択時のみ表示） */}
@@ -140,23 +139,7 @@ export default function WireEdge({
           </div>
         </EdgeLabelRenderer>
       )}
-      
-      {/* 矢印マーカー定義 */}
-      <defs>
-        <marker
-          id="arrowhead"
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill={getWireStyle().stroke}
-          />
-        </marker>
-      </defs>
+
     </>
   )
 }
