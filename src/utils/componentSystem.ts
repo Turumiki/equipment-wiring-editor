@@ -1,9 +1,9 @@
-import { 
-  EquipmentObject, 
-  Component, 
-  ComponentType, 
-  RenderComponent, 
-  ConnectionPortComponent, 
+import {
+  EquipmentObject,
+  Component,
+  ComponentType,
+  RenderComponent,
+  ConnectionPortComponent,
   PropertyComponent,
   ShapeType,
   PortType,
@@ -61,7 +61,7 @@ export function createConnectionPortComponent(
       [PortType.TRS_MINI]: [PortType.TRS_MINI],
       [PortType.POWER_AC]: [PortType.POWER_AC]
     }
-    
+
     return basicCompatibility[type] || [type]
   }
 
@@ -76,7 +76,7 @@ export function createConnectionPortComponent(
   }
 
   return {
-    id: `port-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+    id: `port-${Date.now()}-${Math.random().toString(36).substring(2, 15)}-${performance.now()}`,
     type: ComponentType.CONNECTION_PORT,
     enabled: true,
     data: {
@@ -205,12 +205,12 @@ export function createEquipmentPorts(equipmentType: string): ConnectionPortCompo
         createConnectionPortComponent(Side.RIGHT, 75, PortType.TRS_QUARTER, PortDirection.OUTPUT, 'Main R'),
         createConnectionPortComponent(Side.TOP, 50, PortType.USB_B, PortDirection.BIDIRECTIONAL, 'USB')
       ]
-    
+
     case 'microphone':
       return [
         createConnectionPortComponent(Side.BOTTOM, 50, PortType.XLR_MALE, PortDirection.OUTPUT, 'XLR Out')
       ]
-    
+
     case 'computer':
       return [
         createConnectionPortComponent(Side.LEFT, 20, PortType.USB_A, PortDirection.BIDIRECTIONAL, 'USB 1'),
@@ -220,7 +220,7 @@ export function createEquipmentPorts(equipmentType: string): ConnectionPortCompo
         createConnectionPortComponent(Side.RIGHT, 30, PortType.HDMI, PortDirection.OUTPUT, 'HDMI'),
         createConnectionPortComponent(Side.RIGHT, 70, PortType.TRS_MINI, PortDirection.OUTPUT, 'Audio Out')
       ]
-    
+
     case 'switching-hub':
       return [
         createConnectionPortComponent(Side.BOTTOM, 10, PortType.ETHERNET, PortDirection.BIDIRECTIONAL, 'Port 1'),
@@ -229,7 +229,7 @@ export function createEquipmentPorts(equipmentType: string): ConnectionPortCompo
         createConnectionPortComponent(Side.BOTTOM, 70, PortType.ETHERNET, PortDirection.BIDIRECTIONAL, 'Port 4'),
         createConnectionPortComponent(Side.BOTTOM, 90, PortType.ETHERNET, PortDirection.BIDIRECTIONAL, 'Port 5')
       ]
-    
+
     case 'dante-mixer':
       return [
         createConnectionPortComponent(Side.LEFT, 15, PortType.XLR_FEMALE, PortDirection.INPUT, 'Ch 1'),
@@ -240,25 +240,25 @@ export function createEquipmentPorts(equipmentType: string): ConnectionPortCompo
         createConnectionPortComponent(Side.RIGHT, 75, PortType.XLR_MALE, PortDirection.OUTPUT, 'Main R'),
         createConnectionPortComponent(Side.TOP, 50, PortType.DANTE, PortDirection.BIDIRECTIONAL, 'Dante')
       ]
-    
+
     case 'camera':
       return [
         createConnectionPortComponent(Side.RIGHT, 50, PortType.HDMI, PortDirection.OUTPUT, 'HDMI Out'),
         createConnectionPortComponent(Side.BOTTOM, 50, PortType.USB_C, PortDirection.BIDIRECTIONAL, 'USB-C')
       ]
-    
+
     case 'display':
       return [
         createConnectionPortComponent(Side.LEFT, 30, PortType.HDMI, PortDirection.INPUT, 'HDMI 1'),
         createConnectionPortComponent(Side.LEFT, 70, PortType.HDMI, PortDirection.INPUT, 'HDMI 2'),
         createConnectionPortComponent(Side.BOTTOM, 50, PortType.POWER_AC, PortDirection.INPUT, 'Power')
       ]
-    
+
     case 'speaker':
       return [
         createConnectionPortComponent(Side.LEFT, 50, PortType.TRS_QUARTER, PortDirection.INPUT, 'Audio In')
       ]
-    
+
     case 'video-switcher':
       return [
         createConnectionPortComponent(Side.LEFT, 20, PortType.HDMI, PortDirection.INPUT, 'Input 1'),
@@ -268,7 +268,7 @@ export function createEquipmentPorts(equipmentType: string): ConnectionPortCompo
         createConnectionPortComponent(Side.RIGHT, 50, PortType.HDMI, PortDirection.OUTPUT, 'Output'),
         createConnectionPortComponent(Side.TOP, 50, PortType.ETHERNET, PortDirection.BIDIRECTIONAL, 'Control')
       ]
-    
+
     default:
       // デフォルトポート
       return [
@@ -287,13 +287,13 @@ export function createBasicEquipmentObject(
 ): EquipmentObject {
   const renderComponent = createRenderComponent(shape)
   const propertyComponent = createPropertyComponent(name)
-  
+
   // 機材タイプに応じたポートを作成
   const ports = equipmentType ? createEquipmentPorts(equipmentType) : [
     createConnectionPortComponent(Side.LEFT, 50, PortType.XLR_FEMALE, PortDirection.INPUT, 'Input'),
     createConnectionPortComponent(Side.RIGHT, 50, PortType.XLR_MALE, PortDirection.OUTPUT, 'Output')
   ]
-  
+
   return {
     id: `equipment-${Date.now()}`,
     name,
@@ -314,9 +314,9 @@ export function calculatePortPosition(
   const { x, y } = objectPosition
   const { width, height } = objectSize
   const { side, offset } = portPosition
-  
+
   const offsetRatio = offset / 100
-  
+
   switch (side) {
     case Side.TOP:
       return { x: x + width * offsetRatio, y }

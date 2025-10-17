@@ -11,6 +11,41 @@ import {
 } from '@/utils/componentSystem'
 import { ComponentType, Side, PortType, PortDirection } from '@/types'
 
+// ポートタイプの互換性を取得
+function getCompatiblePorts(type: PortType): PortType[] {
+  const basicCompatibility: Partial<Record<PortType, PortType[]>> = {
+    [PortType.XLR_MALE]: [PortType.XLR_FEMALE],
+    [PortType.XLR_FEMALE]: [PortType.XLR_MALE],
+    [PortType.TRS_QUARTER]: [PortType.TRS_QUARTER, PortType.TS_QUARTER],
+    [PortType.TS_QUARTER]: [PortType.TS_QUARTER, PortType.TRS_QUARTER],
+    [PortType.USB_A]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
+    [PortType.USB_B]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
+    [PortType.USB_C]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
+    [PortType.ETHERNET]: [PortType.ETHERNET, PortType.DANTE],
+    [PortType.DANTE]: [PortType.DANTE, PortType.ETHERNET],
+    [PortType.HDMI]: [PortType.HDMI],
+    [PortType.TRS_MINI]: [PortType.TRS_MINI],
+    [PortType.POWER_AC]: [PortType.POWER_AC],
+    [PortType.POWER_DC]: [PortType.POWER_DC],
+    [PortType.RCA]: [PortType.RCA],
+    [PortType.SPEAKON]: [PortType.SPEAKON],
+    [PortType.AES_EBU]: [PortType.AES_EBU],
+    [PortType.SPDIF]: [PortType.SPDIF],
+    [PortType.ADAT]: [PortType.ADAT],
+    [PortType.DISPLAYPORT]: [PortType.DISPLAYPORT],
+    [PortType.DVI]: [PortType.DVI],
+    [PortType.VGA]: [PortType.VGA],
+    [PortType.SDI]: [PortType.SDI],
+    [PortType.COMPOSITE]: [PortType.COMPOSITE],
+    [PortType.THUNDERBOLT]: [PortType.THUNDERBOLT],
+    [PortType.IEC]: [PortType.IEC],
+    [PortType.MIDI]: [PortType.MIDI],
+    [PortType.CUSTOM]: [PortType.CUSTOM]
+  }
+  
+  return basicCompatibility[type] || [type]
+}
+
 // ポートタイプの表示名を取得
 function getPortTypeDisplayName(portType: PortType): string {
   const displayNames: Record<PortType, string> = {
@@ -375,11 +410,16 @@ export default function InspectorPanel() {
                           <select
                             value={port.data.portType}
                             onChange={(e) => {
+                              const newPortType = e.target.value as PortType
                               const updatedPort = {
                                 ...port,
                                 data: {
                                   ...port.data,
-                                  portType: e.target.value as PortType
+                                  portType: newPortType,
+                                  constraints: {
+                                    ...port.data.constraints,
+                                    allowedPortTypes: getCompatiblePorts(newPortType)
+                                  }
                                 }
                               }
                               const updatedComponents = selectedObject.components.map(comp =>

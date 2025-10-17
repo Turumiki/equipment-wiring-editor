@@ -18,7 +18,7 @@ export function validateConnection(
   targetPortId: string
 ): ValidationResult {
   // デバッグログは開発時のみ有効
-  const DEBUG = process.env.NODE_ENV === 'development' && false // falseに設定してログを無効化
+  const DEBUG = process.env.NODE_ENV === 'development' && true // trueに設定してログを有効化
   // 同じオブジェクト内での接続は禁止
   if (sourceObject.id === targetObject.id) {
     return {
@@ -72,7 +72,7 @@ export function validateConnection(
     console.log('Source port type:', sourcePort.data.portType)
     console.log('Target port type:', targetPort.data.portType)
   }
-  
+
   // 基本的な互換性チェック
   const basicCompatibility: Partial<Record<PortType, PortType[]>> = {
     [PortType.XLR_MALE]: [PortType.XLR_FEMALE],
@@ -88,15 +88,15 @@ export function validateConnection(
     [PortType.TRS_MINI]: [PortType.TRS_MINI],
     [PortType.POWER_AC]: [PortType.POWER_AC]
   }
-  
+
   const sourceType = sourcePort.data.portType
   const targetType = targetPort.data.portType
-  
+
   // 同じタイプは常に互換性あり
-  const typesCompatible = sourceType === targetType || 
-                          basicCompatibility[sourceType]?.includes(targetType) ||
-                          false
-  
+  const typesCompatible = sourceType === targetType ||
+    basicCompatibility[sourceType]?.includes(targetType) ||
+    false
+
   if (DEBUG) console.log('Types compatible:', typesCompatible)
 
   if (!typesCompatible) {
