@@ -49,7 +49,8 @@ export default function WireEdge({
       return {
         ...baseStyle,
         stroke: '#3b82f6',
-        strokeWidth: style.strokeWidth + 1,
+        strokeWidth: Math.max(style.strokeWidth + 2, 4), // 選択時は最低4pxの太さ
+        filter: 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.5))', // 青い光る効果
       }
     }
 
@@ -74,6 +75,16 @@ export default function WireEdge({
 
   return (
     <>
+      {/* 選択用の透明な太い線（クリック領域を広げる） */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth="12"
+        className="react-flow__edge-interaction"
+      />
+      
+      {/* 実際の表示線 */}
       <path
         id={id}
         className="react-flow__edge-path"

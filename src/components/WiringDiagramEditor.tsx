@@ -44,7 +44,7 @@ export default function WiringDiagramEditor() {
   const [showTableEditor, setShowTableEditor] = useState(false)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
 
-  const { project, addWire, updateEquipmentObject, setSelectedObjects, selectedObjectIds } = useProjectStore()
+  const { project, addWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds } = useProjectStore()
 
   // キーボードショートカットを有効化
   useKeyboardShortcuts()
@@ -73,19 +73,23 @@ export default function WiringDiagramEditor() {
     })
 
     // エッジの同期
-    const reactFlowEdges: Edge[] = project.wires.map(wire => ({
-      id: wire.id,
-      source: wire.sourceObjectId,
-      target: wire.targetObjectId,
-      sourceHandle: wire.sourcePortId,
-      targetHandle: wire.targetPortId,
-      type: 'wire',
-      data: { wire }
-    }))
+    const reactFlowEdges: Edge[] = project.wires.map(wire => {
+      const isSelected = selectedWireIds.includes(wire.id)
+      return {
+        id: wire.id,
+        source: wire.sourceObjectId,
+        target: wire.targetObjectId,
+        sourceHandle: wire.sourcePortId,
+        targetHandle: wire.targetPortId,
+        type: 'wire',
+        selected: isSelected, // ReactFlowの選択状態を設定
+        data: { wire, isSelected }
+      }
+    })
 
     setNodes(reactFlowNodes)
     setEdges(reactFlowEdges)
-  }, [project.objects, project.wires, selectedObjectIds, setNodes, setEdges])
+  }, [project.objects, project.wires, selectedObjectIds, selectedWireIds, setNodes, setEdges])
 
   // ノード変更の処理
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
@@ -214,10 +218,11 @@ export default function WiringDiagramEditor() {
     [addWire, project.objects]
   )
 
-  // ノード選択の処理
+  // ノード・エッジ選択の処理
   const handleSelectionChange = useCallback((params: { nodes: Node[], edges: Edge[] }) => {
     setSelectedObjects(params.nodes.map(node => node.id))
-  }, [setSelectedObjects])
+    setSelectedWires(params.edges.map(edge => edge.id))
+  }, [setSelectedObjects, setSelectedWires])
 
   // 接続の事前バリデーション
   const isValidConnection = useCallback((connection: Connection) => {
