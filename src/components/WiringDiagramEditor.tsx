@@ -91,10 +91,14 @@ export default function WiringDiagramEditor() {
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
     onNodesChange(changes)
 
-    // 位置変更をプロジェクトに反映
     changes.forEach(change => {
       if (change.type === 'position' && change.position) {
+        // 位置変更をプロジェクトに反映
         updateEquipmentObject(change.id, { position: change.position }, true) // ドラッグ中は履歴保存をスキップ
+      } else if (change.type === 'remove') {
+        // ノード削除をプロジェクトに反映
+        const { removeEquipmentObject } = useProjectStore.getState()
+        removeEquipmentObject(change.id)
       }
     })
   }, [onNodesChange, updateEquipmentObject])
@@ -102,7 +106,14 @@ export default function WiringDiagramEditor() {
   // エッジ変更の処理
   const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes)
-    // TODO: エッジ削除をプロジェクトに反映
+    
+    // エッジ削除をプロジェクトに反映
+    changes.forEach(change => {
+      if (change.type === 'remove') {
+        const { removeWire } = useProjectStore.getState()
+        removeWire(change.id)
+      }
+    })
   }, [onEdgesChange])
 
   const onConnect = useCallback(
