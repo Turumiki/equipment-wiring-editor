@@ -10,7 +10,7 @@ interface SettingsState {
   settings: ConnectionSettings
   
   // UI設定
-  showPortLabels: 'always' | 'hover' | 'selected'
+  showPortLabels: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover'
   showWireLabels: boolean
   
   // Actions
@@ -24,7 +24,7 @@ interface SettingsState {
   getPortTypeById: (id: string) => PortTypeDefinition | undefined
   getWireTypeById: (id: string) => WireTypeDefinition | undefined
   arePortTypesCompatible: (sourceId: string, targetId: string) => boolean
-  setShowPortLabels: (mode: 'always' | 'hover' | 'selected') => void
+  setShowPortLabels: (mode: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover') => void
   setShowWireLabels: (show: boolean) => void
   resetToDefaults: () => void
 }

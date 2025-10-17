@@ -23,10 +23,17 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
   const portComponents = getConnectionPortComponents(equipmentObject)
   const propertyComponent = getPropertyComponent(equipmentObject)
   const { showPortLabels } = useSettingsStore()
-  const { updateEquipmentObject } = useProjectStore()
+  const { updateEquipmentObject, project } = useProjectStore()
 
   // ポートラベルを表示するかどうか（選択時またはホバー時）
   const [showLabels, setShowLabels] = useState(false)
+
+  // ポートが接続されているかどうかをチェック
+  const isPortConnected = (portId: string) => {
+    return project.wires.some(wire => 
+      wire.sourcePortId === portId || wire.targetPortId === portId
+    )
+  }
 
   // リサイズハンドラー
   const handleResize = (width: number, height: number) => {
@@ -225,6 +232,8 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           {/* ポートラベル */}
           {portLabel && (
             showPortLabels === 'always' || 
+            (showPortLabels === 'connected' && isPortConnected(portComponent.id)) ||
+            (showPortLabels === 'connectedHover' && (isPortConnected(portComponent.id) || (selected || showLabels))) ||
             (showPortLabels === 'selected' && selected) ||
             (showPortLabels === 'hover' && (selected || showLabels))
           ) && (
