@@ -29,6 +29,7 @@ import InspectorPanel from '@/components/InspectorPanel'
 import { getRenderComponent, getConnectionPortComponents } from '@/utils/componentSystem'
 import { validateConnection } from '@/utils/connectionValidation'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import ContextMenu from '@/components/ContextMenu'
 
 const nodeTypes = {
   equipment: EquipmentNode,
@@ -43,8 +44,14 @@ export default function WiringDiagramEditor() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [showTableEditor, setShowTableEditor] = useState(false)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    type: 'canvas' | 'node' | 'edge'
+    targetId?: string
+  } | null>(null)
 
-  const { project, addWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds } = useProjectStore()
+  const { project, addWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected } = useProjectStore()
 
   // キーボードショートカットを有効化
   useKeyboardShortcuts()
@@ -224,6 +231,104 @@ export default function WiringDiagramEditor() {
     setSelectedWires(params.edges.map(edge => edge.id))
   }, [setSelectedObjects, setSelectedWires])
 
+  // 右クリックメニューの処理
+  const handleContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault()
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      type: 'canvas'
+    })
+  }, [])
+
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      type: 'node',
+      targetId: node.id
+    })
+  }, [])
+
+  const handleEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      type: 'edge',
+      targetId: edge.id
+    })
+  }, [])
+
+  // コンテキストメニューアイテムの生成
+  const getContextMenuItems = useCallback(() => {
+    if (!contextMenu) return []
+
+    switch (contextMenu.type) {
+      case 'canvas':
+        return [
+          {
+            label: '貼り付け',
+            onClick: () => {
+              // TODO: 貼り付け機能の実装
+              console.log('貼り付け')
+            },
+            disabled: true
+          }
+        ]
+      
+      case 'node':
+        const isSelected = selectedObjectIds.includes(contextMenu.targetId!)
+        return [
+          {
+            label: 'コピー',
+            onClick: () => {
+              if (!isSelected) {
+                setSelectedObjects([contextMenu.targetId!])
+              }
+              duplicateSelected()
+            }
+          },
+          {
+            label: '複製',
+            onClick: () => {
+              if (!isSelected) {
+                setSelectedObjects([contextMenu.targetId!])
+              }
+              duplicateSelected()
+            }
+          },
+          { separator: true } as const,
+          {
+            label: '削除',
+            onClick: () => {
+              if (isSelected) {
+                selectedObjectIds.forEach(id => removeEquipmentObject(id))
+              } else {
+                removeEquipmentObject(contextMenu.targetId!)
+              }
+            }
+          }
+        ]
+      
+      case 'edge':
+        return [
+          {
+            label: '削除',
+            onClick: () => {
+              removeWire(contextMenu.targetId!)
+            }
+          }
+        ]
+      
+      default:
+        return []
+    }
+  }, [contextMenu, selectedObjectIds, setSelectedObjects, duplicateSelected, removeEquipmentObject, removeWire])
+
   // 接続の事前バリデーション
   const isValidConnection = useCallback((connection: Connection) => {
     const DEBUG = process.env.NODE_ENV === 'development' && false // falseに設定してログを無効化
@@ -261,7 +366,12 @@ export default function WiringDiagramEditor() {
     <div className="h-full w-full flex flex-col lg:flex-row">
       {/* メインキャンバス */}
       <div className="flex-1 relative min-h-0">
-        <div data-id="react-flow-canvas" className="w-full h-full">
+        <div 
+          data-id="react-flow-canvas" 
+          className="w-full h-full select-none"
+          onContextMenu={handleContextMenu}
+          style={{ userSelect: 'none' }}
+        >
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -276,6 +386,9 @@ export default function WiringDiagramEditor() {
             className="bg-gray-200"
             multiSelectionKeyCode="Shift"
             deleteKeyCode="Delete"
+            onNodeContextMenu={handleNodeContextMenu}
+            onEdgeContextMenu={handleEdgeContextMenu}
+            onPaneClick={() => setContextMenu(null)}
           >
             <Controls />
             <MiniMap />
@@ -317,6 +430,16 @@ export default function WiringDiagramEditor() {
         <div className="absolute bottom-0 left-0 right-0 lg:right-80 h-80 bg-gray-100 border-t border-gray-400 z-10">
           <TableEditor onClose={() => setShowTableEditor(false)} />
         </div>
+      )}
+
+      {/* コンテキストメニュー */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={getContextMenuItems()}
+          onClose={() => setContextMenu(null)}
+        />
       )}
     </div>
   )
