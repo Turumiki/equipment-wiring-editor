@@ -1,6 +1,7 @@
 import React from 'react'
 import { EdgeProps, getBezierPath, EdgeLabelRenderer } from 'reactflow'
-import { Wire } from '@/types'
+import { Wire, WireType } from '@/types'
+import { useSettingsStore } from '@/store/useSettingsStore'
 
 interface WireEdgeData {
   wire: Wire
@@ -18,6 +19,12 @@ export default function WireEdge({
   data,
   selected
 }: EdgeProps<WireEdgeData>) {
+  const { showWireLabels } = useSettingsStore()
+  
+  if (!data?.wire) {
+    return null
+  }
+  
   const { wire } = data
   const { style, label, wireType } = wire
 
@@ -47,14 +54,19 @@ export default function WireEdge({
     }
 
     switch (wireType) {
-      case 'power':
+      case WireType.POWER_CABLE:
         return { ...baseStyle, stroke: '#dc2626', strokeWidth: 3 }
-      case 'signal':
+      case WireType.XLR_CABLE:
+      case WireType.TRS_CABLE:
+      case WireType.TS_CABLE:
         return { ...baseStyle, stroke: '#059669', strokeWidth: 2 }
-      case 'data':
+      case WireType.USB_CABLE:
+      case WireType.ETHERNET_CABLE:
+      case WireType.THUNDERBOLT_CABLE:
         return { ...baseStyle, stroke: '#7c3aed', strokeWidth: 2 }
-      case 'ground':
-        return { ...baseStyle, stroke: '#374151', strokeWidth: 2 }
+      case WireType.HDMI_CABLE:
+      case WireType.DISPLAYPORT_CABLE:
+        return { ...baseStyle, stroke: '#8b5cf6', strokeWidth: 2 }
       default:
         return baseStyle
     }
@@ -71,15 +83,18 @@ export default function WireEdge({
       />
       
       {/* ラベル表示 */}
-      {label && (
+      {label && showWireLabels && (
         <EdgeLabelRenderer>
           <div
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
+              fontSize: '8px',
+              fontWeight: '600',
+              color: '#374151',
+              textShadow: '0 0 2px white, 0 0 2px white, 0 0 2px white'
             }}
-            className="bg-white px-2 py-1 rounded border border-gray-300 text-xs font-medium shadow-sm"
           >
             {label}
           </div>

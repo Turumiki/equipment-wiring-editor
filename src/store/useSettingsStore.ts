@@ -11,6 +11,7 @@ interface SettingsState {
   
   // UI設定
   showPortLabels: 'always' | 'hover' | 'selected'
+  showWireLabels: boolean
   
   // Actions
   addPortType: (portType: PortTypeDefinition) => void
@@ -24,6 +25,7 @@ interface SettingsState {
   getWireTypeById: (id: string) => WireTypeDefinition | undefined
   arePortTypesCompatible: (sourceId: string, targetId: string) => boolean
   setShowPortLabels: (mode: 'always' | 'hover' | 'selected') => void
+  setShowWireLabels: (show: boolean) => void
   resetToDefaults: () => void
 }
 
@@ -214,6 +216,7 @@ const createDefaultSettings = (): ConnectionSettings => ({
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: createDefaultSettings(),
   showPortLabels: 'hover',
+  showWireLabels: true,
 
   addPortType: (portType) => set((state) => ({
     settings: {
@@ -292,9 +295,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   setShowPortLabels: (mode) => set({ showPortLabels: mode }),
+  setShowWireLabels: (show) => set({ showWireLabels: show }),
 
   resetToDefaults: () => set({
     settings: createDefaultSettings(),
-    showPortLabels: 'hover'
+    showPortLabels: 'hover',
+    showWireLabels: true
   })
 }))

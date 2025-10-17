@@ -26,7 +26,7 @@ import Toolbar from '@/components/Toolbar'
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
 import InspectorPanel from '@/components/InspectorPanel'
-import { getRenderComponent } from '@/utils/componentSystem'
+import { getRenderComponent, getConnectionPortComponents } from '@/utils/componentSystem'
 import { validateConnection } from '@/utils/connectionValidation'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
@@ -144,6 +144,41 @@ export default function WiringDiagramEditor() {
         }
 
         if (DEBUG) console.log('Creating wire...')
+        
+        // ポート情報を取得してラベルを生成
+        const sourcePortComponents = getConnectionPortComponents(sourceObject)
+        const targetPortComponents = getConnectionPortComponents(targetObject)
+        const sourcePort = sourcePortComponents.find(port => port.id === params.sourceHandle)
+        const targetPort = targetPortComponents.find(port => port.id === params.targetHandle)
+        
+        // ポートタイプに基づいてラベルを生成
+        const getPortTypeLabel = (portType: string) => {
+          switch (portType) {
+            case 'xlr-male':
+            case 'xlr-female':
+              return 'XLR'
+            case 'usb-a':
+            case 'usb-b':
+            case 'usb-c':
+              return 'USB'
+            case 'ethernet':
+              return 'LAN'
+            case 'dante':
+              return 'DANTE'
+            case 'hdmi':
+              return 'HDMI'
+            case 'trs-quarter':
+            case 'ts-quarter':
+              return 'TRS'
+            case 'trs-mini':
+              return '3.5mm'
+            default:
+              return portType.toUpperCase()
+          }
+        }
+        
+        const wireLabel = sourcePort ? getPortTypeLabel(sourcePort.data.portType) : ''
+        
         const newWire = {
           id: `wire-${Date.now()}`,
           sourceObjectId: params.source,
@@ -155,6 +190,7 @@ export default function WiringDiagramEditor() {
             color: '#059669',
             strokeWidth: 2,
           },
+          label: wireLabel,
           metadata: {}
         }
 

@@ -93,7 +93,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
       let position: Position
       let handleStyle: React.CSSProperties = {}
       let labelStyle: React.CSSProperties = {}
-      let labelClasses = 'absolute text-xs font-medium pointer-events-none select-none bg-white px-1 rounded shadow-sm border'
+      let labelClasses = 'absolute text-xs font-medium pointer-events-none select-none'
 
       switch (portPos.side) {
         case Side.TOP:
@@ -209,7 +209,15 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
               className={labelClasses}
               style={labelStyle}
             >
-              <span className="text-black text-xs font-bold">{portLabel}</span>
+              <span 
+                className="text-gray-700 text-xs font-semibold" 
+                style={{ 
+                  fontSize: '7px',
+                  textShadow: '0 0 2px white, 0 0 2px white, 0 0 2px white'
+                }}
+              >
+                {portLabel}
+              </span>
             </div>
           )}
         </div>

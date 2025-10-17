@@ -8,10 +8,10 @@ interface SettingsDialogProps {
 }
 
 export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
-  const { 
-    settings, 
-    addPortType, 
-    updatePortType, 
+  const {
+    settings,
+    addPortType,
+    updatePortType,
     removePortType,
     addWireType,
     updateWireType,
@@ -19,9 +19,11 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
     updateCompatibility,
     resetToDefaults,
     showPortLabels,
-    setShowPortLabels
+    setShowPortLabels,
+    showWireLabels,
+    setShowWireLabels
   } = useSettingsStore()
-  
+
   const [activeTab, setActiveTab] = useState<'ui' | 'portTypes' | 'wireTypes' | 'compatibility'>('ui')
   const [editingPortType, setEditingPortType] = useState<PortTypeDefinition | null>(null)
   const [editingWireType, setEditingWireType] = useState<WireTypeDefinition | null>(null)
@@ -63,7 +65,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
     const newCompatible = compatible
       ? [...currentCompatible.filter(id => id !== targetId), targetId]
       : currentCompatible.filter(id => id !== targetId)
-    
+
     updateCompatibility(sourceId, newCompatible)
   }
 
@@ -95,41 +97,37 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
         <div className="flex border-b border-gray-200">
           <button
             onClick={() => setActiveTab('ui')}
-            className={`flex-1 px-6 py-3 text-sm font-medium ${
-              activeTab === 'ui'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-black hover:text-gray-700'
-            }`}
+            className={`flex-1 px-6 py-3 text-sm font-medium ${activeTab === 'ui'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-black hover:text-gray-700'
+              }`}
           >
             UI設定
           </button>
           <button
             onClick={() => setActiveTab('portTypes')}
-            className={`flex-1 px-6 py-3 text-sm font-medium ${
-              activeTab === 'portTypes'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-black hover:text-gray-700'
-            }`}
+            className={`flex-1 px-6 py-3 text-sm font-medium ${activeTab === 'portTypes'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-black hover:text-gray-700'
+              }`}
           >
             ポートタイプ ({settings.portTypes.length})
           </button>
           <button
             onClick={() => setActiveTab('wireTypes')}
-            className={`flex-1 px-6 py-3 text-sm font-medium ${
-              activeTab === 'wireTypes'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-black hover:text-gray-700'
-            }`}
+            className={`flex-1 px-6 py-3 text-sm font-medium ${activeTab === 'wireTypes'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-black hover:text-gray-700'
+              }`}
           >
             ワイヤータイプ ({settings.wireTypes.length})
           </button>
           <button
             onClick={() => setActiveTab('compatibility')}
-            className={`flex-1 px-6 py-3 text-sm font-medium ${
-              activeTab === 'compatibility'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-black hover:text-gray-700'
-            }`}
+            className={`flex-1 px-6 py-3 text-sm font-medium ${activeTab === 'compatibility'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-black hover:text-gray-700'
+              }`}
           >
             互換性マトリックス
           </button>
@@ -156,6 +154,21 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                     機材ノードのポートラベルをいつ表示するかを設定します
                   </p>
                 </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={showWireLabels}
+                      onChange={(e) => setShowWireLabels(e.target.checked)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium text-black">ワイヤーラベル表示</span>
+                  </label>
+                  <p className="text-sm text-gray-600 mt-1">
+                    接続線にポートタイプ（XLR、USB等）のラベルを表示します
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -178,11 +191,10 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                     {settings.portTypes.map(portType => (
                       <div
                         key={portType.id}
-                        className={`p-3 border rounded cursor-pointer ${
-                          editingPortType?.id === portType.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`p-3 border rounded cursor-pointer ${editingPortType?.id === portType.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                          }`}
                         onClick={() => setEditingPortType(portType)}
                       >
                         <div className="flex items-center gap-3">
