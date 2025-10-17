@@ -163,7 +163,7 @@ const createDefaultSettings = (): ConnectionSettings => ({
       name: 'xlr-cable',
       displayName: 'XLRケーブル',
       description: 'XLRオーディオケーブル',
-      color: '#3b82f6',
+      color: '#059669',
       strokeWidth: 2,
       supportedPortTypes: ['xlr-male', 'xlr-female']
     },

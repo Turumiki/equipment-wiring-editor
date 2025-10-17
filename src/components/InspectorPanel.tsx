@@ -3,9 +3,9 @@ import { useProjectStore } from '@/store/useProjectStore'
 import { useHistoryStore } from '@/store/useHistoryStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useDebounce } from '@/hooks/useDebounce'
-import { 
-  getRenderComponent, 
-  getConnectionPortComponents, 
+import {
+  getRenderComponent,
+  getConnectionPortComponents,
   getPropertyComponent,
   createConnectionPortComponent
 } from '@/utils/componentSystem'
@@ -42,7 +42,7 @@ function getCompatiblePorts(type: PortType): PortType[] {
     [PortType.MIDI]: [PortType.MIDI],
     [PortType.CUSTOM]: [PortType.CUSTOM]
   }
-  
+
   return basicCompatibility[type] || [type]
 }
 
@@ -81,23 +81,151 @@ function getPortTypeDisplayName(portType: PortType): string {
 }
 
 export default function InspectorPanel() {
-  const { project, selectedObjectIds, updateEquipmentObject } = useProjectStore()
+  const { project, selectedObjectIds, selectedWireIds, updateEquipmentObject, updateWire } = useProjectStore()
   const { pushState } = useHistoryStore()
   const [activeTab, setActiveTab] = useState<'properties' | 'components'>('properties')
-  
+
   // 編集完了時に履歴を保存（1秒後）
   useDebounce(() => {
     pushState(project)
   }, 1000, [project])
-  
-  const selectedObject = selectedObjectIds.length === 1 
+
+  const selectedObject = selectedObjectIds.length === 1
     ? project.objects.find(obj => obj.id === selectedObjectIds[0])
     : null
+
+  const selectedWire = selectedWireIds.length === 1
+    ? project.wires.find(wire => wire.id === selectedWireIds[0])
+    : null
+
+  // エッジが選択されている場合
+  if (selectedWire && !selectedObject) {
+    return (
+      <div className="h-full flex flex-col bg-gray-100">
+        {/* ヘッダー */}
+        <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
+          <h2 className="text-sm font-bold text-black uppercase tracking-wide">Inspector</h2>
+          <p className="text-xs text-black">ワイヤー: {selectedWire.label || selectedWire.wireType}</p>
+        </div>
+
+        {/* ワイヤー情報 */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {/* ラベル */}
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">ラベル</label>
+              <input
+                type="text"
+                value={selectedWire.label || ''}
+                onChange={(e) => updateWire(selectedWire.id, { label: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                placeholder="ワイヤーのラベル"
+              />
+            </div>
+
+            {/* ワイヤータイプ */}
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">ワイヤータイプ</label>
+              <select
+                value={selectedWire.wireType}
+                onChange={(e) => updateWire(selectedWire.id, { wireType: e.target.value as any })}
+                className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+              >
+                <option value="xlr-cable">XLRケーブル</option>
+                <option value="trs-cable">TRS/TSケーブル</option>
+                <option value="usb-cable">USBケーブル</option>
+                <option value="ethernet-cable">Ethernetケーブル</option>
+                <option value="hdmi-cable">HDMIケーブル</option>
+                <option value="displayport-cable">DisplayPortケーブル</option>
+                <option value="power-cable">電源ケーブル</option>
+                <option value="midi-cable">MIDIケーブル</option>
+              </select>
+            </div>
+
+            {/* スタイル設定 */}
+            <div className="pt-4 border-t border-gray-200">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium text-black">スタイル</h3>
+                <button
+                  onClick={() => {
+                    // 個別設定をクリアしてワイヤータイプのデフォルトに戻す
+                    updateWire(selectedWire.id, { 
+                      style: { 
+                        color: '', // 空文字にしてデフォルトを使用
+                        strokeWidth: 0, // 0にしてデフォルトを使用
+                        strokeDashArray: selectedWire.style.strokeDashArray
+                      }
+                    })
+                  }}
+                  className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                  デフォルトに戻す
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-black font-medium mb-1">色</label>
+                  <input
+                    type="color"
+                    value={selectedWire.style.color || '#059669'}
+                    onChange={(e) => updateWire(selectedWire.id, {
+                      style: { ...selectedWire.style, color: e.target.value }
+                    })}
+                    className="w-full h-8 border border-gray-300 rounded"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedWire.style.color ? '個別設定' : 'ワイヤータイプのデフォルト'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-black font-medium mb-1">
+                    太さ: {selectedWire.style.strokeWidth || 2}px
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={selectedWire.style.strokeWidth || 2}
+                    onChange={(e) => updateWire(selectedWire.id, {
+                      style: { ...selectedWire.style, strokeWidth: Number(e.target.value) }
+                    })}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedWire.style.strokeWidth ? '個別設定' : 'ワイヤータイプのデフォルト'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 接続情報 */}
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-black mb-2">接続情報</h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div>
+                  <span className="font-medium">接続元:</span> {
+                    project.objects.find(obj => obj.id === selectedWire.sourceObjectId)?.name || 'Unknown'
+                  }
+                </div>
+                <div>
+                  <span className="font-medium">接続先:</span> {
+                    project.objects.find(obj => obj.id === selectedWire.targetObjectId)?.name || 'Unknown'
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (!selectedObject) {
     return (
       <div className="p-4 text-center text-gray-500">
-        <p>オブジェクトを選択してください</p>
+        <p>オブジェクトまたはワイヤーを選択してください</p>
       </div>
     )
   }
@@ -121,12 +249,12 @@ export default function InspectorPanel() {
           }
         }
       }
-      
+
       const updatedComponents = selectedObject.components.map(comp =>
         comp.id === propertyComponent.id ? updatedProperty : comp
       )
-      
-      updateEquipmentObject(selectedObject.id, { 
+
+      updateEquipmentObject(selectedObject.id, {
         components: updatedComponents,
         name: key === 'name' ? value : selectedObject.name
       }, true) // 履歴保存をスキップ
@@ -140,7 +268,7 @@ export default function InspectorPanel() {
       PortType.XLR_FEMALE,
       PortDirection.OUTPUT
     )
-    
+
     const updatedComponents = [...selectedObject.components, newPort]
     updateEquipmentObject(selectedObject.id, { components: updatedComponents }) // ポート追加は履歴に保存
   }
@@ -162,21 +290,19 @@ export default function InspectorPanel() {
       <div className="flex border-b border-gray-400">
         <button
           onClick={() => setActiveTab('properties')}
-          className={`flex-1 px-2 py-1 text-xs font-bold border-r border-gray-400 ${
-            activeTab === 'properties'
+          className={`flex-1 px-2 py-1 text-xs font-bold border-r border-gray-400 ${activeTab === 'properties'
               ? 'bg-blue-600 text-white'
               : 'bg-gray-300 text-black hover:bg-gray-400'
-          }`}
+            }`}
         >
           PROPERTIES
         </button>
         <button
           onClick={() => setActiveTab('components')}
-          className={`flex-1 px-2 py-1 text-xs font-bold ${
-            activeTab === 'components'
+          className={`flex-1 px-2 py-1 text-xs font-bold ${activeTab === 'components'
               ? 'bg-blue-600 text-white'
               : 'bg-gray-300 text-black hover:bg-gray-400'
-          }`}
+            }`}
         >
           COMPONENTS
         </button>
@@ -199,7 +325,7 @@ export default function InspectorPanel() {
                 />
               </div>
             ))}
-            
+
             {/* 位置情報 */}
             <div className="pt-4 border-t border-gray-200">
               <h3 className="text-sm font-medium text-black mb-2">位置</h3>
@@ -345,9 +471,8 @@ export default function InspectorPanel() {
                   <div key={component.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <div>
                       <span className="text-sm font-medium text-black">{component.type}</span>
-                      <span className={`ml-2 text-xs px-2 py-0.5 rounded ${
-                        component.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`ml-2 text-xs px-2 py-0.5 rounded ${component.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
                         {component.enabled ? '有効' : '無効'}
                       </span>
                     </div>

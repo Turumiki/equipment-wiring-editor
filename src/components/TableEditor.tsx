@@ -2,6 +2,15 @@ import React, { useState, useMemo } from 'react'
 import { useProjectStore } from '@/store/useProjectStore'
 import { ConnectionTableRow, WireType } from '@/types'
 import { getConnectionPortComponents, getPropertyComponent } from '@/utils/componentSystem'
+import { useSettingsStore } from '@/store/useSettingsStore'
+
+// ワイヤータイプの表示名を取得
+function getWireTypeDisplayName(wireType: string, settings: any): string {
+  const wireTypeSettings = settings.wireTypes.find((wt: any) =>
+    wt.name === wireType || wt.id === wireType
+  )
+  return wireTypeSettings?.displayName || wireType
+}
 
 interface TableEditorProps {
   onClose: () => void
@@ -9,6 +18,7 @@ interface TableEditorProps {
 
 export default function TableEditor({ onClose }: TableEditorProps) {
   const { project, removeWire, addWire, updateEquipmentObject } = useProjectStore()
+  const { settings } = useSettingsStore()
   const [activeTab, setActiveTab] = useState<'connections' | 'equipment'>('connections')
   const [editingCell, setEditingCell] = useState<{ rowId: string; field: string } | null>(null)
 
@@ -17,10 +27,10 @@ export default function TableEditor({ onClose }: TableEditorProps) {
     return project.wires.map(wire => {
       const sourceObject = project.objects.find(obj => obj.id === wire.sourceObjectId)
       const targetObject = project.objects.find(obj => obj.id === wire.targetObjectId)
-      
+
       const sourceObjectName = getPropertyComponent(sourceObject!)?.data.properties.name?.value || sourceObject?.name || 'Unknown'
       const targetObjectName = getPropertyComponent(targetObject!)?.data.properties.name?.value || targetObject?.name || 'Unknown'
-      
+
       const sourcePort = getConnectionPortComponents(sourceObject!).find(port => port.id === wire.sourcePortId)
       const targetPort = getConnectionPortComponents(targetObject!).find(port => port.id === wire.targetPortId)
 
@@ -42,7 +52,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
     return project.objects.map(obj => {
       const propertyComponent = getPropertyComponent(obj)
       const portComponents = getConnectionPortComponents(obj)
-      const connectionCount = project.wires.filter(wire => 
+      const connectionCount = project.wires.filter(wire =>
         wire.sourceObjectId === obj.id || wire.targetObjectId === obj.id
       ).length
 
@@ -101,12 +111,12 @@ export default function TableEditor({ onClose }: TableEditorProps) {
             }
           }
         }
-        
+
         const updatedComponents = obj.components.map(comp =>
           comp.id === propertyComponent.id ? updatedProperty : comp
         )
-        
-        updateEquipmentObject(objectId, { 
+
+        updateEquipmentObject(objectId, {
           components: updatedComponents,
           name: newName
         })
@@ -128,7 +138,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
           row.label || ''
         ].join(','))
       ].join('\n')
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
@@ -164,21 +174,19 @@ export default function TableEditor({ onClose }: TableEditorProps) {
       <div className="flex border-b border-gray-200">
         <button
           onClick={() => setActiveTab('connections')}
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
-            activeTab === 'connections'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-black hover:text-gray-700'
-          }`}
+          className={`flex-1 px-4 py-2 text-sm font-medium ${activeTab === 'connections'
+            ? 'text-blue-600 border-b-2 border-blue-600'
+            : 'text-black hover:text-gray-700'
+            }`}
         >
           接続情報 ({connectionRows.length})
         </button>
         <button
           onClick={() => setActiveTab('equipment')}
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
-            activeTab === 'equipment'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-black hover:text-gray-700'
-          }`}
+          className={`flex-1 px-4 py-2 text-sm font-medium ${activeTab === 'equipment'
+            ? 'text-blue-600 border-b-2 border-blue-600'
+            : 'text-black hover:text-gray-700'
+            }`}
         >
           機材一覧 ({equipmentRows.length})
         </button>
@@ -212,11 +220,11 @@ export default function TableEditor({ onClose }: TableEditorProps) {
                       onChange={(e) => handleUpdateWireType(row.id, e.target.value as WireType)}
                       className="text-xs border border-gray-300 rounded px-2 py-1 text-black"
                     >
-                      <option value="power">power</option>
-                      <option value="signal">signal</option>
-                      <option value="data">data</option>
-                      <option value="ground">ground</option>
-                      <option value="custom">custom</option>
+                      {settings.wireTypes.map(wt => (
+                        <option key={wt.id} value={wt.name}>
+                          {wt.displayName}
+                        </option>
+                      ))}
                     </select>
                   </td>
                   <td className="px-4 py-2">

@@ -40,12 +40,23 @@ export default function WireEdge({
   // ワイヤータイプに応じた色とスタイル
   const getWireStyle = () => {
     // 設定ストアからワイヤータイプ設定を取得
-    const wireTypeSettings = settings.wireTypes.find(wt => wt.name === wireType)
+    // wireTypeの値（例: "xlr-cable"）でnameまたはidを検索
+    const wireTypeSettings = settings.wireTypes.find(wt => 
+      wt.name === wireType || wt.id === wireType
+    )
     
+    // デバッグログ（開発時のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Wire type:', wireType)
+      console.log('Wire type settings found:', wireTypeSettings)
+      console.log('Available wire types:', settings.wireTypes.map(wt => ({ id: wt.id, name: wt.name })))
+    }
+    
+    // 個別のワイヤースタイルを優先し、設定ストアをフォールバックとして使用
     const baseStyle = {
-      stroke: wireTypeSettings?.color || style.color,
-      strokeWidth: wireTypeSettings?.strokeWidth || style.strokeWidth,
-      strokeDasharray: wireTypeSettings?.strokeDashArray || style.strokeDashArray,
+      stroke: (style.color && style.color !== '') ? style.color : (wireTypeSettings?.color || '#059669'),
+      strokeWidth: (style.strokeWidth && style.strokeWidth > 0) ? style.strokeWidth : (wireTypeSettings?.strokeWidth || 2),
+      strokeDasharray: style.strokeDashArray || wireTypeSettings?.strokeDashArray,
     }
 
     if (selected) {
