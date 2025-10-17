@@ -1,5 +1,5 @@
 import React from 'react'
-import { EdgeProps, getBezierPath, EdgeLabelRenderer } from 'reactflow'
+import { EdgeProps, getBezierPath, EdgeLabelRenderer, ConnectionLineType } from 'reactflow'
 import { Wire, WireType } from '@/types'
 import { useSettingsStore } from '@/store/useSettingsStore'
 
@@ -92,6 +92,35 @@ export default function WireEdge({
         style={getWireStyle()}
         markerEnd="url(#arrowhead)"
       />
+
+      {/* Reconnectハンドル（選択時のみ表示） */}
+      {selected && (
+        <>
+          {/* ソース側のReconnectハンドル */}
+          <circle
+            cx={sourceX}
+            cy={sourceY}
+            r="4"
+            fill="#3b82f6"
+            stroke="white"
+            strokeWidth="2"
+            className="react-flow__edge-reconnect-source"
+            style={{ cursor: 'grab' }}
+          />
+          
+          {/* ターゲット側のReconnectハンドル */}
+          <circle
+            cx={targetX}
+            cy={targetY}
+            r="4"
+            fill="#3b82f6"
+            stroke="white"
+            strokeWidth="2"
+            className="react-flow__edge-reconnect-target"
+            style={{ cursor: 'grab' }}
+          />
+        </>
+      )}
       
       {/* ラベル表示 */}
       {label && showWireLabels && (

@@ -54,7 +54,7 @@ export default function WiringDiagramEditor() {
     targetId?: string
   } | null>(null)
 
-  const { project, addWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected } = useProjectStore()
+  const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected } = useProjectStore()
 
   // キーボードショートカットを有効化
   useKeyboardShortcuts()
@@ -320,6 +320,15 @@ export default function WiringDiagramEditor() {
       case 'edge':
         return [
           {
+            label: '再接続モード',
+            onClick: () => {
+              // エッジを選択状態にして再接続を促す
+              setSelectedWires([contextMenu.targetId!])
+              alert('エッジの端点（青い丸）をドラッグして別のポートに接続してください')
+            }
+          },
+          { separator: true } as const,
+          {
             label: '削除',
             onClick: () => {
               removeWire(contextMenu.targetId!)
@@ -341,6 +350,56 @@ export default function WiringDiagramEditor() {
       updateEquipmentObject(objectId, { position })
     })
   }, [project.objects, project.wires, updateEquipmentObject])
+
+  // エッジの再接続処理
+  const handleReconnect = useCallback((oldEdge: Edge, connection: Connection) => {
+    const DEBUG = process.env.NODE_ENV === 'development' && false
+
+    if (DEBUG) {
+      console.log('=== Edge Reconnect ===')
+      console.log('Old edge:', oldEdge)
+      console.log('New connection:', connection)
+    }
+
+    if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) {
+      if (DEBUG) console.log('Missing connection parameters')
+      return false
+    }
+
+    // 接続バリデーション
+    const sourceObject = project.objects.find(obj => obj.id === connection.source)
+    const targetObject = project.objects.find(obj => obj.id === connection.target)
+
+    if (!sourceObject || !targetObject) {
+      if (DEBUG) console.log('Objects not found for reconnection')
+      alert('接続対象のオブジェクトが見つかりません')
+      return false
+    }
+
+    const validationResult = validateConnection(
+      sourceObject,
+      connection.sourceHandle,
+      targetObject,
+      connection.targetHandle
+    )
+
+    if (!validationResult.isValid) {
+      if (DEBUG) console.log('Reconnection validation failed:', validationResult.errorMessage)
+      alert(validationResult.errorMessage || '再接続できません')
+      return false
+    }
+
+    // ワイヤーを更新
+    updateWire(oldEdge.id, {
+      sourceObjectId: connection.source,
+      sourcePortId: connection.sourceHandle,
+      targetObjectId: connection.target,
+      targetPortId: connection.targetHandle
+    })
+
+    if (DEBUG) console.log('Edge reconnected successfully!')
+    return true
+  }, [project.objects, updateWire])
 
   // 接続の事前バリデーション
   const isValidConnection = useCallback((connection: Connection) => {
@@ -391,6 +450,7 @@ export default function WiringDiagramEditor() {
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onConnect={onConnect}
+            onReconnect={handleReconnect}
             onSelectionChange={handleSelectionChange}
             isValidConnection={isValidConnection}
             nodeTypes={nodeTypes}

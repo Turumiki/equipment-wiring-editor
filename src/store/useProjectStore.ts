@@ -24,6 +24,7 @@ interface ProjectState {
   updateEquipmentObject: (id: string, updates: Partial<EquipmentObject>, skipHistory?: boolean) => void
   removeEquipmentObject: (id: string) => void
   addWire: (wire: Wire) => void
+  updateWire: (id: string, updates: Partial<Wire>) => void
   removeWire: (id: string) => void
   setSelectedObjects: (ids: string[]) => void
   setSelectedWires: (ids: string[]) => void
@@ -117,6 +118,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const newProject = {
       ...state.project,
       wires: [...state.project.wires, wire],
+      updatedAt: new Date()
+    }
+    pushToHistory(newProject)
+    return { project: newProject }
+  }),
+
+  updateWire: (id, updates) => set((state) => {
+    const newProject = {
+      ...state.project,
+      wires: state.project.wires.map(wire =>
+        wire.id === id ? { ...wire, ...updates } : wire
+      ),
       updatedAt: new Date()
     }
     pushToHistory(newProject)
