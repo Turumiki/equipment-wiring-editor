@@ -72,8 +72,7 @@ export default function WiringDiagramEditor() {
         selected: isSelected, // ReactFlowの選択状態を設定
         data: {
           equipmentObject: obj,
-          isSelected: isSelected,
-          isEditMode: false
+          isSelected: isSelected
         },
         style: {
           width: renderComponent?.data.size.width || 100,
@@ -204,16 +203,50 @@ export default function WiringDiagramEditor() {
         
         const wireLabel = sourcePort ? getPortTypeLabel(sourcePort.data.portType) : ''
         
+        // ポートタイプに応じて適切なワイヤータイプを決定
+        const getWireTypeForPort = (portType: string): WireType => {
+          switch (portType) {
+            case 'xlr-male':
+            case 'xlr-female':
+              return WireType.XLR_CABLE
+            case 'trs-quarter':
+            case 'ts-quarter':
+              return WireType.TRS_CABLE
+            case 'trs-mini':
+              return WireType.TRS_CABLE
+            case 'usb-a':
+            case 'usb-b':
+            case 'usb-c':
+              return WireType.USB_CABLE
+            case 'ethernet':
+            case 'dante':
+              return WireType.ETHERNET_CABLE
+            case 'hdmi':
+              return WireType.HDMI_CABLE
+            case 'displayport':
+              return WireType.DISPLAYPORT_CABLE
+            case 'power-ac':
+            case 'power-dc':
+              return WireType.POWER_CABLE
+            case 'midi':
+              return WireType.MIDI_CABLE
+            default:
+              return WireType.XLR_CABLE
+          }
+        }
+        
+        const wireType = sourcePort ? getWireTypeForPort(sourcePort.data.portType) : WireType.XLR_CABLE
+        
         const newWire = {
           id: `wire-${Date.now()}`,
           sourceObjectId: params.source,
           sourcePortId: params.sourceHandle,
           targetObjectId: params.target,
           targetPortId: params.targetHandle,
-          wireType: WireType.XLR_CABLE,
+          wireType: wireType,
           style: {
-            color: '#059669',
-            strokeWidth: 2,
+            color: '#059669', // デフォルト色（設定ストアで上書きされる）
+            strokeWidth: 2,   // デフォルト太さ（設定ストアで上書きされる）
           },
           label: wireLabel,
           metadata: {}

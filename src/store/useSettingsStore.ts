@@ -1,18 +1,21 @@
 import { create } from 'zustand'
-import { 
-  PortTypeDefinition, 
-  WireTypeDefinition, 
+import {
+  PortTypeDefinition,
+  WireTypeDefinition,
   ConnectionSettings,
-  PortDirection 
+  PortDirection
 } from '@/types'
 
 interface SettingsState {
   settings: ConnectionSettings
-  
+
   // UI設定
   showPortLabels: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover'
   showWireLabels: boolean
-  
+  canvasBackgroundColor: string
+  gridColor: string
+  gridEnabled: boolean
+
   // Actions
   addPortType: (portType: PortTypeDefinition) => void
   updatePortType: (id: string, updates: Partial<PortTypeDefinition>) => void
@@ -26,6 +29,9 @@ interface SettingsState {
   arePortTypesCompatible: (sourceId: string, targetId: string) => boolean
   setShowPortLabels: (mode: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover') => void
   setShowWireLabels: (show: boolean) => void
+  setCanvasBackgroundColor: (color: string) => void
+  setGridColor: (color: string) => void
+  setGridEnabled: (enabled: boolean) => void
   resetToDefaults: () => void
 }
 
@@ -77,7 +83,7 @@ const createDefaultSettings = (): ConnectionSettings => ({
       defaultDirection: PortDirection.BIDIRECTIONAL,
       maxConnections: 1
     },
-    
+
     // USB・データ
     {
       id: 'usb-a',
@@ -112,7 +118,7 @@ const createDefaultSettings = (): ConnectionSettings => ({
       defaultDirection: PortDirection.BIDIRECTIONAL,
       maxConnections: 1
     },
-    
+
     // ネットワーク
     {
       id: 'ethernet',
@@ -136,7 +142,7 @@ const createDefaultSettings = (): ConnectionSettings => ({
       defaultDirection: PortDirection.BIDIRECTIONAL,
       maxConnections: -1
     },
-    
+
     // 映像
     {
       id: 'hdmi',
@@ -150,7 +156,7 @@ const createDefaultSettings = (): ConnectionSettings => ({
       maxConnections: 1
     }
   ],
-  
+
   wireTypes: [
     {
       id: 'xlr-cable',
@@ -198,7 +204,7 @@ const createDefaultSettings = (): ConnectionSettings => ({
       supportedPortTypes: ['hdmi']
     }
   ],
-  
+
   compatibilityMatrix: {
     'xlr-male': ['xlr-female'],
     'xlr-female': ['xlr-male'],
@@ -217,6 +223,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: createDefaultSettings(),
   showPortLabels: 'hover',
   showWireLabels: true,
+  canvasBackgroundColor: '#f3f4f6',
+  gridColor: '#d1d5db',
+  gridEnabled: true,
 
   addPortType: (portType) => set((state) => ({
     settings: {
@@ -296,10 +305,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   setShowPortLabels: (mode) => set({ showPortLabels: mode }),
   setShowWireLabels: (show) => set({ showWireLabels: show }),
+  setCanvasBackgroundColor: (color) => set({ canvasBackgroundColor: color }),
+  setGridColor: (color) => set({ gridColor: color }),
+  setGridEnabled: (enabled) => set({ gridEnabled: enabled }),
 
   resetToDefaults: () => set({
     settings: createDefaultSettings(),
     showPortLabels: 'hover',
-    showWireLabels: true
+    showWireLabels: true,
+    canvasBackgroundColor: '#f3f4f6',
+    gridColor: '#d1d5db',
+    gridEnabled: true
   })
 }))

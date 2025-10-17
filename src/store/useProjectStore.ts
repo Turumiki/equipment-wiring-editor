@@ -1,8 +1,8 @@
 import { create } from 'zustand'
-import { 
-  EquipmentObject, 
-  Wire, 
-  Project, 
+import {
+  EquipmentObject,
+  Wire,
+  Project,
   EquipmentTemplate,
   ComponentType,
   ShapeType,
@@ -17,8 +17,7 @@ interface ProjectState {
   project: Project
   selectedObjectIds: string[]
   selectedWireIds: string[]
-  isEditMode: boolean
-  
+
   // Actions
   addEquipmentObject: (object: EquipmentObject) => void
   updateEquipmentObject: (id: string, updates: Partial<EquipmentObject>, skipHistory?: boolean) => void
@@ -28,7 +27,6 @@ interface ProjectState {
   removeWire: (id: string) => void
   setSelectedObjects: (ids: string[]) => void
   setSelectedWires: (ids: string[]) => void
-  toggleEditMode: () => void
   saveProject: () => void
   loadProject: (project: Project) => void
   createNewProject: () => void
@@ -72,7 +70,6 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   project: createDefaultProject(),
   selectedObjectIds: [],
   selectedWireIds: [],
-  isEditMode: false,
 
   addEquipmentObject: (object) => set((state) => {
     const newProject = {
@@ -87,7 +84,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   updateEquipmentObject: (id, updates, skipHistory = false) => set((state) => {
     const newProject = {
       ...state.project,
-      objects: state.project.objects.map(obj => 
+      objects: state.project.objects.map(obj =>
         obj.id === id ? { ...obj, ...updates } : obj
       ),
       updatedAt: new Date()
@@ -102,7 +99,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const newProject = {
       ...state.project,
       objects: state.project.objects.filter(obj => obj.id !== id),
-      wires: state.project.wires.filter(wire => 
+      wires: state.project.wires.filter(wire =>
         wire.sourceObjectId !== id && wire.targetObjectId !== id
       ),
       updatedAt: new Date()
@@ -150,10 +147,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   }),
 
   setSelectedObjects: (ids) => set({ selectedObjectIds: ids }),
-  
+
   setSelectedWires: (ids) => set({ selectedWireIds: ids }),
-  
-  toggleEditMode: () => set((state) => ({ isEditMode: !state.isEditMode })),
 
   saveProject: () => {
     const { project } = get()
@@ -171,11 +166,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   loadProject: (project) => set({ project }),
 
-  createNewProject: () => set({ 
+  createNewProject: () => set({
     project: createDefaultProject(),
     selectedObjectIds: [],
-    selectedWireIds: [],
-    isEditMode: false
+    selectedWireIds: []
   }),
 
   undo: () => {
@@ -193,38 +187,90 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   canUndo: () => useHistoryStore.getState().canUndo(),
-  
+
   canRedo: () => useHistoryStore.getState().canRedo(),
 
   duplicateSelected: () => {
     const state = get()
-    const selectedObjects = state.project.objects.filter(obj => 
+    const selectedObjects = state.project.objects.filter(obj =>
       state.selectedObjectIds.includes(obj.id)
     )
-    
+
     if (selectedObjects.length === 0) return
 
-    const duplicatedObjects = selectedObjects.map(obj => ({
-      ...obj,
-      id: `${obj.id}-copy-${Date.now()}`,
-      position: {
-        x: obj.position.x + 50,
-        y: obj.position.y + 50
-      },
-      components: obj.components.map(comp => ({
-        ...comp,
-        id: `${comp.id}-copy-${Date.now()}`
-      }))
-    }))
+    // オブジェクトIDのマッピングを作成（元のID -> 新しいID）
+    const objectIdMap = new Map<string, string>()
+    const portIdMap = new Map<string, string>()
+
+    const duplicatedObjects = selectedObjects.map(obj => {
+      const newObjectId = `${obj.id}-copy-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+      objectIdMap.set(obj.id, newObjectId)
+
+      const duplicatedComponents = obj.components.map(comp => {
+        const newCompId = `${comp.id}-copy-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+
+        // ポートコンポーネントの場合、ポートIDマッピングも作成
+        if (comp.type === 'connectionPort') {
+          portIdMap.set(comp.id, newCompId)
+        }
+
+        return {
+          ...comp,
+          id: newCompId,
+          data: {
+            ...comp.data,
+            // ポートコンポーネントの場合、connectedWiresをクリア
+            ...(comp.type === 'connectionPort' ? { connectedWires: [] } : {})
+          }
+        }
+      })
+
+      return {
+        ...obj,
+        id: newObjectId,
+        position: {
+          x: obj.position.x + 50,
+          y: obj.position.y + 50
+        },
+        components: duplicatedComponents
+      }
+    })
+
+    // 選択されたオブジェクト間のワイヤーを複製
+    const selectedObjectIds = new Set(state.selectedObjectIds)
+    const wiresToDuplicate = state.project.wires.filter(wire =>
+      selectedObjectIds.has(wire.sourceObjectId) && selectedObjectIds.has(wire.targetObjectId)
+    )
+
+    const duplicatedWires = wiresToDuplicate.map(wire => {
+      const newSourceObjectId = objectIdMap.get(wire.sourceObjectId)
+      const newTargetObjectId = objectIdMap.get(wire.targetObjectId)
+      const newSourcePortId = portIdMap.get(wire.sourcePortId)
+      const newTargetPortId = portIdMap.get(wire.targetPortId)
+
+      if (!newSourceObjectId || !newTargetObjectId || !newSourcePortId || !newTargetPortId) {
+        return null // スキップ
+      }
+
+      return {
+        ...wire,
+        id: `wire-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        sourceObjectId: newSourceObjectId,
+        sourcePortId: newSourcePortId,
+        targetObjectId: newTargetObjectId,
+        targetPortId: newTargetPortId
+      }
+    }).filter(wire => wire !== null)
 
     const newProject = {
       ...state.project,
       objects: [...state.project.objects, ...duplicatedObjects],
+      wires: [...state.project.wires, ...duplicatedWires],
       updatedAt: new Date()
     }
-    
+
     pushToHistory(newProject)
-    set({ 
+    set({
       project: newProject,
       selectedObjectIds: duplicatedObjects.map(obj => obj.id)
     })

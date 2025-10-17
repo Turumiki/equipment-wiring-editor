@@ -15,8 +15,7 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
     saveProject, 
     loadProject, 
     createNewProject, 
-    toggleEditMode, 
-    isEditMode,
+
     undo,
     redo,
     canUndo,
@@ -177,22 +176,7 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
         </button>
       </div>
 
-      <div className="hidden lg:block w-px bg-gray-300" />
 
-      {/* 編集モード */}
-      <button
-        onClick={toggleEditMode}
-        className={`px-2 lg:px-3 py-2 text-xs lg:text-sm rounded transition-colors ${
-          isEditMode 
-            ? 'bg-red-500 text-white hover:bg-red-600' 
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-        }`}
-        title="編集モード切替"
-        aria-label={isEditMode ? '編集モードを終了' : '編集モードを開始'}
-      >
-        <span className="hidden lg:inline">{isEditMode ? '編集中' : '編集'}</span>
-        <span className="lg:hidden">{isEditMode ? '✏️' : '📝'}</span>
-      </button>
       
       <CSVImportDialog 
         isOpen={showCSVImport}

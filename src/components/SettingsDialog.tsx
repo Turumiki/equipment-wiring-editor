@@ -301,6 +301,153 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
             </div>
           )}
 
+          {activeTab === 'wireTypes' && (
+            <div className="h-full flex">
+              {/* ワイヤータイプ一覧 */}
+              <div className="w-1/2 border-r border-gray-200 overflow-y-auto">
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-black">ワイヤータイプ</h3>
+                    <button
+                      onClick={handleAddWireType}
+                      className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                      追加
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {settings.wireTypes.map(wireType => (
+                      <div
+                        key={wireType.id}
+                        className={`p-3 border rounded cursor-pointer ${editingWireType?.id === wireType.id
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        onClick={() => setEditingWireType(wireType)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded"
+                            style={{ backgroundColor: wireType.color }}
+                          />
+                          <div>
+                            <div className="font-medium text-black">{wireType.displayName}</div>
+                            <div className="text-xs text-gray-600">幅: {wireType.strokeWidth}px</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* ワイヤータイプ編集 */}
+              <div className="w-1/2 overflow-y-auto">
+                {editingWireType ? (
+                  <div className="p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium text-black">ワイヤータイプ編集</h3>
+                      <button
+                        onClick={() => {
+                          removeWireType(editingWireType.id)
+                          setEditingWireType(null)
+                        }}
+                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        削除
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">表示名</label>
+                        <input
+                          type="text"
+                          value={editingWireType.displayName}
+                          onChange={(e) => {
+                            const updated = { ...editingWireType, displayName: e.target.value }
+                            setEditingWireType(updated)
+                            updateWireType(editingWireType.id, { displayName: e.target.value })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">説明</label>
+                        <textarea
+                          value={editingWireType.description || ''}
+                          onChange={(e) => {
+                            const updated = { ...editingWireType, description: e.target.value }
+                            setEditingWireType(updated)
+                            updateWireType(editingWireType.id, { description: e.target.value })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">色</label>
+                        <input
+                          type="color"
+                          value={editingWireType.color}
+                          onChange={(e) => {
+                            const updated = { ...editingWireType, color: e.target.value }
+                            setEditingWireType(updated)
+                            updateWireType(editingWireType.id, { color: e.target.value })
+                          }}
+                          className="w-full h-10 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">線の太さ</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={editingWireType.strokeWidth}
+                          onChange={(e) => {
+                            const updated = { ...editingWireType, strokeWidth: Number(e.target.value) }
+                            setEditingWireType(updated)
+                            updateWireType(editingWireType.id, { strokeWidth: Number(e.target.value) })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">サポートするポートタイプ</label>
+                        <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-300 rounded p-2">
+                          {settings.portTypes.map(portType => (
+                            <label key={portType.id} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={editingWireType.supportedPortTypes.includes(portType.id)}
+                                onChange={(e) => {
+                                  const currentSupported = editingWireType.supportedPortTypes
+                                  const newSupported = e.target.checked
+                                    ? [...currentSupported, portType.id]
+                                    : currentSupported.filter(id => id !== portType.id)
+
+                                  const updated = { ...editingWireType, supportedPortTypes: newSupported }
+                                  setEditingWireType(updated)
+                                  updateWireType(editingWireType.id, { supportedPortTypes: newSupported })
+                                }}
+                                className="mr-2"
+                              />
+                              <span className="text-sm text-black">{portType.displayName}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    ワイヤータイプを選択してください
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'compatibility' && (
             <div className="p-4 overflow-auto">
               <h3 className="text-lg font-medium text-black mb-4">互換性マトリックス</h3>

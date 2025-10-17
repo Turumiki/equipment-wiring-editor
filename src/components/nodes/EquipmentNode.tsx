@@ -14,7 +14,6 @@ import ResizableNodeSelected from './ResizableNodeSelected'
 interface EquipmentNodeData {
   equipmentObject: EquipmentObject
   isSelected: boolean
-  isEditMode: boolean
 }
 
 export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNodeData>) {

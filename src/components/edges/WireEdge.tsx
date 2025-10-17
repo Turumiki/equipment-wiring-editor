@@ -19,7 +19,7 @@ export default function WireEdge({
   data,
   selected
 }: EdgeProps<WireEdgeData>) {
-  const { showWireLabels } = useSettingsStore()
+  const { showWireLabels, settings } = useSettingsStore()
   
   if (!data?.wire) {
     return null
@@ -39,38 +39,25 @@ export default function WireEdge({
 
   // ワイヤータイプに応じた色とスタイル
   const getWireStyle = () => {
+    // 設定ストアからワイヤータイプ設定を取得
+    const wireTypeSettings = settings.wireTypes.find(wt => wt.name === wireType)
+    
     const baseStyle = {
-      stroke: style.color,
-      strokeWidth: style.strokeWidth,
-      strokeDasharray: style.strokeDashArray,
+      stroke: wireTypeSettings?.color || style.color,
+      strokeWidth: wireTypeSettings?.strokeWidth || style.strokeWidth,
+      strokeDasharray: wireTypeSettings?.strokeDashArray || style.strokeDashArray,
     }
 
     if (selected) {
       return {
         ...baseStyle,
         stroke: '#3b82f6',
-        strokeWidth: Math.max(style.strokeWidth + 2, 4), // 選択時は最低4pxの太さ
+        strokeWidth: Math.max(baseStyle.strokeWidth + 2, 4), // 選択時は最低4pxの太さ
         filter: 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.5))', // 青い光る効果
       }
     }
 
-    switch (wireType) {
-      case WireType.POWER_CABLE:
-        return { ...baseStyle, stroke: '#dc2626', strokeWidth: 3 }
-      case WireType.XLR_CABLE:
-      case WireType.TRS_CABLE:
-      case WireType.TS_CABLE:
-        return { ...baseStyle, stroke: '#059669', strokeWidth: 2 }
-      case WireType.USB_CABLE:
-      case WireType.ETHERNET_CABLE:
-      case WireType.THUNDERBOLT_CABLE:
-        return { ...baseStyle, stroke: '#7c3aed', strokeWidth: 2 }
-      case WireType.HDMI_CABLE:
-      case WireType.DISPLAYPORT_CABLE:
-        return { ...baseStyle, stroke: '#8b5cf6', strokeWidth: 2 }
-      default:
-        return baseStyle
-    }
+    return baseStyle
   }
 
   return (
