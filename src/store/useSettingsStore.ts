@@ -6,6 +6,7 @@ import {
   PortDirection,
   EquipmentTemplate
 } from '@/types'
+import { createDefaultPortTypes } from '@/utils/portTypeDefaults'
 
 interface SettingsState {
   settings: ConnectionSettings
@@ -155,126 +156,7 @@ const createDefaultEquipmentTemplates = (): EquipmentTemplate[] => [
 
 // デフォルト設定
 const createDefaultSettings = (): ConnectionSettings => ({
-  portTypes: [
-    // オーディオコネクタ
-    {
-      id: 'xlr-male',
-      name: 'xlr-male',
-      displayName: 'XLR オス',
-      description: 'XLRオスコネクタ（マイク出力等）',
-      color: '#3b82f6',
-      category: 'audio',
-      compatibleWith: ['xlr-female'],
-      defaultDirection: PortDirection.OUTPUT,
-      maxConnections: 1
-    },
-    {
-      id: 'xlr-female',
-      name: 'xlr-female',
-      displayName: 'XLR メス',
-      description: 'XLRメスコネクタ（マイク入力等）',
-      color: '#3b82f6',
-      category: 'audio',
-      compatibleWith: ['xlr-male'],
-      defaultDirection: PortDirection.INPUT,
-      maxConnections: 1
-    },
-    {
-      id: 'trs-quarter',
-      name: 'trs-quarter',
-      displayName: 'TRS 6.3mm',
-      description: '6.3mm TRSコネクタ（楽器・ライン）',
-      color: '#059669',
-      category: 'audio',
-      compatibleWith: ['trs-quarter', 'ts-quarter'],
-      defaultDirection: PortDirection.BIDIRECTIONAL,
-      maxConnections: 1
-    },
-    {
-      id: 'ts-quarter',
-      name: 'ts-quarter',
-      displayName: 'TS 6.3mm',
-      description: '6.3mm TSコネクタ（楽器・モノ）',
-      color: '#059669',
-      category: 'audio',
-      compatibleWith: ['ts-quarter', 'trs-quarter'],
-      defaultDirection: PortDirection.BIDIRECTIONAL,
-      maxConnections: 1
-    },
-
-    // USB・データ
-    {
-      id: 'usb-a',
-      name: 'usb-a',
-      displayName: 'USB-A',
-      description: 'USB Type-A コネクタ',
-      color: '#f59e0b',
-      category: 'data',
-      compatibleWith: ['usb-a', 'usb-b', 'usb-c'],
-      defaultDirection: PortDirection.BIDIRECTIONAL,
-      maxConnections: 1
-    },
-    {
-      id: 'usb-b',
-      name: 'usb-b',
-      displayName: 'USB-B',
-      description: 'USB Type-B コネクタ',
-      color: '#f59e0b',
-      category: 'data',
-      compatibleWith: ['usb-a', 'usb-b', 'usb-c'],
-      defaultDirection: PortDirection.BIDIRECTIONAL,
-      maxConnections: 1
-    },
-    {
-      id: 'usb-c',
-      name: 'usb-c',
-      displayName: 'USB-C',
-      description: 'USB Type-C コネクタ',
-      color: '#f59e0b',
-      category: 'data',
-      compatibleWith: ['usb-a', 'usb-b', 'usb-c', 'thunderbolt'],
-      defaultDirection: PortDirection.BIDIRECTIONAL,
-      maxConnections: 1
-    },
-
-    // ネットワーク
-    {
-      id: 'ethernet',
-      name: 'ethernet',
-      displayName: 'Ethernet',
-      description: 'RJ45 Ethernetコネクタ',
-      color: '#ea580c',
-      category: 'network',
-      compatibleWith: ['ethernet', 'dante'],
-      defaultDirection: PortDirection.BIDIRECTIONAL,
-      maxConnections: 1
-    },
-    {
-      id: 'dante',
-      name: 'dante',
-      displayName: 'Dante',
-      description: 'Danteネットワークオーディオ',
-      color: '#7c3aed',
-      category: 'network',
-      compatibleWith: ['dante', 'ethernet'],
-      defaultDirection: PortDirection.BIDIRECTIONAL,
-      maxConnections: -1
-    },
-
-    // 映像
-    {
-      id: 'hdmi',
-      name: 'hdmi',
-      displayName: 'HDMI',
-      description: 'HDMIコネクタ',
-      color: '#8b5cf6',
-      category: 'video',
-      compatibleWith: ['hdmi'],
-      defaultDirection: PortDirection.BIDIRECTIONAL,
-      maxConnections: 1
-    }
-  ],
-
+  portTypes: createDefaultPortTypes(),
   wireTypes: [
     {
       id: 'xlr-cable',

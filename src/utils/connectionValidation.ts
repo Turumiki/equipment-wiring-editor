@@ -82,36 +82,7 @@ export function validateConnection(
     console.log('Target port type:', targetPort.data.portType)
   }
 
-  // 基本的な互換性チェック
-  const basicCompatibility: Partial<Record<PortType, PortType[]>> = {
-    [PortType.XLR_MALE]: [PortType.XLR_FEMALE],
-    [PortType.XLR_FEMALE]: [PortType.XLR_MALE],
-    [PortType.TRS_QUARTER]: [PortType.TRS_QUARTER, PortType.TS_QUARTER],
-    [PortType.TS_QUARTER]: [PortType.TS_QUARTER, PortType.TRS_QUARTER],
-    [PortType.USB_A]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-    [PortType.USB_B]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-    [PortType.USB_C]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-    [PortType.ETHERNET]: [PortType.ETHERNET, PortType.DANTE], // ETHERNET同士は確実に互換
-    [PortType.DANTE]: [PortType.DANTE, PortType.ETHERNET],
-    [PortType.HDMI]: [PortType.HDMI],
-    [PortType.TRS_MINI]: [PortType.TRS_MINI],
-    [PortType.POWER_AC]: [PortType.POWER_AC],
-    [PortType.POWER_DC]: [PortType.POWER_DC],
-    [PortType.RCA]: [PortType.RCA],
-    [PortType.SPEAKON]: [PortType.SPEAKON],
-    [PortType.AES_EBU]: [PortType.AES_EBU],
-    [PortType.SPDIF]: [PortType.SPDIF],
-    [PortType.ADAT]: [PortType.ADAT],
-    [PortType.DISPLAYPORT]: [PortType.DISPLAYPORT],
-    [PortType.DVI]: [PortType.DVI],
-    [PortType.VGA]: [PortType.VGA],
-    [PortType.SDI]: [PortType.SDI],
-    [PortType.COMPOSITE]: [PortType.COMPOSITE],
-    [PortType.THUNDERBOLT]: [PortType.THUNDERBOLT],
-    [PortType.IEC]: [PortType.IEC],
-    [PortType.MIDI]: [PortType.MIDI],
-    [PortType.CUSTOM]: [PortType.CUSTOM]
-  }
+  // 設定ストアから互換性情報を取得
 
   const sourceType = sourcePort.data.portType
   const targetType = targetPort.data.portType
@@ -119,9 +90,13 @@ export function validateConnection(
   // 双方向ポートの場合は互換性チェックを緩和
   const bothBidirectional = sourceBidirectional && targetBidirectional
   
-  // 同じタイプは常に互換性あり
+  // 設定ストアからポートタイプ定義を取得
+  const { settings } = useSettingsStore.getState()
+  const sourcePortTypeDefinition = settings.portTypes.find(pt => pt.name === sourceType || pt.id === sourceType)
+  
+  // 同じタイプは常に互換性あり、または設定で定義された互換性をチェック
   let typesCompatible = sourceType === targetType ||
-    basicCompatibility[sourceType]?.includes(targetType) ||
+    sourcePortTypeDefinition?.compatibleWith?.includes(targetType) ||
     false
 
   // 双方向ポート同士の場合は、より柔軟な互換性を適用
