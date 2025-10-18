@@ -466,7 +466,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
         const wireLabel = sourcePort ? getPortTypeLabel(sourcePort.data.portType) : ''
 
-        const wireType = sourcePort ? getWireTypeForPortType(sourcePort.data.portType) : 'xlr-cable'
+        const wireType = sourcePort ? getWireTypeForPortType(sourcePort.data.portType) : WireType.XLR_CABLE
 
         // 設定ストアからワイヤータイプに応じたスタイルを取得
         const { settings } = useSettingsStore.getState()
