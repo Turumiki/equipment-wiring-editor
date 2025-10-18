@@ -30,7 +30,7 @@ export function createRenderComponent(
       label: {
         text: '機材',
         position: 'center' as any,
-        fontSize: 12,
+        fontSize: 6,
         color: '#ffffff'
       }
     }

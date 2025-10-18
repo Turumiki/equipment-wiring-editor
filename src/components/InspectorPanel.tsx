@@ -15,7 +15,7 @@ import {
   ARRANGEMENT_PRESETS,
   PortArrangementOptions
 } from '@/utils/portArrangement'
-import { ComponentType, Side, PortType, PortDirection } from '@/types'
+import { ComponentType, Side, PortType, PortDirection, RenderComponent } from '@/types'
 
 // ポートタイプの互換性を取得
 function getCompatiblePorts(type: PortType): PortType[] {
@@ -379,6 +379,228 @@ export default function InspectorPanel() {
                 </div>
               </div>
             )}
+
+            {/* 一括ラベル・図形設定 */}
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-medium text-black mb-3">一括ラベル・図形設定</h3>
+              <div className="space-y-3">
+                
+                {/* ラベルフォントサイズ一括変更 */}
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">
+                    ラベルフォントサイズ
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="4"
+                      max="24"
+                      defaultValue="12"
+                      onChange={(e) => {
+                        const fontSize = Number(e.target.value)
+                        selectedObjects.forEach(obj => {
+                          const renderComponent = getRenderComponent(obj)
+                          if (renderComponent && renderComponent.data.label) {
+                            const updatedComponent = {
+                              ...renderComponent,
+                              data: {
+                                ...renderComponent.data,
+                                label: {
+                                  ...renderComponent.data.label,
+                                  fontSize
+                                }
+                              }
+                            }
+                            const updatedComponents = obj.components.map(comp =>
+                              comp.id === renderComponent.id ? updatedComponent : comp
+                            )
+                            updateEquipmentObject(obj.id, { components: updatedComponents })
+                          }
+                        })
+                      }}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-gray-600 w-8">px</span>
+                  </div>
+                </div>
+
+                {/* ラベル色一括変更 */}
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">ラベル色</label>
+                  <input
+                    type="color"
+                    onChange={(e) => {
+                      const color = e.target.value
+                      selectedObjects.forEach(obj => {
+                        const renderComponent = getRenderComponent(obj)
+                        if (renderComponent && renderComponent.data.label) {
+                          const updatedComponent = {
+                            ...renderComponent,
+                            data: {
+                              ...renderComponent.data,
+                              label: {
+                                ...renderComponent.data.label,
+                                color
+                              }
+                            }
+                          }
+                          const updatedComponents = obj.components.map(comp =>
+                            comp.id === renderComponent.id ? updatedComponent : comp
+                          )
+                          updateEquipmentObject(obj.id, { components: updatedComponents })
+                        }
+                      })
+                    }}
+                    className="w-full h-8 border border-gray-300 rounded"
+                  />
+                </div>
+
+                {/* 背景色一括変更 */}
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">背景色</label>
+                  <input
+                    type="color"
+                    onChange={(e) => {
+                      const color = e.target.value
+                      selectedObjects.forEach(obj => {
+                        const renderComponent = getRenderComponent(obj)
+                        if (renderComponent) {
+                          const updatedComponent = {
+                            ...renderComponent,
+                            data: {
+                              ...renderComponent.data,
+                              color
+                            }
+                          }
+                          const updatedComponents = obj.components.map(comp =>
+                            comp.id === renderComponent.id ? updatedComponent : comp
+                          )
+                          updateEquipmentObject(obj.id, { components: updatedComponents })
+                        }
+                      })
+                    }}
+                    className="w-full h-8 border border-gray-300 rounded"
+                  />
+                </div>
+
+                {/* 枠線色一括変更 */}
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">枠線色</label>
+                  <input
+                    type="color"
+                    onChange={(e) => {
+                      const color = e.target.value
+                      selectedObjects.forEach(obj => {
+                        const renderComponent = getRenderComponent(obj)
+                        if (renderComponent) {
+                          const updatedComponent = {
+                            ...renderComponent,
+                            data: {
+                              ...renderComponent.data,
+                              strokeColor: color
+                            }
+                          }
+                          const updatedComponents = obj.components.map(comp =>
+                            comp.id === renderComponent.id ? updatedComponent : comp
+                          )
+                          updateEquipmentObject(obj.id, { components: updatedComponents })
+                        }
+                      })
+                    }}
+                    className="w-full h-8 border border-gray-300 rounded"
+                  />
+                </div>
+
+                {/* 枠線の太さ一括変更 */}
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">
+                    枠線の太さ
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="8"
+                      defaultValue="2"
+                      onChange={(e) => {
+                        const strokeWidth = Number(e.target.value)
+                        selectedObjects.forEach(obj => {
+                          const renderComponent = getRenderComponent(obj)
+                          if (renderComponent) {
+                            const updatedComponent = {
+                              ...renderComponent,
+                              data: {
+                                ...renderComponent.data,
+                                strokeWidth
+                              }
+                            }
+                            const updatedComponents = obj.components.map(comp =>
+                              comp.id === renderComponent.id ? updatedComponent : comp
+                            )
+                            updateEquipmentObject(obj.id, { components: updatedComponents })
+                          }
+                        })
+                      }}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-gray-600 w-8">px</span>
+                  </div>
+                </div>
+
+                {/* 一括サイズ変更 */}
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">サイズ一括変更</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        selectedObjects.forEach(obj => {
+                          const renderComponent = getRenderComponent(obj)
+                          if (renderComponent) {
+                            const updatedComponent = {
+                              ...renderComponent,
+                              data: {
+                                ...renderComponent.data,
+                                size: { width: 100, height: 60 }
+                              }
+                            }
+                            const updatedComponents = obj.components.map(comp =>
+                              comp.id === renderComponent.id ? updatedComponent : comp
+                            )
+                            updateEquipmentObject(obj.id, { components: updatedComponents })
+                          }
+                        })
+                      }}
+                      className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                    >
+                      標準サイズ
+                    </button>
+                    <button
+                      onClick={() => {
+                        selectedObjects.forEach(obj => {
+                          const renderComponent = getRenderComponent(obj)
+                          if (renderComponent) {
+                            const updatedComponent = {
+                              ...renderComponent,
+                              data: {
+                                ...renderComponent.data,
+                                size: { width: 150, height: 90 }
+                              }
+                            }
+                            const updatedComponents = obj.components.map(comp =>
+                              comp.id === renderComponent.id ? updatedComponent : comp
+                            )
+                            updateEquipmentObject(obj.id, { components: updatedComponents })
+                          }
+                        })
+                      }}
+                      className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                    >
+                      大きいサイズ
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* 一括位置調整 */}
             <div className="border-t border-gray-200 pt-4">
@@ -1101,10 +1323,185 @@ export default function InspectorPanel() {
                           </button>
 
                           {!isCollapsed && (
-                            <div className="mt-2 text-xs text-gray-600">
-                              {component.type === ComponentType.RENDER && '見た目・形状を制御'}
-                              {component.type === ComponentType.PROPERTY && '名前・属性を管理'}
-                              {/* 将来のGPUコンポーネント等の説明 */}
+                            <div className="mt-2 space-y-3">
+                              {component.type === ComponentType.RENDER && (
+                                <div className="space-y-2">
+                                  {/* ラベル設定 */}
+                                  {(component as RenderComponent).data.label && (
+                                    <div>
+                                      <h4 className="text-xs font-medium text-gray-800 mb-2">ラベル設定</h4>
+                                      
+                                      {/* ラベルテキスト */}
+                                      <div className="mb-2">
+                                        <label className="block text-xs font-medium text-black mb-1">テキスト</label>
+                                        <input
+                                          type="text"
+                                          value={(component as RenderComponent).data.label.text}
+                                          onChange={(e) => {
+                                            const updatedComponent = {
+                                              ...component,
+                                              data: {
+                                                ...(component as RenderComponent).data,
+                                                label: {
+                                                  ...(component as RenderComponent).data.label!,
+                                                  text: e.target.value
+                                                }
+                                              }
+                                            }
+                                            const updatedComponents = selectedObject.components.map(comp =>
+                                              comp.id === component.id ? updatedComponent : comp
+                                            )
+                                            updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                          }}
+                                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                                        />
+                                      </div>
+
+                                      {/* フォントサイズ */}
+                                      <div className="mb-2">
+                                        <label className="block text-xs font-medium text-black mb-1">
+                                          フォントサイズ: {(component as RenderComponent).data.label.fontSize}px
+                                        </label>
+                                        <input
+                                          type="range"
+                                          min="4"
+                                          max="24"
+                                          value={(component as RenderComponent).data.label.fontSize}
+                                          onChange={(e) => {
+                                            const updatedComponent = {
+                                              ...component,
+                                              data: {
+                                                ...(component as RenderComponent).data,
+                                                label: {
+                                                  ...(component as RenderComponent).data.label!,
+                                                  fontSize: Number(e.target.value)
+                                                }
+                                              }
+                                            }
+                                            const updatedComponents = selectedObject.components.map(comp =>
+                                              comp.id === component.id ? updatedComponent : comp
+                                            )
+                                            updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                          }}
+                                          className="w-full"
+                                        />
+                                      </div>
+
+                                      {/* ラベル色 */}
+                                      <div className="mb-2">
+                                        <label className="block text-xs font-medium text-black mb-1">文字色</label>
+                                        <input
+                                          type="color"
+                                          value={(component as RenderComponent).data.label.color}
+                                          onChange={(e) => {
+                                            const updatedComponent = {
+                                              ...component,
+                                              data: {
+                                                ...(component as RenderComponent).data,
+                                                label: {
+                                                  ...(component as RenderComponent).data.label!,
+                                                  color: e.target.value
+                                                }
+                                              }
+                                            }
+                                            const updatedComponents = selectedObject.components.map(comp =>
+                                              comp.id === component.id ? updatedComponent : comp
+                                            )
+                                            updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                          }}
+                                          className="w-full h-8 border border-gray-300 rounded"
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* 図形設定 */}
+                                  <div>
+                                    <h4 className="text-xs font-medium text-gray-800 mb-2">図形設定</h4>
+                                    
+                                    {/* 背景色 */}
+                                    <div className="mb-2">
+                                      <label className="block text-xs font-medium text-black mb-1">背景色</label>
+                                      <input
+                                        type="color"
+                                        value={(component as RenderComponent).data.color}
+                                        onChange={(e) => {
+                                          const updatedComponent = {
+                                            ...component,
+                                            data: {
+                                              ...(component as RenderComponent).data,
+                                              color: e.target.value
+                                            }
+                                          }
+                                          const updatedComponents = selectedObject.components.map(comp =>
+                                            comp.id === component.id ? updatedComponent : comp
+                                          )
+                                          updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                        }}
+                                        className="w-full h-8 border border-gray-300 rounded"
+                                      />
+                                    </div>
+
+                                    {/* 枠線色 */}
+                                    <div className="mb-2">
+                                      <label className="block text-xs font-medium text-black mb-1">枠線色</label>
+                                      <input
+                                        type="color"
+                                        value={(component as RenderComponent).data.strokeColor}
+                                        onChange={(e) => {
+                                          const updatedComponent = {
+                                            ...component,
+                                            data: {
+                                              ...(component as RenderComponent).data,
+                                              strokeColor: e.target.value
+                                            }
+                                          }
+                                          const updatedComponents = selectedObject.components.map(comp =>
+                                            comp.id === component.id ? updatedComponent : comp
+                                          )
+                                          updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                        }}
+                                        className="w-full h-8 border border-gray-300 rounded"
+                                      />
+                                    </div>
+
+                                    {/* 枠線の太さ */}
+                                    <div className="mb-2">
+                                      <label className="block text-xs font-medium text-black mb-1">
+                                        枠線の太さ: {(component as RenderComponent).data.strokeWidth}px
+                                      </label>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="8"
+                                        value={(component as RenderComponent).data.strokeWidth}
+                                        onChange={(e) => {
+                                          const updatedComponent = {
+                                            ...component,
+                                            data: {
+                                              ...(component as RenderComponent).data,
+                                              strokeWidth: Number(e.target.value)
+                                            }
+                                          }
+                                          const updatedComponents = selectedObject.components.map(comp =>
+                                            comp.id === component.id ? updatedComponent : comp
+                                          )
+                                          updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                        }}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {component.type === ComponentType.PROPERTY && (
+                                <div className="text-xs text-gray-600">名前・属性を管理</div>
+                              )}
+                              
+                              {component.type === ComponentType.CONNECTION_PORT && (
+                                <div className="text-xs text-gray-600">接続ポートを管理</div>
+                              )}
                             </div>
                           )}
                         </div>

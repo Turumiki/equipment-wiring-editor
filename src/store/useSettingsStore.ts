@@ -345,7 +345,7 @@ const loadSettingsFromStorage = () => {
       return {
         settings: parsed.settings || createDefaultSettings(),
         equipmentTemplates: parsed.equipmentTemplates || createDefaultEquipmentTemplates(),
-        showPortLabels: parsed.showPortLabels || 'hover',
+        showPortLabels: parsed.showPortLabels || 'connectedHover',
         showWireLabels: parsed.showWireLabels ?? true,
         canvasBackgroundColor: parsed.canvasBackgroundColor || '#f3f4f6',
         gridColor: parsed.gridColor || '#d1d5db',
@@ -359,7 +359,7 @@ const loadSettingsFromStorage = () => {
   return {
     settings: createDefaultSettings(),
     equipmentTemplates: createDefaultEquipmentTemplates(),
-    showPortLabels: 'hover' as const,
+    showPortLabels: 'connectedHover' as const,
     showWireLabels: true,
     canvasBackgroundColor: '#f3f4f6',
     gridColor: '#d1d5db',
@@ -553,7 +553,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   resetToDefaults: () => set({
     settings: createDefaultSettings(),
     equipmentTemplates: createDefaultEquipmentTemplates(),
-    showPortLabels: 'hover',
+    showPortLabels: 'connectedHover',
     showWireLabels: true,
     canvasBackgroundColor: '#f3f4f6',
     gridColor: '#d1d5db',

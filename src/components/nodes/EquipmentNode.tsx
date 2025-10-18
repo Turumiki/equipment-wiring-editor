@@ -83,12 +83,13 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
 
   // 図形の描画
   const renderShape = () => {
-    const baseClasses = `border-${strokeWidth}`
+    const baseClasses = 'border-solid'
     const selectedClasses = selected ? 'ring-1 ring-gray-600' : ''
 
     const style = {
       backgroundColor: color,
       borderColor: strokeColor,
+      borderWidth: `${strokeWidth}px`,
       width: size.width,
       height: size.height,
     }
@@ -134,6 +135,21 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
     }
   }
 
+  // 背景色から見やすいテキスト色を計算する関数
+  const getContrastColor = (backgroundColor: string): string => {
+    // HEXカラーをRGBに変換
+    const hex = backgroundColor.replace('#', '')
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16)
+    const b = parseInt(hex.substr(4, 2), 16)
+
+    // 輝度を計算 (0-255)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b)
+
+    // 輝度が128以上なら黒、未満なら白を返す
+    return luminance > 128 ? '#000000' : '#ffffff'
+  }
+
   // ポートハンドルとラベルの描画
   const renderPorts = () => {
     return portComponents.map((portComponent) => {
@@ -142,7 +158,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
       let position: Position
       let handleStyle: React.CSSProperties = {}
       let labelStyle: React.CSSProperties = {}
-      let labelClasses = 'absolute text-xs font-medium pointer-events-none select-none'
+      let labelClasses = 'absolute text-xs font-medium pointer-events-none select-none whitespace-nowrap'
 
       switch (portPos.side) {
         case Side.TOP:
@@ -150,7 +166,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           handleStyle = { left: `${portPos.offset}%` }
           labelStyle = {
             left: `${portPos.offset}%`,
-            top: '-24px',
+            top: '-2px',
             transform: 'translateX(-50%)'
           }
           break
@@ -158,9 +174,9 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           position = Position.Right
           handleStyle = { top: `${portPos.offset}%` }
           labelStyle = {
-            right: '-8px',
+            right: '4px',
             top: `${portPos.offset}%`,
-            transform: 'translateY(-50%) translateX(100%)'
+            transform: 'translateY(-50%)'
           }
           break
         case Side.BOTTOM:
@@ -168,7 +184,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           handleStyle = { left: `${portPos.offset}%` }
           labelStyle = {
             left: `${portPos.offset}%`,
-            bottom: '-24px',
+            bottom: '0px',
             transform: 'translateX(-50%)'
           }
           break
@@ -176,13 +192,57 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           position = Position.Left
           handleStyle = { top: `${portPos.offset}%` }
           labelStyle = {
-            left: '-8px',
+            left: '4px',
             top: `${portPos.offset}%`,
-            transform: 'translateY(-50%) translateX(-100%)'
+            transform: 'translateY(-50%)'
           }
           break
         default:
           position = Position.Left
+      }
+
+      // ポートタイプの表示名を取得
+      const getPortTypeDisplayName = (portType: string, direction: string) => {
+        const directionText = direction === 'input' ? 'Input' : direction === 'output' ? 'Output' : 'Bidirectional'
+
+        switch (portType) {
+          case 'xlr-male':
+            return `XLR Male ${directionText}`
+          case 'xlr-female':
+            return `XLR Female ${directionText}`
+          case 'trs-quarter':
+            return `TRS 1/4" ${directionText}`
+          case 'ts-quarter':
+            return `TS 1/4" ${directionText}`
+          case 'trs-mini':
+            return `TRS 3.5mm ${directionText}`
+          case 'hdmi':
+            return `HDMI ${directionText}`
+          case 'displayport':
+            return `DisplayPort ${directionText}`
+          case 'dvi':
+            return `DVI ${directionText}`
+          case 'usb-a':
+            return `USB-A ${directionText}`
+          case 'usb-b':
+            return `USB-B ${directionText}`
+          case 'usb-c':
+            return `USB-C ${directionText}`
+          case 'thunderbolt':
+            return `Thunderbolt ${directionText}`
+          case 'ethernet':
+            return `Ethernet ${directionText}`
+          case 'dante':
+            return `Dante ${directionText}`
+          case 'power-ac':
+            return `AC Power ${directionText}`
+          case 'power-dc':
+            return `DC Power ${directionText}`
+          case 'iec':
+            return `IEC Power ${directionText}`
+          default:
+            return `${portType.toUpperCase()} ${directionText}`
+        }
       }
 
       // シンプルなポートスタイル
@@ -217,6 +277,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
       }
 
       const handleClasses = `w-3 h-3 border-2 ${getPortColor()}`
+      const portTypeTooltip = getPortTypeDisplayName(portType, direction)
 
       return (
         <div key={portComponent.id}>
@@ -229,6 +290,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
                 id={portComponent.id}
                 style={handleStyle}
                 className={handleClasses}
+                title={portTypeTooltip}
               />
               <Handle
                 type="target"
@@ -236,6 +298,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
                 id={portComponent.id}
                 style={{ ...handleStyle, zIndex: -1 }}
                 className={handleClasses}
+                title={portTypeTooltip}
               />
             </>
           ) : (
@@ -245,6 +308,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
               id={portComponent.id}
               style={handleStyle}
               className={handleClasses}
+              title={portTypeTooltip}
             />
           )}
 
@@ -261,9 +325,13 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
                 style={labelStyle}
               >
                 <span
-                  className="text-gray-800 text-xs font-medium bg-white px-1 border border-gray-400"
+                  className="font-medium"
                   style={{
-                    fontSize: '8px',
+                    fontSize: '5px',
+                    color: getContrastColor(renderComponent?.data.color || '#6b7280'),
+                    textShadow: getContrastColor(renderComponent?.data.color || '#6b7280') === '#ffffff'
+                      ? '0 0 2px rgba(0, 0, 0, 0.8)'
+                      : '0 0 2px rgba(255, 255, 255, 0.8)',
                   }}
                 >
                   {portLabel}
@@ -297,10 +365,11 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           {/* ラベル */}
           {label && (
             <div
-              className="absolute text-xs font-medium pointer-events-none select-none"
+              className="absolute pointer-events-none select-none"
               style={{
                 color: label.color,
-                fontSize: label.fontSize
+                fontSize: label.fontSize,
+                fontWeight: 500
               }}
             >
               {name}

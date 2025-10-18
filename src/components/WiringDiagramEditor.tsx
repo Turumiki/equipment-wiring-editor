@@ -14,15 +14,17 @@ import ReactFlow, {
   BackgroundVariant,
   Panel,
   NodeChange,
-  EdgeChange
+  EdgeChange,
+  ConnectionLineType
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
 import { useProjectStore } from '@/store/useProjectStore'
+import { useSettingsStore } from '@/store/useSettingsStore'
 import { WireType, EquipmentObject } from '@/types'
 import EquipmentNode from '@/components/nodes/EquipmentNode'
 import WireEdge from '@/components/edges/WireEdge'
-import Toolbar from '@/components/Toolbar'
+
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
 import InspectorPanel from '@/components/InspectorPanel'
@@ -30,7 +32,7 @@ import { getRenderComponent, getConnectionPortComponents } from '@/utils/compone
 import { validateConnection } from '@/utils/connectionValidation'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import ContextMenu from '@/components/ContextMenu'
-import AutoLayoutDialog from '@/components/AutoLayoutDialog'
+
 import SaveTemplateDialog from '@/components/SaveTemplateDialog'
 import { autoLayout, LayoutOptions } from '@/utils/autoLayout'
 
@@ -42,12 +44,27 @@ const edgeTypes = {
   wire: WireEdge,
 }
 
-export default function WiringDiagramEditor() {
+interface WiringDiagramEditorProps {
+  showTemplateLibrary?: boolean
+  showTableEditor?: boolean
+  showAutoLayout?: boolean
+  onCloseTemplateLibrary?: () => void
+  onCloseTableEditor?: () => void
+  onCloseAutoLayout?: () => void
+  onCloseMenus?: () => void
+}
+
+export default function WiringDiagramEditor({
+  showTemplateLibrary = false,
+  showTableEditor = false,
+  showAutoLayout = false,
+  onCloseTemplateLibrary,
+  onCloseTableEditor,
+  onCloseAutoLayout,
+  onCloseMenus
+}: WiringDiagramEditorProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const [showTableEditor, setShowTableEditor] = useState(false)
-  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
-  const [showAutoLayout, setShowAutoLayout] = useState(false)
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState<EquipmentObject | null>(null)
   const [contextMenu, setContextMenu] = useState<{
     x: number
@@ -121,7 +138,7 @@ export default function WiringDiagramEditor() {
   // エッジ変更の処理
   const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
     onEdgesChange(changes)
-    
+
     // エッジ削除をプロジェクトに反映
     changes.forEach(change => {
       if (change.type === 'remove') {
@@ -170,13 +187,13 @@ export default function WiringDiagramEditor() {
         }
 
         if (DEBUG) console.log('Creating wire...')
-        
+
         // ポート情報を取得してラベルを生成
         const sourcePortComponents = getConnectionPortComponents(sourceObject)
         const targetPortComponents = getConnectionPortComponents(targetObject)
         const sourcePort = sourcePortComponents.find(port => port.id === params.sourceHandle)
         const targetPort = targetPortComponents.find(port => port.id === params.targetHandle)
-        
+
         // ポートタイプに基づいてラベルを生成
         const getPortTypeLabel = (portType: string) => {
           switch (portType) {
@@ -202,9 +219,9 @@ export default function WiringDiagramEditor() {
               return portType.toUpperCase()
           }
         }
-        
+
         const wireLabel = sourcePort ? getPortTypeLabel(sourcePort.data.portType) : ''
-        
+
         // ポートタイプに応じて適切なワイヤータイプを決定
         const getWireTypeForPort = (portType: string): WireType => {
           switch (portType) {
@@ -236,9 +253,15 @@ export default function WiringDiagramEditor() {
               return WireType.XLR_CABLE
           }
         }
-        
+
         const wireType = sourcePort ? getWireTypeForPort(sourcePort.data.portType) : WireType.XLR_CABLE
-        
+
+        // 設定ストアからワイヤータイプに応じたスタイルを取得
+        const { settings } = useSettingsStore.getState()
+        const wireTypeSettings = settings.wireTypes.find(wt =>
+          wt.name === wireType || wt.id === wireType
+        )
+
         const newWire = {
           id: `wire-${Date.now()}`,
           sourceObjectId: params.source,
@@ -247,8 +270,9 @@ export default function WiringDiagramEditor() {
           targetPortId: params.targetHandle,
           wireType: wireType,
           style: {
-            color: '#059669', // デフォルト色（設定ストアで上書きされる）
-            strokeWidth: 2,   // デフォルト太さ（設定ストアで上書きされる）
+            color: wireTypeSettings?.color || '#059669',
+            strokeWidth: wireTypeSettings?.strokeWidth || 2,
+            strokeDashArray: wireTypeSettings?.strokeDashArray
           },
           label: wireLabel,
           metadata: {}
@@ -316,7 +340,7 @@ export default function WiringDiagramEditor() {
             disabled: true
           }
         ]
-      
+
       case 'node':
         const isSelected = selectedObjectIds.includes(contextMenu.targetId!)
         return [
@@ -345,7 +369,7 @@ export default function WiringDiagramEditor() {
               onClick: () => alignSelected('left')
             },
             {
-              label: '右揃え', 
+              label: '右揃え',
               onClick: () => alignSelected('right')
             },
             {
@@ -391,7 +415,7 @@ export default function WiringDiagramEditor() {
             }
           }
         ]
-      
+
       case 'edge':
         return [
           {
@@ -410,7 +434,7 @@ export default function WiringDiagramEditor() {
             }
           }
         ]
-      
+
       default:
         return []
     }
@@ -419,7 +443,7 @@ export default function WiringDiagramEditor() {
   // 自動レイアウトの適用
   const handleAutoLayout = useCallback((options: LayoutOptions) => {
     const layoutResult = autoLayout(project.objects, project.wires, options)
-    
+
     // 各オブジェクトの位置を更新
     Object.entries(layoutResult.positions).forEach(([objectId, position]) => {
       updateEquipmentObject(objectId, { position })
@@ -510,11 +534,11 @@ export default function WiringDiagramEditor() {
   }, [project.objects])
 
   return (
-    <div className="h-full w-full flex flex-col lg:flex-row">
+    <div className="h-full w-full flex flex-col lg:flex-row overflow-hidden">
       {/* メインキャンバス */}
-      <div className="flex-1 relative min-h-0">
-        <div 
-          data-id="react-flow-canvas" 
+      <div className="flex-1 relative min-h-0 overflow-hidden">
+        <div
+          data-id="react-flow-canvas"
           className="w-full h-full select-none"
           onContextMenu={handleContextMenu}
           style={{ userSelect: 'none' }}
@@ -530,45 +554,49 @@ export default function WiringDiagramEditor() {
             isValidConnection={isValidConnection}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            connectionLineType={ConnectionLineType.SmoothStep}
+            connectionLineStyle={{
+              stroke: '#059669',
+              strokeWidth: 2,
+              strokeDasharray: '5,5'
+            }}
             fitView
             className="bg-gray-200"
             multiSelectionKeyCode="Shift"
             deleteKeyCode="Delete"
             onNodeContextMenu={handleNodeContextMenu}
             onEdgeContextMenu={handleEdgeContextMenu}
-            onPaneClick={() => setContextMenu(null)}
+            onPaneClick={() => {
+              setContextMenu(null)
+              onCloseMenus?.()
+            }}
+            onNodeDrag={() => onCloseMenus?.()}
+            onNodeDragStart={() => onCloseMenus?.()}
+            onSelectionDragStart={() => onCloseMenus?.()}
           >
             <Controls />
             <MiniMap />
             <Background variant={BackgroundVariant.Lines} gap={20} size={1} color="#999" />
-
-            {/* ツールバー */}
-            <Panel position="top-left">
-              <Toolbar
-                onToggleTemplateLibrary={() => setShowTemplateLibrary(!showTemplateLibrary)}
-                onToggleTableEditor={() => setShowTableEditor(!showTableEditor)}
-                onToggleAutoLayout={() => setShowAutoLayout(!showAutoLayout)}
-              />
-            </Panel>
           </ReactFlow>
         </div>
       </div>
 
       {/* サイドパネル */}
-      <div className="w-full lg:w-80 h-64 lg:h-full bg-gray-100 border-t lg:border-t-0 lg:border-l border-gray-400 flex flex-col">
+      <div className="w-full lg:w-80 h-64 lg:h-full bg-gray-100 border-t lg:border-t-0 lg:border-l border-gray-400 flex flex-col overflow-hidden">
         {/* インスペクターパネル */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <InspectorPanel />
         </div>
       </div>
 
       {/* テンプレートライブラリ */}
       {showTemplateLibrary && (
-        <div className="absolute top-0 left-0 w-full lg:w-80 h-full bg-gray-100 border-r border-gray-400 z-10">
+        <div className="absolute top-6 left-0 w-full lg:w-80 h-[calc(100%-24px)] bg-gray-100 border-r border-gray-400 z-10">
           <TemplateLibrary
-            onClose={() => setShowTemplateLibrary(false)}
+            onClose={onCloseTemplateLibrary || (() => { })}
             onAddEquipment={(_template) => {
-              setShowTemplateLibrary(false)
+              // テンプレート追加後もライブラリを開いたままにする
+              // onCloseTemplateLibrary?.() を削除
             }}
           />
         </div>
@@ -577,16 +605,12 @@ export default function WiringDiagramEditor() {
       {/* テーブルエディタ */}
       {showTableEditor && (
         <div className="absolute bottom-0 left-0 right-0 lg:right-80 h-80 bg-gray-100 border-t border-gray-400 z-10">
-          <TableEditor onClose={() => setShowTableEditor(false)} />
+          <TableEditor onClose={onCloseTableEditor || (() => { })} />
         </div>
       )}
 
       {/* 自動レイアウトダイアログ */}
-      <AutoLayoutDialog
-        isOpen={showAutoLayout}
-        onClose={() => setShowAutoLayout(false)}
-        onApply={handleAutoLayout}
-      />
+
 
       {/* テンプレート保存ダイアログ */}
       <SaveTemplateDialog
