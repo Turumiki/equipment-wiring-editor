@@ -75,7 +75,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
   }
 
   if (!renderComponent) {
-    return <div className="w-20 h-12 bg-gray-300 rounded">No Render</div>
+    return <div className="w-20 h-12 bg-gray-300">No Render</div>
   }
 
   const { shape, color, strokeColor, strokeWidth, size, label } = renderComponent.data
@@ -83,8 +83,8 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
 
   // 図形の描画
   const renderShape = () => {
-    const baseClasses = `border-${strokeWidth} transition-all duration-200`
-    const selectedClasses = selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+    const baseClasses = `border-${strokeWidth}`
+    const selectedClasses = selected ? 'ring-1 ring-gray-600' : ''
 
     const style = {
       backgroundColor: color,
@@ -97,7 +97,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
       case ShapeType.RECTANGLE:
         return (
           <div
-            className={`${baseClasses} ${selectedClasses} border-solid rounded`}
+            className={`${baseClasses} ${selectedClasses} border-solid`}
             style={style}
           />
         )
@@ -127,7 +127,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
       default:
         return (
           <div
-            className={`${baseClasses} ${selectedClasses} border-solid rounded`}
+            className={`${baseClasses} ${selectedClasses} border-solid`}
             style={style}
           />
         )
@@ -185,32 +185,32 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           position = Position.Left
       }
 
-      // ポートタイプに応じた色分け
+      // シンプルなポートスタイル
       const getPortColor = () => {
         switch (portType) {
           case 'xlr-male':
           case 'xlr-female':
-            return direction === 'input' ? 'bg-blue-400 border-blue-600' : 'bg-blue-500 border-blue-700'
+            return direction === 'input' ? 'bg-gray-600 border-gray-800' : 'bg-gray-700 border-gray-900'
           case 'trs-quarter':
           case 'ts-quarter':
           case 'trs-mini':
-            return direction === 'input' ? 'bg-green-400 border-green-600' : 'bg-green-500 border-green-700'
+            return direction === 'input' ? 'bg-gray-500 border-gray-700' : 'bg-gray-600 border-gray-800'
           case 'hdmi':
           case 'displayport':
           case 'dvi':
-            return direction === 'input' ? 'bg-purple-400 border-purple-600' : 'bg-purple-500 border-purple-700'
+            return direction === 'input' ? 'bg-gray-600 border-gray-800' : 'bg-gray-700 border-gray-900'
           case 'usb-a':
           case 'usb-b':
           case 'usb-c':
           case 'thunderbolt':
-            return 'bg-yellow-400 border-yellow-600'
+            return 'bg-gray-500 border-gray-700'
           case 'ethernet':
           case 'dante':
-            return 'bg-orange-400 border-orange-600'
+            return 'bg-gray-600 border-gray-800'
           case 'power-ac':
           case 'power-dc':
           case 'iec':
-            return 'bg-red-400 border-red-600'
+            return 'bg-gray-700 border-gray-900'
           default:
             return direction === 'input' ? 'bg-gray-400 border-gray-600' : 'bg-gray-500 border-gray-700'
         }
@@ -261,10 +261,9 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
                 style={labelStyle}
               >
                 <span
-                  className="text-gray-700 text-xs font-semibold"
+                  className="text-gray-800 text-xs font-medium bg-white px-1 border border-gray-400"
                   style={{
-                    fontSize: '7px',
-                    textShadow: '0 0 2px white, 0 0 2px white, 0 0 2px white'
+                    fontSize: '8px',
                   }}
                 >
                   {portLabel}

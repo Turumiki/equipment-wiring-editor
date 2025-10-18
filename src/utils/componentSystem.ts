@@ -14,7 +14,7 @@ import {
 // コンポーネント作成ヘルパー関数
 export function createRenderComponent(
   shape: ShapeType = ShapeType.RECTANGLE,
-  color: string = '#3b82f6',
+  color: string = '#6b7280',
   size: { width: number; height: number } = { width: 100, height: 60 }
 ): RenderComponent {
   return {
@@ -24,7 +24,7 @@ export function createRenderComponent(
     data: {
       shape,
       color,
-      strokeColor: '#1e40af',
+      strokeColor: '#4b5563',
       strokeWidth: 2,
       size,
       label: {
@@ -196,6 +196,8 @@ export function updateComponentInObject(
 
 // 機材タイプに応じたポート作成
 export function createEquipmentPorts(equipmentType: string): ConnectionPortComponent[] {
+  console.log('Creating ports for equipment type:', equipmentType)
+  
   switch (equipmentType) {
     case 'audio-interface':
       return [
@@ -401,17 +403,45 @@ function stringToShapeType(shape: string): ShapeType {
 // シンプルなテンプレート作成関数
 export function createEquipmentFromTemplate(template: SimpleTemplate | any): EquipmentObject {
   // 新しいシンプル形式かチェック
-  if (template.ports && Array.isArray(template.ports)) {
+  if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
     return createEquipmentFromSimpleTemplate(template as SimpleTemplate)
   }
   
-  // 旧形式の場合は基本テンプレートにフォールバック
+  // defaultComponentsが実際に定義されている場合
+  if (template.defaultComponents && Array.isArray(template.defaultComponents) && template.defaultComponents.length > 0) {
+    return createEquipmentFromDefaultComponents(template)
+  }
+  
+  // それ以外は機材タイプベースの基本テンプレートにフォールバック
   return createBasicEquipmentObject(
     template.name,
     { x: 100, y: 100 },
     ShapeType.RECTANGLE,
     template.id
   )
+}
+
+// defaultComponentsから機材オブジェクトを作成
+function createEquipmentFromDefaultComponents(template: any): EquipmentObject {
+  // defaultComponentsをそのまま使用してオブジェクトを作成
+  const components = template.defaultComponents.map((comp: any) => ({
+    ...comp,
+    id: `${comp.type}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+  }))
+
+  return {
+    id: `${template.id}-${Date.now()}`,
+    name: template.name,
+    position: { x: 100, y: 100 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
+    components,
+    templateId: template.id,
+    metadata: {
+      category: template.category,
+      description: template.description
+    }
+  }
 }
 
 // シンプルテンプレートから機材オブジェクトを作成

@@ -60,14 +60,14 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
       <div className="flex gap-1 flex-wrap">
         <button
           onClick={createNewProject}
-          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
           title="新規プロジェクト"
           aria-label="新規プロジェクト"
         >
           新規
         </button>
         
-        <label className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors cursor-pointer">
+        <label className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors cursor-pointer">
           開く
           <input
             type="file"
@@ -80,7 +80,7 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
         
         <button
           onClick={saveProject}
-          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
           title="プロジェクトを保存"
           aria-label="プロジェクトを保存"
         >
@@ -89,7 +89,7 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
         
         <button
           onClick={() => setShowCSVImport(true)}
-          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
           title="CSVインポート"
           aria-label="CSVファイルをインポート"
         >
@@ -98,7 +98,7 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
         
         <button
           onClick={() => setShowExport(true)}
-          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors"
+          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
           title="図面エクスポート"
           aria-label="図面をエクスポート"
         >
@@ -122,7 +122,7 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
       <div className="flex gap-1 flex-wrap">
         <button
           onClick={onToggleTemplateLibrary}
-          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
           title="テンプレートライブラリ"
           aria-label="テンプレートライブラリを開く"
         >
@@ -132,7 +132,7 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
         
         <button
           onClick={onToggleTableEditor}
-          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
           title="テーブルエディタ"
           aria-label="テーブルエディタを開く"
         >
@@ -142,7 +142,7 @@ export default function Toolbar({ onToggleTemplateLibrary, onToggleTableEditor, 
         
         <button
           onClick={onToggleAutoLayout}
-          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-teal-500 text-white rounded hover:bg-teal-600 transition-colors"
+          className="px-2 lg:px-3 py-2 text-xs lg:text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
           title="自動レイアウト"
           aria-label="自動レイアウトを開く"
         >

@@ -27,18 +27,20 @@ export default function AutoLayoutDialog({ isOpen, onClose, onApply }: AutoLayou
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-black">自動レイアウト</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
+      <div className="bg-gray-100 border border-gray-400 w-full max-w-md">
+        <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
+          <div className="flex justify-between items-center">
+            <h2 className="text-sm font-bold text-black uppercase tracking-wide">Auto Layout</h2>
+            <button
+              onClick={onClose}
+              className="text-black hover:bg-gray-300 px-2 py-1 text-xs font-bold"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="p-2 space-y-2">
           {/* レイアウトアルゴリズム */}
           <div>
             <label className="block text-sm font-medium text-black mb-2">
@@ -182,19 +184,21 @@ export default function AutoLayoutDialog({ isOpen, onClose, onApply }: AutoLayou
         </div>
 
         {/* ボタン */}
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
-          >
-            キャンセル
-          </button>
-          <button
-            onClick={handleApply}
-            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            適用
-          </button>
+        <div className="px-2 py-1 border-t border-gray-400 bg-gray-200">
+          <div className="flex gap-1">
+            <button
+              onClick={onClose}
+              className="flex-1 px-2 py-1 text-xs font-bold bg-gray-300 text-black border border-gray-500 hover:bg-gray-400"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={handleApply}
+              className="flex-1 px-2 py-1 text-xs font-bold bg-gray-600 text-white border border-gray-700 hover:bg-gray-700"
+            >
+              適用
+            </button>
+          </div>
         </div>
       </div>
     </div>

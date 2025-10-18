@@ -44,15 +44,17 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">図面エクスポート</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            ✕
-          </button>
+      <div className="bg-gray-100 border border-gray-400 w-full max-w-md">
+        <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
+          <div className="flex justify-between items-center">
+            <h2 className="text-sm font-bold text-black uppercase tracking-wide">Export</h2>
+            <button onClick={onClose} className="text-black hover:bg-gray-300 px-2 py-1 text-xs font-bold">
+              ×
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="p-2 space-y-2">
           {/* エクスポートタイプ選択 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -14,8 +14,8 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
   const [selectedCategory, setSelectedCategory] = useState<string>('全て')
   const [searchTerm, setSearchTerm] = useState('')
   const [templateSource, setTemplateSource] = useState<'global' | 'project'>('global')
-  const { 
-    addEquipmentObject, 
+  const {
+    addEquipmentObject,
     project,
     addTemplateToProject,
     removeTemplateFromProject,
@@ -51,16 +51,16 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target?.result as string)
-          
+
           // 単一テンプレートか配列かを判定
           const templates = Array.isArray(data) ? data : [data]
-          
+
           if (templateSource === 'global') {
             importGlobalTemplates(templates)
           } else {
             importProjectTemplates(templates)
           }
-          
+
           alert(`${templates.length}個のテンプレートを${templateSource === 'global' ? 'グローバル' : 'プロジェクト'}にインポートしました`)
         } catch (error) {
           alert('テンプレートファイルの読み込みに失敗しました')
@@ -103,16 +103,26 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
   const handleAddTemplate = (template: EquipmentTemplate) => {
     let equipmentObject
 
-    // defaultComponentsが定義されている場合は汎用テンプレート関数を使用
-    if (template.defaultComponents && template.defaultComponents.length > 0) {
+    console.log('Creating equipment from template:', template.id, {
+      hasPorts: template.ports && Array.isArray(template.ports) && template.ports.length > 0,
+      hasDefaultComponents: template.defaultComponents && template.defaultComponents.length > 0,
+      portsLength: template.ports?.length || 0,
+      defaultComponentsLength: template.defaultComponents?.length || 0
+    })
+
+    // portsが定義されている場合は新しいシンプルテンプレート形式を使用
+    if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
+      console.log('Using simple template format with ports')
       equipmentObject = createEquipmentFromTemplate(template)
-      // ランダムな位置に配置
-      equipmentObject.position = { 
-        x: Math.random() * 300 + 100, 
-        y: Math.random() * 200 + 100 
-      }
-    } else {
-      // 従来の基本テンプレートから機材オブジェクトを作成
+    }
+    // defaultComponentsが定義されて実際にコンポーネントがある場合は汎用テンプレート関数を使用
+    else if (template.defaultComponents && template.defaultComponents.length > 0) {
+      console.log('Using default components format')
+      equipmentObject = createEquipmentFromTemplate(template)
+    }
+    // それ以外は従来の機材タイプベースの生成
+    else {
+      console.log('Using equipment type based generation for:', template.id)
       const shape = getShapeForTemplate(template.id)
       equipmentObject = createBasicEquipmentObject(
         template.name,
@@ -120,6 +130,12 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
         shape,
         template.id // 機材タイプを渡す
       )
+    }
+
+    // ランダムな位置に配置
+    equipmentObject.position = {
+      x: Math.random() * 300 + 100,
+      y: Math.random() * 200 + 100
     }
 
     equipmentObject.templateId = template.id
@@ -135,41 +151,41 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
   const getColorForTemplate = (templateId: string): string => {
     switch (templateId) {
       case 'audio-interface':
-        return '#3b82f6' // blue
+        return '#6b7280' // gray-500
       case 'microphone':
-        return '#dc2626' // red
+        return '#4b5563' // gray-600
       case 'computer':
-        return '#6b7280' // gray
+        return '#374151' // gray-700
       case 'switching-hub':
-        return '#059669' // green
+        return '#6b7280' // gray-500
       case 'dante-mixer':
-        return '#7c3aed' // purple
+        return '#4b5563' // gray-600
       case 'camera':
-        return '#ea580c' // orange
+        return '#374151' // gray-700
       case 'display':
-        return '#1f2937' // dark gray
+        return '#1f2937' // gray-800
       case 'speaker':
-        return '#f59e0b' // amber
+        return '#6b7280' // gray-500
       case 'headphones':
-        return '#8b5cf6' // violet
+        return '#4b5563' // gray-600
       case 'video-switcher':
-        return '#ef4444' // red
+        return '#374151' // gray-700
       case 'yamaha-ql1':
-        return '#1a1a1a' // YAMAHA black
+        return '#1f2937' // gray-800
       default:
-        return '#3b82f6'
+        return '#6b7280' // gray-500
     }
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-100">
+    <div className="h-full flex flex-col bg-white">
       {/* ヘッダー */}
-      <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
+      <div className="px-2 py-2 border-b border-gray-300 bg-gray-100">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-sm font-bold text-black uppercase tracking-wide">Template Library</h2>
+          <h2 className="text-sm font-medium text-gray-800">Template Library</h2>
           <button
             onClick={onClose}
-            className="text-black hover:bg-gray-300 px-2 py-1 text-xs font-bold"
+            className="text-gray-600 hover:bg-gray-200 px-2 py-1 text-xs"
           >
             ×
           </button>
@@ -179,28 +195,28 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
         <div className="flex gap-1 mb-2">
           <button
             onClick={() => setTemplateSource('global')}
-            className={`flex-1 px-2 py-1 text-xs font-bold border ${templateSource === 'global'
-              ? 'bg-blue-600 text-white border-blue-800'
-              : 'bg-gray-300 text-black border-gray-500 hover:bg-gray-400'
-            }`}
+            className={`flex-1 px-2 py-1 text-xs font-medium border ${templateSource === 'global'
+              ? 'bg-gray-600 text-white border-gray-700'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
           >
-            グローバル ({globalTemplates.length})
+            Global ({globalTemplates.length})
           </button>
           <button
             onClick={() => setTemplateSource('project')}
-            className={`flex-1 px-2 py-1 text-xs font-bold border ${templateSource === 'project'
-              ? 'bg-green-600 text-white border-green-800'
-              : 'bg-gray-300 text-black border-gray-500 hover:bg-gray-400'
-            }`}
+            className={`flex-1 px-2 py-1 text-xs font-medium border ${templateSource === 'project'
+              ? 'bg-gray-600 text-white border-gray-700'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
           >
-            プロジェクト ({project.customTemplates.length})
+            Project ({project.customTemplates.length})
           </button>
         </div>
 
         {/* 管理ボタン */}
         <div className="flex gap-1 mb-2">
-          <label className="flex-1 px-2 py-1 text-xs font-bold bg-yellow-500 text-white border border-yellow-700 hover:bg-yellow-600 cursor-pointer text-center">
-            インポート
+          <label className="flex-1 px-2 py-1 text-xs font-medium bg-gray-500 text-white border border-gray-600 hover:bg-gray-600 cursor-pointer text-center">
+            Import
             <input
               type="file"
               accept=".json"
@@ -210,10 +226,10 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
           </label>
           <button
             onClick={handleExportTemplates}
-            className="flex-1 px-2 py-1 text-xs font-bold bg-orange-500 text-white border border-orange-700 hover:bg-orange-600"
+            className="flex-1 px-2 py-1 text-xs font-medium bg-gray-500 text-white border border-gray-600 hover:bg-gray-600"
             disabled={currentTemplates.length === 0}
           >
-            エクスポート
+            Export
           </button>
         </div>
 
@@ -223,20 +239,20 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
           placeholder="Search templates..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-2 py-1 border border-gray-400 bg-white text-black text-xs focus:outline-none focus:border-black"
+          className="w-full px-2 py-1 border border-gray-300 bg-white text-gray-800 text-xs focus:outline-none focus:border-gray-500"
         />
       </div>
 
       {/* カテゴリフィルター */}
-      <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
+      <div className="px-2 py-1 border-b border-gray-300 bg-gray-50">
         <div className="flex flex-wrap gap-1">
           {categories.map(category => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-2 py-1 text-xs font-bold border ${selectedCategory === category
-                ? 'bg-blue-600 text-white border-blue-800'
-                : 'bg-gray-300 text-black border-gray-500 hover:bg-gray-400'
+              className={`px-2 py-1 text-xs font-medium border ${selectedCategory === category
+                ? 'bg-gray-600 text-white border-gray-700'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}
             >
               {category}
@@ -261,8 +277,7 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
                 <div className="flex items-center gap-2">
                   {/* テンプレートアイコン */}
                   <div
-                    className="w-8 h-6 border border-gray-600 flex items-center justify-center text-white text-xs font-bold cursor-pointer"
-                    style={{ backgroundColor: getColorForTemplate(template.id) }}
+                    className="w-8 h-6 border border-gray-400 flex items-center justify-center text-white text-xs font-medium cursor-pointer bg-gray-500 hover:bg-gray-600"
                     onClick={() => handleAddTemplate(template)}
                     title="クリックして機材を追加"
                   >
@@ -270,7 +285,7 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
                   </div>
 
                   {/* テンプレート情報 */}
-                  <div 
+                  <div
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => handleAddTemplate(template)}
                   >
@@ -301,7 +316,7 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
                     >
                       📤
                     </button>
-                    
+
                     {/* コピー */}
                     {templateSource === 'global' ? (
                       <button
@@ -326,7 +341,7 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
                         🌐
                       </button>
                     )}
-                    
+
                     {/* 削除 */}
                     <button
                       onClick={(e) => {
