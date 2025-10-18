@@ -17,8 +17,8 @@ export function validateConnection(
   targetObject: EquipmentObject,
   targetPortId: string
 ): ValidationResult {
-  // デバッグログは開発時のみ有効
-  const DEBUG = process.env.NODE_ENV === 'development' && true // trueに設定してログを有効化
+  // デバッグログは開発時のみ有効 - onConnectからの呼び出し時のみ
+  const DEBUG = false // ドラッグ中のログを無効化
   // 同じオブジェクト内での接続は禁止
   if (sourceObject.id === targetObject.id) {
     return {
@@ -34,8 +34,17 @@ export function validateConnection(
   const targetPort = targetPortComponents.find(port => port.id === targetPortId)
 
   if (DEBUG) {
-    console.log('Source Port:', sourcePort?.data)
-    console.log('Target Port:', targetPort?.data)
+    console.log('=== CONNECTION VALIDATION DEBUG ===')
+    console.log('Source Object ID:', sourceObject.id)
+    console.log('Target Object ID:', targetObject.id)
+    console.log('Source Port ID:', sourcePortId)
+    console.log('Target Port ID:', targetPortId)
+    console.log('Source Port Found:', !!sourcePort)
+    console.log('Target Port Found:', !!targetPort)
+    console.log('Source Port Data:', sourcePort?.data)
+    console.log('Target Port Data:', targetPort?.data)
+    console.log('All Source Ports:', sourcePortComponents.map(p => ({ id: p.id, type: p.data.portType, direction: p.data.direction })))
+    console.log('All Target Ports:', targetPortComponents.map(p => ({ id: p.id, type: p.data.portType, direction: p.data.direction })))
   }
 
   if (!sourcePort || !targetPort) {
@@ -82,20 +91,59 @@ export function validateConnection(
     [PortType.USB_A]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
     [PortType.USB_B]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
     [PortType.USB_C]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-    [PortType.ETHERNET]: [PortType.ETHERNET, PortType.DANTE],
+    [PortType.ETHERNET]: [PortType.ETHERNET, PortType.DANTE], // ETHERNET同士は確実に互換
     [PortType.DANTE]: [PortType.DANTE, PortType.ETHERNET],
     [PortType.HDMI]: [PortType.HDMI],
     [PortType.TRS_MINI]: [PortType.TRS_MINI],
-    [PortType.POWER_AC]: [PortType.POWER_AC]
+    [PortType.POWER_AC]: [PortType.POWER_AC],
+    [PortType.POWER_DC]: [PortType.POWER_DC],
+    [PortType.RCA]: [PortType.RCA],
+    [PortType.SPEAKON]: [PortType.SPEAKON],
+    [PortType.AES_EBU]: [PortType.AES_EBU],
+    [PortType.SPDIF]: [PortType.SPDIF],
+    [PortType.ADAT]: [PortType.ADAT],
+    [PortType.DISPLAYPORT]: [PortType.DISPLAYPORT],
+    [PortType.DVI]: [PortType.DVI],
+    [PortType.VGA]: [PortType.VGA],
+    [PortType.SDI]: [PortType.SDI],
+    [PortType.COMPOSITE]: [PortType.COMPOSITE],
+    [PortType.THUNDERBOLT]: [PortType.THUNDERBOLT],
+    [PortType.IEC]: [PortType.IEC],
+    [PortType.MIDI]: [PortType.MIDI],
+    [PortType.CUSTOM]: [PortType.CUSTOM]
   }
 
   const sourceType = sourcePort.data.portType
   const targetType = targetPort.data.portType
 
+  // 双方向ポートの場合は互換性チェックを緩和
+  const bothBidirectional = sourceBidirectional && targetBidirectional
+  
   // 同じタイプは常に互換性あり
-  const typesCompatible = sourceType === targetType ||
+  let typesCompatible = sourceType === targetType ||
     basicCompatibility[sourceType]?.includes(targetType) ||
     false
+
+  // 双方向ポート同士の場合は、より柔軟な互換性を適用
+  if (bothBidirectional) {
+    // 双方向ポート同士は基本的に接続可能（ただし、明らかに互換性のないものは除外）
+    const incompatibleTypes = [
+      [PortType.POWER_AC, PortType.USB_A],
+      [PortType.POWER_DC, PortType.HDMI],
+      [PortType.XLR_MALE, PortType.USB_C],
+      // 必要に応じて追加
+    ]
+    
+    const isIncompatible = incompatibleTypes.some(([type1, type2]) => 
+      (sourceType === type1 && targetType === type2) ||
+      (sourceType === type2 && targetType === type1)
+    )
+    
+    if (!isIncompatible) {
+      typesCompatible = true
+      if (DEBUG) console.log('Bidirectional ports - allowing flexible compatibility')
+    }
+  }
 
   if (DEBUG) console.log('Types compatible:', typesCompatible)
 
@@ -133,19 +181,25 @@ export function validateConnection(
     console.log('Target allowed types:', targetPort.data.constraints.allowedPortTypes)
   }
 
-  if (!sourcePort.data.constraints.allowedPortTypes.includes(targetPort.data.portType)) {
-    if (DEBUG) console.log('Source port type constraint failed!')
-    return {
-      isValid: false,
-      errorMessage: 'このポートタイプとの接続は許可されていません'
+  // 同じタイプ同士は常に接続可能
+  if (sourceType === targetType) {
+    if (DEBUG) console.log('Same port types - connection allowed')
+  } else {
+    // 異なるタイプの場合のみ制約をチェック
+    if (!sourcePort.data.constraints.allowedPortTypes.includes(targetPort.data.portType)) {
+      if (DEBUG) console.log('Source port type constraint failed!')
+      return {
+        isValid: false,
+        errorMessage: 'このポートタイプとの接続は許可されていません'
+      }
     }
-  }
 
-  if (!targetPort.data.constraints.allowedPortTypes.includes(sourcePort.data.portType)) {
-    if (DEBUG) console.log('Target port type constraint failed!')
-    return {
-      isValid: false,
-      errorMessage: 'このポートタイプとの接続は許可されていません'
+    if (!targetPort.data.constraints.allowedPortTypes.includes(sourcePort.data.portType)) {
+      if (DEBUG) console.log('Target port type constraint failed!')
+      return {
+        isValid: false,
+        errorMessage: 'このポートタイプとの接続は許可されていません'
+      }
     }
   }
 

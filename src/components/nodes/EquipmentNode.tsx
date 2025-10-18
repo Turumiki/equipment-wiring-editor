@@ -7,6 +7,7 @@ import {
   getPropertyComponent,
   calculatePortPosition
 } from '@/utils/componentSystem'
+import { getPortTypeDisplayName } from '@/utils/portTypeUtils'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useProjectStore } from '@/store/useProjectStore'
 import ResizableNodeSelected from './ResizableNodeSelected'
@@ -14,10 +15,11 @@ import ResizableNodeSelected from './ResizableNodeSelected'
 interface EquipmentNodeData {
   equipmentObject: EquipmentObject
   isSelected: boolean
+  onPortEdit?: (portId: string, equipmentId: string) => void
 }
 
 export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNodeData>) {
-  const { equipmentObject, isSelected } = data
+  const { equipmentObject, isSelected, onPortEdit } = data
   const renderComponent = getRenderComponent(equipmentObject)
   const portComponents = getConnectionPortComponents(equipmentObject)
   const propertyComponent = getPropertyComponent(equipmentObject)
@@ -71,6 +73,17 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
       })
 
       updateEquipmentObject(equipmentObject.id, { components: updatedComponents }) // 履歴に保存
+    }
+  }
+
+  // ポートクリック処理（ドラッグと競合しないように）
+  const handlePortClick = (e: React.MouseEvent, portComponent: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // ダブルクリックでのみ編集を開始
+    if (e.detail === 2 && onPortEdit) {
+      onPortEdit(portComponent.id, equipmentObject.id)
     }
   }
 
@@ -155,93 +168,133 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
     return portComponents.map((portComponent) => {
       const { position: portPos, direction, portType, label: portLabel } = portComponent.data
 
+      // デバッグ用ログ（簡潔版）
+      // if (direction === 'bidirectional') {
+      //   console.log('🔄 Bidirectional port:', portComponent.id, 'Type:', portType, 'Side:', portPos?.side)
+      // }
+
       let position: Position
       let handleStyle: React.CSSProperties = {}
       let labelStyle: React.CSSProperties = {}
       let labelClasses = 'absolute text-xs font-medium pointer-events-none select-none whitespace-nowrap'
 
-      switch (portPos.side) {
+      // ポートデータの安全な取得
+      const portSide = portPos?.side || Side.LEFT
+      const portOffset = portPos?.offset || 50
+
+      // デバッグ: 強制的にテストケースを適用
+      // console.log('Before switch - portSide:', portSide, 'Expected:', Side.RIGHT)
+
+      switch (portSide) {
         case Side.TOP:
           position = Position.Top
-          handleStyle = { left: `${portPos.offset}%` }
+          handleStyle = {
+            left: `${portOffset}%`,
+            transform: 'translateX(-50%) translateY(-50%)',
+            top: '0px' // 辺の上に配置
+          }
           labelStyle = {
-            left: `${portPos.offset}%`,
+            left: `${portOffset}%`,
             top: '-2px',
             transform: 'translateX(-50%)'
           }
           break
         case Side.RIGHT:
           position = Position.Right
-          handleStyle = { top: `${portPos.offset}%` }
+          handleStyle = {
+            top: `${portOffset}%`,
+            transform: 'translateY(-50%) translateX(50%)',
+            right: '0px' // 辺の上に配置
+          }
           labelStyle = {
             right: '4px',
-            top: `${portPos.offset}%`,
+            top: `${portOffset}%`,
             transform: 'translateY(-50%)'
           }
           break
         case Side.BOTTOM:
           position = Position.Bottom
-          handleStyle = { left: `${portPos.offset}%` }
+          handleStyle = {
+            left: `${portOffset}%`,
+            transform: 'translateX(-50%) translateY(50%)',
+            bottom: '0px' // 辺の上に配置
+          }
           labelStyle = {
-            left: `${portPos.offset}%`,
+            left: `${portOffset}%`,
             bottom: '0px',
             transform: 'translateX(-50%)'
           }
           break
         case Side.LEFT:
           position = Position.Left
-          handleStyle = { top: `${portPos.offset}%` }
+          handleStyle = {
+            top: `${portOffset}%`,
+            transform: 'translateY(-50%) translateX(-50%)',
+            left: '0px' // 辺の上に配置
+          }
           labelStyle = {
             left: '4px',
-            top: `${portPos.offset}%`,
+            top: `${portOffset}%`,
             transform: 'translateY(-50%)'
           }
           break
         default:
           position = Position.Left
+          handleStyle = {
+            top: `${portOffset}%`,
+            transform: 'translateY(-50%) translateX(-50%)',
+            left: '0px'
+          }
+          labelStyle = {
+            left: '4px',
+            top: `${portOffset}%`,
+            transform: 'translateY(-50%)'
+          }
       }
 
       // ポートタイプの表示名を取得
       const getPortTypeDisplayName = (portType: string, direction: string) => {
-        const directionText = direction === 'input' ? 'Input' : direction === 'output' ? 'Output' : 'Bidirectional'
+        // 双方向ポートの場合は方向を表示しない
+        const directionText = direction === 'bidirectional' ? '' :
+          direction === 'input' ? ' Input' : direction === 'output' ? ' Output' : ''
 
         switch (portType) {
           case 'xlr-male':
-            return `XLR Male ${directionText}`
+            return `XLR Male${directionText}`
           case 'xlr-female':
-            return `XLR Female ${directionText}`
+            return `XLR Female${directionText}`
           case 'trs-quarter':
-            return `TRS 1/4" ${directionText}`
+            return `TRS 1/4"${directionText}`
           case 'ts-quarter':
-            return `TS 1/4" ${directionText}`
+            return `TS 1/4"${directionText}`
           case 'trs-mini':
-            return `TRS 3.5mm ${directionText}`
+            return `TRS 3.5mm${directionText}`
           case 'hdmi':
-            return `HDMI ${directionText}`
+            return `HDMI${directionText}`
           case 'displayport':
-            return `DisplayPort ${directionText}`
+            return `DisplayPort${directionText}`
           case 'dvi':
-            return `DVI ${directionText}`
+            return `DVI${directionText}`
           case 'usb-a':
-            return `USB-A ${directionText}`
+            return `USB-A${directionText}`
           case 'usb-b':
-            return `USB-B ${directionText}`
+            return `USB-B${directionText}`
           case 'usb-c':
-            return `USB-C ${directionText}`
+            return `USB-C${directionText}`
           case 'thunderbolt':
-            return `Thunderbolt ${directionText}`
+            return `Thunderbolt${directionText}`
           case 'ethernet':
-            return `Ethernet ${directionText}`
+            return `Ethernet${directionText}`
           case 'dante':
-            return `Dante ${directionText}`
+            return `Dante${directionText}`
           case 'power-ac':
-            return `AC Power ${directionText}`
+            return `AC Power${directionText}`
           case 'power-dc':
-            return `DC Power ${directionText}`
+            return `DC Power${directionText}`
           case 'iec':
-            return `IEC Power ${directionText}`
+            return `IEC Power${directionText}`
           default:
-            return `${portType.toUpperCase()} ${directionText}`
+            return `${portType.toUpperCase()}${directionText}`
         }
       }
 
@@ -281,24 +334,31 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
 
       return (
         <div key={portComponent.id}>
-          {/* ポートハンドル - 双方向ポートは両方のタイプを作成 */}
+          {/* ポートハンドル */}
           {direction === 'bidirectional' ? (
             <>
-              <Handle
-                type="source"
-                position={position}
-                id={portComponent.id}
-                style={handleStyle}
-                className={handleClasses}
-                title={portTypeTooltip}
-              />
+              {/* 双方向ポートは見た目は通常のポートと同じ、機能的にはsourceとtarget両方 */}
               <Handle
                 type="target"
                 position={position}
                 id={portComponent.id}
-                style={{ ...handleStyle, zIndex: -1 }}
-                className={handleClasses}
-                title={portTypeTooltip}
+                style={{
+                  ...handleStyle,
+                  zIndex: 1
+                }}
+                className="opacity-0" // 透明にして見えなくする
+              />
+              <Handle
+                type="source"
+                position={position}
+                id={portComponent.id}
+                style={{
+                  ...handleStyle,
+                  zIndex: 2 // sourceを上に配置してドラッグしやすくする
+                }}
+                className={handleClasses} // 通常のポートと同じ見た目
+                onClick={(e) => handlePortClick(e, portComponent)}
+                title={`${portTypeTooltip} (ダブルクリックで編集)`}
               />
             </>
           ) : (
@@ -308,36 +368,61 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
               id={portComponent.id}
               style={handleStyle}
               className={handleClasses}
-              title={portTypeTooltip}
+              onClick={(e) => handlePortClick(e, portComponent)}
+              title={`${portTypeTooltip} (ダブルクリックで編集)`}
             />
           )}
 
           {/* ポートラベル */}
-          {portLabel && (
-            showPortLabels === 'always' ||
-            (showPortLabels === 'connected' && isPortConnected(portComponent.id)) ||
-            (showPortLabels === 'connectedHover' && (isPortConnected(portComponent.id) || (selected || showLabels))) ||
-            (showPortLabels === 'selected' && selected) ||
-            (showPortLabels === 'hover' && (selected || showLabels))
-          ) && (
+          {portLabel && (() => {
+            // 表示条件の判定
+            const shouldShow =
+              showPortLabels === 'always' || showPortLabels === 'alwaysWithType' ||
+              ((showPortLabels === 'connected' || showPortLabels === 'connectedWithType') && isPortConnected(portComponent.id)) ||
+              ((showPortLabels === 'connectedHover' || showPortLabels === 'connectedHoverWithType') && (isPortConnected(portComponent.id) || (selected || showLabels))) ||
+              ((showPortLabels === 'selected' || showPortLabels === 'selectedWithType') && selected) ||
+              ((showPortLabels === 'hover' || showPortLabels === 'hoverWithType') && (selected || showLabels))
+
+            // タイプ表示の判定
+            const showType = showPortLabels.includes('WithType')
+
+            if (!shouldShow) return null
+
+            return (
               <div
                 className={labelClasses}
                 style={labelStyle}
               >
-                <span
-                  className="font-medium"
+                <div
+                  className={`font-medium ${portSide === Side.LEFT ? 'text-left' :
+                    portSide === Side.RIGHT ? 'text-right' :
+                      'text-center'
+                    }`}
                   style={{
                     fontSize: '5px',
                     color: getContrastColor(renderComponent?.data.color || '#6b7280'),
                     textShadow: getContrastColor(renderComponent?.data.color || '#6b7280') === '#ffffff'
                       ? '0 0 2px rgba(0, 0, 0, 0.8)'
                       : '0 0 2px rgba(255, 255, 255, 0.8)',
+                    lineHeight: '1.2'
                   }}
                 >
-                  {portLabel}
-                </span>
+                  <div>{portLabel}</div>
+                  {showType && (
+                    <div
+                      style={{
+                        fontSize: '4px',
+                        opacity: 0.8,
+                        marginTop: '1px'
+                      }}
+                    >
+                      {getPortTypeDisplayName(portType, direction)}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+            )
+          })()}
         </div>
       )
     })

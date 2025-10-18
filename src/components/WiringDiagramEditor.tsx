@@ -31,12 +31,15 @@ import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
 import InspectorPanel from '@/components/InspectorPanel'
 import { getRenderComponent, getConnectionPortComponents, createEquipmentFromTemplate, createBasicEquipmentObject } from '@/utils/componentSystem'
+import { getWireTypeForPortType } from '@/utils/portTypeUtils'
 import { validateConnection } from '@/utils/connectionValidation'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import ContextMenu from '@/components/ContextMenu'
 
 import SaveTemplateDialog from '@/components/SaveTemplateDialog'
+import PortEditDialog from '@/components/PortEditDialog'
 import { autoLayout, LayoutOptions } from '@/utils/autoLayout'
+import { PortType, PortDirection } from '@/types'
 
 const nodeTypes = {
   equipment: EquipmentNode,
@@ -189,6 +192,7 @@ function ReactFlowCanvas({
       onSelectionDragStart={() => onCloseMenus?.()}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
+
     >
       <Controls />
       <MiniMap />
@@ -215,8 +219,19 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     type: 'canvas' | 'node' | 'edge'
     targetId?: string
   } | null>(null)
+  const [showPortEditDialog, setShowPortEditDialog] = useState(false)
+  const [editingPortData, setEditingPortData] = useState<{
+    portId: string
+    equipmentId: string
+  } | null>(null)
 
   const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
+  const { hydrate } = useSettingsStore()
+
+  // クライアントサイドでの設定初期化
+  useEffect(() => {
+    hydrate()
+  }, [hydrate])
 
   // テンプレートに応じた図形を取得
   const getShapeForTemplate = (templateId: string): ShapeType => {
@@ -308,7 +323,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
         selected: isSelected, // ReactFlowの選択状態を設定
         data: {
           equipmentObject: obj,
-          isSelected: isSelected
+          isSelected: isSelected,
+          onPortEdit: handlePortEdit
         },
         style: {
           width: renderComponent?.data.size.width || 100,
@@ -388,12 +404,23 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
           return
         }
 
-        const validationResult = validateConnection(
-          sourceObject,
-          params.sourceHandle,
-          targetObject,
-          params.targetHandle
-        )
+        // onConnect時のみデバッグログを有効にしてバリデーション実行
+        const validationResult = (() => {
+          // 一時的にDEBUGを有効化
+          const originalConsoleLog = console.log
+          let shouldLog = DEBUG
+
+          if (shouldLog) {
+            console.log('=== onConnect VALIDATION ===')
+          }
+
+          return validateConnection(
+            sourceObject,
+            params.sourceHandle,
+            targetObject,
+            params.targetHandle
+          )
+        })()
 
         if (DEBUG) console.log('Validation result:', validationResult)
 
@@ -439,39 +466,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
         const wireLabel = sourcePort ? getPortTypeLabel(sourcePort.data.portType) : ''
 
-        // ポートタイプに応じて適切なワイヤータイプを決定
-        const getWireTypeForPort = (portType: string): WireType => {
-          switch (portType) {
-            case 'xlr-male':
-            case 'xlr-female':
-              return WireType.XLR_CABLE
-            case 'trs-quarter':
-            case 'ts-quarter':
-              return WireType.TRS_CABLE
-            case 'trs-mini':
-              return WireType.TRS_CABLE
-            case 'usb-a':
-            case 'usb-b':
-            case 'usb-c':
-              return WireType.USB_CABLE
-            case 'ethernet':
-            case 'dante':
-              return WireType.ETHERNET_CABLE
-            case 'hdmi':
-              return WireType.HDMI_CABLE
-            case 'displayport':
-              return WireType.DISPLAYPORT_CABLE
-            case 'power-ac':
-            case 'power-dc':
-              return WireType.POWER_CABLE
-            case 'midi':
-              return WireType.MIDI_CABLE
-            default:
-              return WireType.XLR_CABLE
-          }
-        }
-
-        const wireType = sourcePort ? getWireTypeForPort(sourcePort.data.portType) : WireType.XLR_CABLE
+        const wireType = sourcePort ? getWireTypeForPortType(sourcePort.data.portType) : 'xlr-cable'
 
         // 設定ストアからワイヤータイプに応じたスタイルを取得
         const { settings } = useSettingsStore.getState()
@@ -541,6 +536,56 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       targetId: edge.id
     })
   }, [])
+
+  // ポート編集の処理
+  const handlePortEdit = useCallback((portId: string, equipmentId: string) => {
+    setEditingPortData({ portId, equipmentId })
+    setShowPortEditDialog(true)
+  }, [])
+
+  // ポート編集保存
+  const handlePortSave = useCallback((label: string, portType: PortType, direction: PortDirection) => {
+    if (!editingPortData) return
+
+    const equipment = project.objects.find(obj => obj.id === editingPortData.equipmentId)
+    if (!equipment) return
+
+    const updatedComponents = equipment.components.map(comp => {
+      if (comp.id === editingPortData.portId) {
+        return {
+          ...comp,
+          data: {
+            ...comp.data,
+            label,
+            portType,
+            direction
+          }
+        }
+      }
+      return comp
+    })
+
+    updateEquipmentObject(editingPortData.equipmentId, { components: updatedComponents })
+    setShowPortEditDialog(false)
+    setEditingPortData(null)
+  }, [editingPortData, project.objects, updateEquipmentObject])
+
+  // 編集中のポート情報を取得
+  const getEditingPortInfo = useCallback(() => {
+    if (!editingPortData) return null
+
+    const equipment = project.objects.find(obj => obj.id === editingPortData.equipmentId)
+    if (!equipment) return null
+
+    const port = equipment.components.find(comp => comp.id === editingPortData.portId)
+    if (!port) return null
+
+    return {
+      label: port.data.label || '',
+      portType: port.data.portType,
+      direction: port.data.direction
+    }
+  }, [editingPortData, project.objects])
 
   // コンテキストメニューアイテムの生成
   const getContextMenuItems = useCallback(() => {
@@ -719,7 +764,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
   // 接続の事前バリデーション
   const isValidConnection = useCallback((connection: Connection) => {
-    const DEBUG = process.env.NODE_ENV === 'development' && false // falseに設定してログを無効化
+    const DEBUG = false // ドラッグ中のログを無効化
 
     if (DEBUG) {
       console.log('=== ReactFlow isValidConnection called ===')
@@ -731,6 +776,12 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       return false
     }
 
+    // 同じオブジェクト内での接続は禁止
+    if (connection.source === connection.target) {
+      if (DEBUG) console.log('Same object connection not allowed')
+      return false
+    }
+
     const sourceObject = project.objects.find(obj => obj.id === connection.source)
     const targetObject = project.objects.find(obj => obj.id === connection.target)
 
@@ -739,6 +790,31 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       return false
     }
 
+    // 双方向ポート同士の接続は常に許可（ReactFlowが自動的にsource/targetを決定）
+    const sourcePortComponents = getConnectionPortComponents(sourceObject)
+    const targetPortComponents = getConnectionPortComponents(targetObject)
+
+    const sourcePort = sourcePortComponents.find(port => port.id === connection.sourceHandle)
+    const targetPort = targetPortComponents.find(port => port.id === connection.targetHandle)
+
+    if (sourcePort?.data.direction === 'bidirectional' && targetPort?.data.direction === 'bidirectional') {
+      // 双方向ポート同士は基本的な互換性チェックのみ
+      const sourceType = sourcePort.data.portType
+      const targetType = targetPort.data.portType
+
+      // 同じタイプまたは互換性のあるタイプ
+      const isCompatible = sourceType === targetType ||
+        // Ethernet/Dante互換性
+        (sourceType === 'ethernet' && targetType === 'dante') ||
+        (sourceType === 'dante' && targetType === 'ethernet') ||
+        // USB互換性
+        (['usb-a', 'usb-b', 'usb-c'].includes(sourceType) && ['usb-a', 'usb-b', 'usb-c'].includes(targetType))
+
+      if (DEBUG) console.log('Bidirectional ports compatibility:', isCompatible)
+      return isCompatible
+    }
+
+    // その他の接続は通常のバリデーション
     const validationResult = validateConnection(
       sourceObject,
       connection.sourceHandle,
@@ -819,6 +895,19 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
         isOpen={!!showSaveTemplateDialog}
         equipmentObject={showSaveTemplateDialog}
         onClose={() => setShowSaveTemplateDialog(null)}
+      />
+
+      {/* ポート編集ダイアログ */}
+      <PortEditDialog
+        isOpen={showPortEditDialog}
+        onClose={() => {
+          setShowPortEditDialog(false)
+          setEditingPortData(null)
+        }}
+        onSave={handlePortSave}
+        initialLabel={getEditingPortInfo()?.label || ''}
+        initialPortType={getEditingPortInfo()?.portType || PortType.XLR_FEMALE}
+        initialDirection={getEditingPortInfo()?.direction || PortDirection.INPUT}
       />
 
       {/* コンテキストメニュー */}

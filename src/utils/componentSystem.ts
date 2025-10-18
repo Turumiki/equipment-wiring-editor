@@ -57,7 +57,7 @@ export function createConnectionPortComponent(
       [PortType.USB_A]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
       [PortType.USB_B]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
       [PortType.USB_C]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-      [PortType.ETHERNET]: [PortType.ETHERNET, PortType.DANTE],
+      [PortType.ETHERNET]: [PortType.ETHERNET, PortType.DANTE], // ETHERNET同士は確実に互換
       [PortType.DANTE]: [PortType.DANTE, PortType.ETHERNET],
       [PortType.HDMI]: [PortType.HDMI],
       [PortType.TRS_MINI]: [PortType.TRS_MINI],
@@ -199,19 +199,19 @@ export function updateComponentInObject(
 // 機材タイプに応じたポート作成（動的テンプレートベース）
 export function createEquipmentPorts(equipmentType: string): ConnectionPortComponent[] {
   console.log('Creating ports for equipment type:', equipmentType)
-  
+
   // テンプレートライブラリから動的に取得
   const { equipmentTemplates } = useSettingsStore.getState()
   const { project } = useProjectStore.getState()
-  
+
   // グローバルテンプレートから検索
   let template = equipmentTemplates.find(t => t.id === equipmentType)
-  
+
   // プロジェクトテンプレートからも検索
   if (!template) {
     template = project.customTemplates.find(t => t.id === equipmentType)
   }
-  
+
   // テンプレートにポート定義がある場合は使用
   if (template && template.ports && Array.isArray(template.ports)) {
     return template.ports.map(portConfig => {
@@ -224,7 +224,7 @@ export function createEquipmentPorts(equipmentType: string): ConnectionPortCompo
       )
     })
   }
-  
+
   // フォールバック：従来のハードコードされた定義
   switch (equipmentType) {
     case 'audio-interface':
@@ -434,12 +434,12 @@ export function createEquipmentFromTemplate(template: SimpleTemplate | any): Equ
   if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
     return createEquipmentFromSimpleTemplate(template as SimpleTemplate)
   }
-  
+
   // defaultComponentsが実際に定義されている場合
   if (template.defaultComponents && Array.isArray(template.defaultComponents) && template.defaultComponents.length > 0) {
     return createEquipmentFromDefaultComponents(template)
   }
-  
+
   // それ以外は機材タイプベースの基本テンプレートにフォールバック
   return createBasicEquipmentObject(
     template.name,
@@ -480,7 +480,7 @@ function createEquipmentFromSimpleTemplate(template: SimpleTemplate): EquipmentO
     template.color || '#3b82f6',
     template.size || { width: 100, height: 60 }
   )
-  
+
   // ラベルを設定
   if (renderComponent.data.label) {
     renderComponent.data.label.text = template.name

@@ -12,7 +12,7 @@ interface SettingsState {
   equipmentTemplates: EquipmentTemplate[]
 
   // UI設定
-  showPortLabels: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover'
+  showPortLabels: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover' | 'alwaysWithType' | 'hoverWithType' | 'selectedWithType' | 'connectedWithType' | 'connectedHoverWithType'
   showWireLabels: boolean
   canvasBackgroundColor: string
   gridColor: string
@@ -36,12 +36,13 @@ interface SettingsState {
   getPortTypeById: (id: string) => PortTypeDefinition | undefined
   getWireTypeById: (id: string) => WireTypeDefinition | undefined
   arePortTypesCompatible: (sourceId: string, targetId: string) => boolean
-  setShowPortLabels: (mode: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover') => void
+  setShowPortLabels: (mode: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover' | 'alwaysWithType' | 'hoverWithType' | 'selectedWithType' | 'connectedWithType' | 'connectedHoverWithType') => void
   setShowWireLabels: (show: boolean) => void
   setCanvasBackgroundColor: (color: string) => void
   setGridColor: (color: string) => void
   setGridEnabled: (enabled: boolean) => void
   resetToDefaults: () => void
+  hydrate: () => void
 }
 
 // シンプルなテンプレート形式の例
@@ -339,6 +340,10 @@ const createDefaultSettings = (): ConnectionSettings => ({
 // LocalStorageから設定を読み込み
 const loadSettingsFromStorage = () => {
   try {
+    // SSR環境ではlocalStorageが存在しないため、クライアントサイドでのみ実行
+    if (typeof window === 'undefined') {
+      return null
+    }
     const stored = localStorage.getItem('wiring-diagram-settings')
     if (stored) {
       const parsed = JSON.parse(stored)
@@ -370,6 +375,10 @@ const loadSettingsFromStorage = () => {
 // LocalStorageに設定を保存
 const saveSettingsToStorage = (state: Partial<SettingsState>) => {
   try {
+    // SSR環境ではlocalStorageが存在しないため、クライアントサイドでのみ実行
+    if (typeof window === 'undefined') {
+      return
+    }
     const toSave = {
       settings: state.settings,
       equipmentTemplates: state.equipmentTemplates,
@@ -385,10 +394,28 @@ const saveSettingsToStorage = (state: Partial<SettingsState>) => {
   }
 }
 
-const initialState = loadSettingsFromStorage()
+const initialState = loadSettingsFromStorage() || {
+  settings: createDefaultSettings(),
+  equipmentTemplates: createDefaultEquipmentTemplates(),
+  showPortLabels: 'connectedHover' as const,
+  showWireLabels: true,
+  canvasBackgroundColor: '#f3f4f6',
+  gridColor: '#e5e7eb',
+  gridEnabled: true
+}
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...initialState,
+
+  // クライアントサイドでの初期化
+  hydrate: () => {
+    if (typeof window !== 'undefined') {
+      const stored = loadSettingsFromStorage()
+      if (stored) {
+        set(stored)
+      }
+    }
+  },
 
   addPortType: (portType) => set((state) => {
     const newState = {

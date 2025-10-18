@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useProjectStore } from '@/store/useProjectStore'
 import { createBasicEquipmentObject, getConnectionPortComponents } from '@/utils/componentSystem'
+import { getWireTypeForPortType } from '@/utils/portTypeUtils'
 import { ShapeType, WireType } from '@/types'
 
 interface CSVImportDialogProps {
@@ -145,10 +146,11 @@ export default function CSVImportDialog({ isOpen, onClose }: CSVImportDialogProp
             const inputPort = targetPortComponents.find(port => port.data.direction === 'input')
 
             if (outputPort && inputPort) {
-              const wireTypeValue = row[columnMapping.wireType]?.toLowerCase() || 'xlr-cable'
-              const wireType = Object.values(WireType).includes(wireTypeValue as WireType)
-                ? wireTypeValue as WireType
-                : WireType.XLR_CABLE
+              // CSVからワイヤータイプを取得、なければポートタイプから自動決定
+              const csvWireType = row[columnMapping.wireType]?.toLowerCase()
+              const wireType = csvWireType && Object.values(WireType).includes(csvWireType as WireType)
+                ? csvWireType as WireType
+                : getWireTypeForPortType(outputPort.data.portType)
 
               const wire = {
                 id: `imported-wire-${index}`,

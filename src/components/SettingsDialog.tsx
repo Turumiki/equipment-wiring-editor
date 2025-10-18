@@ -143,14 +143,23 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                   <label className="block text-sm font-medium text-black mb-2">ポートラベル表示</label>
                   <select
                     value={showPortLabels}
-                    onChange={(e) => setShowPortLabels(e.target.value as 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover')}
+                    onChange={(e) => setShowPortLabels(e.target.value as any)}
                     className="w-full px-3 py-2 border border-gray-300 rounded text-black"
                   >
-                    <option value="always">常に表示</option>
-                    <option value="connected">接続済みのみ表示</option>
-                    <option value="connectedHover">接続済み + ホバー時表示</option>
-                    <option value="selected">選択時のみ表示</option>
-                    <option value="hover">ホバー時のみ表示</option>
+                    <optgroup label="ポート名のみ">
+                      <option value="always">常に表示</option>
+                      <option value="connected">接続済みのみ表示</option>
+                      <option value="connectedHover">接続済み + ホバー時表示</option>
+                      <option value="selected">選択時のみ表示</option>
+                      <option value="hover">ホバー時のみ表示</option>
+                    </optgroup>
+                    <optgroup label="ポート名 + タイプ">
+                      <option value="alwaysWithType">常に表示（タイプ付き）</option>
+                      <option value="connectedWithType">接続済みのみ表示（タイプ付き）</option>
+                      <option value="connectedHoverWithType">接続済み + ホバー時表示（タイプ付き）</option>
+                      <option value="selectedWithType">選択時のみ表示（タイプ付き）</option>
+                      <option value="hoverWithType">ホバー時のみ表示（タイプ付き）</option>
+                    </optgroup>
                   </select>
                   <p className="text-sm text-gray-600 mt-1">
                     機材ノードのポートラベルをいつ表示するかを設定します
