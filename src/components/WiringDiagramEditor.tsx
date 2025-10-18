@@ -30,6 +30,7 @@ import WireEdge from '@/components/edges/WireEdge'
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
 import InspectorPanel from '@/components/InspectorPanel'
+import ResizablePanel from '@/components/ResizablePanel'
 import { getRenderComponent, getConnectionPortComponents, createEquipmentFromTemplate, createBasicEquipmentObject } from '@/utils/componentSystem'
 import { getWireTypeForPortType } from '@/utils/portTypeUtils'
 import { validateConnection } from '@/utils/connectionValidation'
@@ -882,8 +883,15 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
       {/* テーブルエディタ */}
       {showTableEditor && (
-        <div className="absolute bottom-0 left-0 right-0 lg:right-80 h-80 bg-gray-100 border-t border-gray-400 z-10">
-          <TableEditor onClose={onCloseTableEditor || (() => { })} />
+        <div className="absolute bottom-0 left-0 right-0 lg:right-80 z-10">
+          <ResizablePanel
+            initialHeight={320}
+            minHeight={200}
+            maxHeight={600}
+            className="bg-gray-100 border-t border-gray-400"
+          >
+            <TableEditor onClose={onCloseTableEditor || (() => { })} />
+          </ResizablePanel>
         </div>
       )}
 
