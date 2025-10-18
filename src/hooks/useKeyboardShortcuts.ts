@@ -13,7 +13,12 @@ export function useKeyboardShortcuts() {
     selectedObjectIds,
     selectedWireIds,
     saveProject,
-    createNewProject
+    createNewProject,
+    selectAll,
+    deleteSelected,
+    clearSelection,
+    alignSelected,
+    distributeSelected
   } = useProjectStore()
 
   useEffect(() => {
@@ -84,9 +89,7 @@ export function useKeyboardShortcuts() {
         case 'Delete':
         case 'Backspace':
           event.preventDefault()
-          // 選択されたオブジェクトを削除
-          selectedObjectIds.forEach(id => removeEquipmentObject(id))
-          selectedWireIds.forEach(id => removeWire(id))
+          deleteSelected()
           break
 
         case 's':
@@ -111,15 +114,55 @@ export function useKeyboardShortcuts() {
         case 'A':
           if (isCtrlOrCmd) {
             event.preventDefault()
-            // 全選択機能（今後実装予定）
-            // console.log('Select all (not implemented)')
+            selectAll()
           }
           break
 
         case 'Escape':
           // 選択解除
-          useProjectStore.getState().setSelectedObjects([])
-          useProjectStore.getState().setSelectedWires([])
+          clearSelection()
+          break
+
+        // 整列ショートカット (Ctrl + Shift + 矢印キー)
+        case 'ArrowLeft':
+          if (isCtrlOrCmd && event.shiftKey) {
+            event.preventDefault()
+            alignSelected('left')
+          }
+          break
+        case 'ArrowRight':
+          if (isCtrlOrCmd && event.shiftKey) {
+            event.preventDefault()
+            alignSelected('right')
+          }
+          break
+        case 'ArrowUp':
+          if (isCtrlOrCmd && event.shiftKey) {
+            event.preventDefault()
+            alignSelected('top')
+          }
+          break
+        case 'ArrowDown':
+          if (isCtrlOrCmd && event.shiftKey) {
+            event.preventDefault()
+            alignSelected('bottom')
+          }
+          break
+
+        // 分散配置ショートカット (Ctrl + Alt + 矢印キー)
+        case 'ArrowLeft':
+        case 'ArrowRight':
+          if (isCtrlOrCmd && event.altKey) {
+            event.preventDefault()
+            distributeSelected('horizontal')
+          }
+          break
+        case 'ArrowUp':
+        case 'ArrowDown':
+          if (isCtrlOrCmd && event.altKey) {
+            event.preventDefault()
+            distributeSelected('vertical')
+          }
           break
       }
     }
@@ -137,7 +180,12 @@ export function useKeyboardShortcuts() {
     selectedObjectIds,
     selectedWireIds,
     saveProject,
-    createNewProject
+    createNewProject,
+    selectAll,
+    deleteSelected,
+    clearSelection,
+    alignSelected,
+    distributeSelected
   ])
 }
 

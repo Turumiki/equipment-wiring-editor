@@ -45,12 +45,12 @@ export default function WireEdge({
       wt.name === wireType || wt.id === wireType
     )
     
-    // デバッグログ（開発時のみ）
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Wire type:', wireType)
-      console.log('Wire type settings found:', wireTypeSettings)
-      console.log('Available wire types:', settings.wireTypes.map(wt => ({ id: wt.id, name: wt.name })))
-    }
+    // デバッグログは無効化
+    // if (process.env.NODE_ENV === 'development') {
+    //   console.log('Wire type:', wireType)
+    //   console.log('Wire type settings found:', wireTypeSettings)
+    //   console.log('Available wire types:', settings.wireTypes.map(wt => ({ id: wt.id, name: wt.name })))
+    // }
     
     // 個別のワイヤースタイルを優先し、設定ストアをフォールバックとして使用
     const baseStyle = {

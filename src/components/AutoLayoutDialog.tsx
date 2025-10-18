@@ -9,10 +9,13 @@ interface AutoLayoutDialogProps {
 
 export default function AutoLayoutDialog({ isOpen, onClose, onApply }: AutoLayoutDialogProps) {
   const [options, setOptions] = useState<LayoutOptions>({
-    algorithm: 'grid',
+    algorithm: 'smart',
     spacing: 100,
     padding: 50,
-    direction: 'horizontal'
+    direction: 'horizontal',
+    groupByType: true,
+    minimizeCrossings: true,
+    avoidNodeOverlap: true
   })
 
   if (!isOpen) return null
@@ -43,43 +46,100 @@ export default function AutoLayoutDialog({ isOpen, onClose, onApply }: AutoLayou
             </label>
             <select
               value={options.algorithm}
-              onChange={(e) => setOptions(prev => ({ 
-                ...prev, 
+              onChange={(e) => setOptions(prev => ({
+                ...prev,
                 algorithm: e.target.value as LayoutOptions['algorithm']
               }))}
               className="w-full px-3 py-2 border border-gray-300 rounded text-black"
             >
-              <option value="grid">グリッド</option>
-              <option value="hierarchical">階層</option>
-              <option value="force">力学</option>
-              <option value="circular">円形</option>
+              <option value="smart">🧠 スマート（推奨）</option>
+              <option value="signal-flow">🔄 信号フロー</option>
+              <option value="hierarchical">📊 階層</option>
+              <option value="force">⚡ 力学</option>
+              <option value="grid">📋 グリッド</option>
+              <option value="circular">⭕ 円形</option>
             </select>
             <p className="text-xs text-gray-600 mt-1">
-              {options.algorithm === 'grid' && 'ノードを格子状に配置します'}
-              {options.algorithm === 'hierarchical' && '接続関係に基づいて階層的に配置します'}
-              {options.algorithm === 'force' && '力学シミュレーションで自然な配置を作成します'}
-              {options.algorithm === 'circular' && 'ノードを円形に配置します'}
+              {options.algorithm === 'smart' && '設備タイプ別にグループ化し、接続関係を考慮した最適配置'}
+              {options.algorithm === 'signal-flow' && '信号の流れ（入力→処理→出力）に沿った配置'}
+              {options.algorithm === 'hierarchical' && '接続関係に基づいて階層的に配置'}
+              {options.algorithm === 'force' && '力学シミュレーションで自然な配置を作成'}
+              {options.algorithm === 'grid' && 'ノードを格子状に配置'}
+              {options.algorithm === 'circular' && 'ノードを円形に配置'}
             </p>
           </div>
 
-          {/* 方向（階層レイアウトのみ） */}
-          {options.algorithm === 'hierarchical' && (
+          {/* 方向（階層・信号フローレイアウト用） */}
+          {(options.algorithm === 'hierarchical' || options.algorithm === 'signal-flow') && (
             <div>
               <label className="block text-sm font-medium text-black mb-2">
                 方向
               </label>
               <select
                 value={options.direction}
-                onChange={(e) => setOptions(prev => ({ 
-                  ...prev, 
+                onChange={(e) => setOptions(prev => ({
+                  ...prev,
                   direction: e.target.value as 'horizontal' | 'vertical'
                 }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded text-black"
               >
-                <option value="horizontal">水平</option>
-                <option value="vertical">垂直</option>
+                <option value="horizontal">水平（左→右）</option>
+                <option value="vertical">垂直（上→下）</option>
               </select>
             </div>
+          )}
+
+          {/* スマートレイアウト用オプション */}
+          {options.algorithm === 'smart' && (
+            <>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="groupByType"
+                  checked={options.groupByType}
+                  onChange={(e) => setOptions(prev => ({
+                    ...prev,
+                    groupByType: e.target.checked
+                  }))}
+                  className="rounded"
+                />
+                <label htmlFor="groupByType" className="text-sm text-black">
+                  設備タイプ別にグループ化
+                </label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="minimizeCrossings"
+                  checked={options.minimizeCrossings}
+                  onChange={(e) => setOptions(prev => ({
+                    ...prev,
+                    minimizeCrossings: e.target.checked
+                  }))}
+                  className="rounded"
+                />
+                <label htmlFor="minimizeCrossings" className="text-sm text-black">
+                  配線交差を最小化
+                </label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="avoidNodeOverlap"
+                  checked={options.avoidNodeOverlap}
+                  onChange={(e) => setOptions(prev => ({
+                    ...prev,
+                    avoidNodeOverlap: e.target.checked
+                  }))}
+                  className="rounded"
+                />
+                <label htmlFor="avoidNodeOverlap" className="text-sm text-black">
+                  配線と機材の重複を回避
+                </label>
+              </div>
+            </>
           )}
 
           {/* 間隔 */}
@@ -93,8 +153,8 @@ export default function AutoLayoutDialog({ isOpen, onClose, onApply }: AutoLayou
               max="200"
               step="10"
               value={options.spacing}
-              onChange={(e) => setOptions(prev => ({ 
-                ...prev, 
+              onChange={(e) => setOptions(prev => ({
+                ...prev,
                 spacing: parseInt(e.target.value)
               }))}
               className="w-full"
@@ -112,8 +172,8 @@ export default function AutoLayoutDialog({ isOpen, onClose, onApply }: AutoLayou
               max="100"
               step="10"
               value={options.padding}
-              onChange={(e) => setOptions(prev => ({ 
-                ...prev, 
+              onChange={(e) => setOptions(prev => ({
+                ...prev,
                 padding: parseInt(e.target.value)
               }))}
               className="w-full"

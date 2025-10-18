@@ -45,7 +45,7 @@ export default function CSVImportDialog({ isOpen, onClose }: CSVImportDialogProp
         try {
           const text = e.target?.result as string
           const lines = text.split('\n').filter(line => line.trim())
-          
+
           if (lines.length < 2) {
             alert('CSVファイルにはヘッダー行とデータ行が必要です')
             return
@@ -78,10 +78,10 @@ export default function CSVImportDialog({ isOpen, onClose }: CSVImportDialogProp
 
   const validateMapping = (): string[] => {
     const errors: string[] = []
-    
+
     if (!columnMapping.sourceEquipment) errors.push('接続元機材の列を選択してください')
     if (!columnMapping.targetEquipment) errors.push('接続先機材の列を選択してください')
-    
+
     return errors
   }
 
@@ -112,9 +112,9 @@ export default function CSVImportDialog({ isOpen, onClose }: CSVImportDialogProp
     Array.from(equipmentNames).forEach((name, index) => {
       const equipment = createBasicEquipmentObject(
         name,
-        { 
-          x: 100 + (index % 5) * 150, 
-          y: 100 + Math.floor(index / 5) * 100 
+        {
+          x: 100 + (index % 5) * 150,
+          y: 100 + Math.floor(index / 5) * 100
         },
         ShapeType.RECTANGLE
       )
@@ -136,19 +136,19 @@ export default function CSVImportDialog({ isOpen, onClose }: CSVImportDialogProp
           // 実際のオブジェクトからポートIDを取得
           const sourceObj = useProjectStore.getState().project.objects.find(obj => obj.id === sourceId)
           const targetObj = useProjectStore.getState().project.objects.find(obj => obj.id === targetId)
-          
+
           if (sourceObj && targetObj) {
             const sourcePortComponents = getConnectionPortComponents(sourceObj)
             const targetPortComponents = getConnectionPortComponents(targetObj)
-            
+
             const outputPort = sourcePortComponents.find(port => port.data.direction === 'output')
             const inputPort = targetPortComponents.find(port => port.data.direction === 'input')
-            
+
             if (outputPort && inputPort) {
-              const wireTypeValue = row[columnMapping.wireType]?.toLowerCase() || 'signal'
-              const wireType = Object.values(WireType).includes(wireTypeValue as WireType) 
-                ? wireTypeValue as WireType 
-                : WireType.SIGNAL
+              const wireTypeValue = row[columnMapping.wireType]?.toLowerCase() || 'xlr-cable'
+              const wireType = Object.values(WireType).includes(wireTypeValue as WireType)
+                ? wireTypeValue as WireType
+                : WireType.XLR_CABLE
 
               const wire = {
                 id: `imported-wire-${index}`,
@@ -158,7 +158,7 @@ export default function CSVImportDialog({ isOpen, onClose }: CSVImportDialogProp
                 targetPortId: inputPort.id,
                 wireType,
                 style: {
-                  color: wireType === 'power' ? '#dc2626' : '#059669',
+                  color: wireType === WireType.POWER_CABLE ? '#dc2626' : '#059669',
                   strokeWidth: 2,
                 },
                 label: row[columnMapping.label] || '',
@@ -213,7 +213,7 @@ export default function CSVImportDialog({ isOpen, onClose }: CSVImportDialogProp
             <p className="mb-4 text-gray-600">
               CSVの列を対応するフィールドにマッピングしてください。
             </p>
-            
+
             <div className="space-y-4">
               {Object.entries({
                 sourceEquipment: '接続元機材',
@@ -274,7 +274,7 @@ export default function CSVImportDialog({ isOpen, onClose }: CSVImportDialogProp
             <p className="mb-4 text-gray-600">
               {csvData.length}行のデータをインポートします。
             </p>
-            
+
             <div className="max-h-60 overflow-y-auto border border-gray-300 rounded">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 sticky top-0">

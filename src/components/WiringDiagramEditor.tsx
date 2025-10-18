@@ -19,7 +19,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 
 import { useProjectStore } from '@/store/useProjectStore'
-import { WireType } from '@/types'
+import { WireType, EquipmentObject } from '@/types'
 import EquipmentNode from '@/components/nodes/EquipmentNode'
 import WireEdge from '@/components/edges/WireEdge'
 import Toolbar from '@/components/Toolbar'
@@ -31,6 +31,7 @@ import { validateConnection } from '@/utils/connectionValidation'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import ContextMenu from '@/components/ContextMenu'
 import AutoLayoutDialog from '@/components/AutoLayoutDialog'
+import SaveTemplateDialog from '@/components/SaveTemplateDialog'
 import { autoLayout, LayoutOptions } from '@/utils/autoLayout'
 
 const nodeTypes = {
@@ -47,6 +48,7 @@ export default function WiringDiagramEditor() {
   const [showTableEditor, setShowTableEditor] = useState(false)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
   const [showAutoLayout, setShowAutoLayout] = useState(false)
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState<EquipmentObject | null>(null)
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -54,7 +56,7 @@ export default function WiringDiagramEditor() {
     targetId?: string
   } | null>(null)
 
-  const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected } = useProjectStore()
+  const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, alignSelected, distributeSelected } = useProjectStore()
 
   // キーボードショートカットを有効化
   useKeyboardShortcuts()
@@ -310,7 +312,6 @@ export default function WiringDiagramEditor() {
             label: '貼り付け',
             onClick: () => {
               // TODO: 貼り付け機能の実装
-              console.log('貼り付け')
             },
             disabled: true
           }
@@ -335,6 +336,47 @@ export default function WiringDiagramEditor() {
                 setSelectedObjects([contextMenu.targetId!])
               }
               duplicateSelected()
+            }
+          },
+          { separator: true } as const,
+          ...(selectedObjectIds.length > 1 ? [
+            {
+              label: '左揃え',
+              onClick: () => alignSelected('left')
+            },
+            {
+              label: '右揃え', 
+              onClick: () => alignSelected('right')
+            },
+            {
+              label: '上揃え',
+              onClick: () => alignSelected('top')
+            },
+            {
+              label: '下揃え',
+              onClick: () => alignSelected('bottom')
+            },
+            ...(selectedObjectIds.length > 2 ? [
+              { separator: true } as const,
+              {
+                label: '水平分散',
+                onClick: () => distributeSelected('horizontal')
+              },
+              {
+                label: '垂直分散',
+                onClick: () => distributeSelected('vertical')
+              }
+            ] : []),
+            { separator: true } as const
+          ] : []),
+          {
+            label: 'テンプレートとして保存',
+            onClick: () => {
+              const targetId = contextMenu.targetId!
+              const targetObject = project.objects.find(obj => obj.id === targetId)
+              if (targetObject) {
+                setShowSaveTemplateDialog(targetObject)
+              }
             }
           },
           { separator: true } as const,
@@ -544,6 +586,13 @@ export default function WiringDiagramEditor() {
         isOpen={showAutoLayout}
         onClose={() => setShowAutoLayout(false)}
         onApply={handleAutoLayout}
+      />
+
+      {/* テンプレート保存ダイアログ */}
+      <SaveTemplateDialog
+        isOpen={!!showSaveTemplateDialog}
+        equipmentObject={showSaveTemplateDialog}
+        onClose={() => setShowSaveTemplateDialog(null)}
       />
 
       {/* コンテキストメニュー */}

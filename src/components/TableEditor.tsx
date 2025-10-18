@@ -1,15 +1,61 @@
 import React, { useState, useMemo } from 'react'
 import { useProjectStore } from '@/store/useProjectStore'
-import { ConnectionTableRow, WireType } from '@/types'
+import { ConnectionTableRow, WireType, EquipmentTemplate } from '@/types'
 import { getConnectionPortComponents, getPropertyComponent } from '@/utils/componentSystem'
 import { useSettingsStore } from '@/store/useSettingsStore'
 
-// ワイヤータイプの表示名を取得
-function getWireTypeDisplayName(wireType: string, settings: any): string {
-  const wireTypeSettings = settings.wireTypes.find((wt: any) =>
-    wt.name === wireType || wt.id === wireType
-  )
-  return wireTypeSettings?.displayName || wireType
+// 基本的な機材テンプレート（TemplateLibraryから抜粋）
+const basicTemplates: EquipmentTemplate[] = [
+  {
+    id: 'audio-interface',
+    name: 'オーディオインターフェース',
+    category: 'オーディオ',
+    description: 'USB/Thunderbolt オーディオインターフェース',
+    defaultComponents: [],
+    tags: ['オーディオ', 'USB', 'レコーディング'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'microphone',
+    name: 'マイクロフォン',
+    category: 'オーディオ',
+    description: 'コンデンサー・ダイナミックマイク',
+    defaultComponents: [],
+    tags: ['マイク', '入力', 'XLR'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'computer',
+    name: 'パソコン',
+    category: 'コンピューター',
+    description: 'デスクトップ・ノートパソコン',
+    defaultComponents: [],
+    tags: ['PC', 'コンピューター', 'DAW'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'switching-hub',
+    name: 'スイッチングハブ',
+    category: 'ネットワーク',
+    description: 'Ethernet スイッチングハブ',
+    defaultComponents: [],
+    tags: ['ネットワーク', 'Ethernet', 'ハブ'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+]
+
+// 機材テンプレートの表示名を取得
+function getEquipmentTypeDisplayName(templateId: string): string {
+  const template = basicTemplates.find(template => template.id === templateId)
+  return template?.name || templateId || 'カスタム'
 }
 
 interface TableEditorProps {
@@ -20,7 +66,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
   const { project, removeWire, addWire, updateEquipmentObject } = useProjectStore()
   const { settings } = useSettingsStore()
   const [activeTab, setActiveTab] = useState<'connections' | 'equipment'>('connections')
-  const [editingCell, setEditingCell] = useState<{ rowId: string; field: string } | null>(null)
+
 
   // 接続テーブルデータの生成
   const connectionRows: ConnectionTableRow[] = useMemo(() => {
@@ -59,7 +105,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
       return {
         id: obj.id,
         name: propertyComponent?.data.properties.name?.value || obj.name,
-        type: obj.templateId || 'カスタム',
+        type: getEquipmentTypeDisplayName(obj.templateId || ''),
         position: `${Math.round(obj.position.x)}, ${Math.round(obj.position.y)}`,
         properties: propertyComponent?.data.properties || {},
         portCount: portComponents.length,
@@ -221,8 +267,8 @@ export default function TableEditor({ onClose }: TableEditorProps) {
                       className="text-xs border border-gray-300 rounded px-2 py-1 text-black"
                     >
                       {settings.wireTypes.map(wt => (
-                        <option key={wt.id} value={wt.name}>
-                          {wt.displayName}
+                        <option key={wt.id} value={wt.id}>
+                          {wt.name}
                         </option>
                       ))}
                     </select>

@@ -232,13 +232,31 @@ export interface WireStyle {
   animated?: boolean;
 }
 
+// シンプルなテンプレート形式のポート定義
+export interface SimpleTemplatePort {
+  side: 'top' | 'right' | 'bottom' | 'left';
+  offset: number; // 0-100の％
+  type: string; // PortTypeの文字列
+  direction: 'input' | 'output' | 'bidirectional';
+  label: string;
+}
+
 export interface EquipmentTemplate {
   id: string;
   name: string;
   category: string;
   description?: string;
   thumbnail?: string;
-  defaultComponents: Component[];
+  
+  // 旧形式（複雑なコンポーネント定義）
+  defaultComponents?: any[];
+  
+  // 新形式（シンプルなポート配列）
+  ports?: SimpleTemplatePort[];
+  shape?: 'rectangle' | 'circle' | 'triangle';
+  color?: string;
+  size?: { width: number; height: number };
+  
   tags: string[];
   version: string;
   author?: string;

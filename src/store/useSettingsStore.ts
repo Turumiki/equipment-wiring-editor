@@ -3,11 +3,13 @@ import {
   PortTypeDefinition,
   WireTypeDefinition,
   ConnectionSettings,
-  PortDirection
+  PortDirection,
+  EquipmentTemplate
 } from '@/types'
 
 interface SettingsState {
   settings: ConnectionSettings
+  equipmentTemplates: EquipmentTemplate[]
 
   // UI設定
   showPortLabels: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover'
@@ -23,6 +25,13 @@ interface SettingsState {
   addWireType: (wireType: WireTypeDefinition) => void
   updateWireType: (id: string, updates: Partial<WireTypeDefinition>) => void
   removeWireType: (id: string) => void
+  addEquipmentTemplate: (template: EquipmentTemplate) => void
+  updateEquipmentTemplate: (id: string, updates: Partial<EquipmentTemplate>) => void
+  removeEquipmentTemplate: (id: string) => void
+  getEquipmentTemplateById: (id: string) => EquipmentTemplate | undefined
+  exportEquipmentTemplates: () => void
+  importEquipmentTemplates: (templates: EquipmentTemplate[]) => void
+  exportEquipmentTemplatesToCSV: () => void
   updateCompatibility: (sourcePortId: string, targetPortIds: string[]) => void
   getPortTypeById: (id: string) => PortTypeDefinition | undefined
   getWireTypeById: (id: string) => WireTypeDefinition | undefined
@@ -34,6 +43,114 @@ interface SettingsState {
   setGridEnabled: (enabled: boolean) => void
   resetToDefaults: () => void
 }
+
+// シンプルなテンプレート形式の例
+const createDefaultEquipmentTemplates = (): EquipmentTemplate[] => [
+  // 従来の基本テンプレート（createEquipmentPorts関数を使用）
+  {
+    id: 'audio-interface',
+    name: 'オーディオインターフェース',
+    category: 'オーディオ',
+    description: 'USB/Thunderbolt オーディオインターフェース',
+    defaultComponents: [],
+    tags: ['オーディオ', 'USB', 'レコーディング'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'microphone',
+    name: 'マイクロフォン',
+    category: 'オーディオ',
+    description: 'コンデンサー・ダイナミックマイク',
+    defaultComponents: [],
+    tags: ['マイク', '入力', 'XLR'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+
+  // 新しいシンプル形式のテンプレート例
+  {
+    id: 'yamaha-ql1-simple',
+    name: 'YAMAHA QL1 (シンプル)',
+    category: 'オーディオ',
+    description: 'YAMAHA QL1 デジタルミキサー - シンプル形式',
+    // シンプルなポート配列形式
+    ports: [
+      // 左側：入力ポート
+      { side: 'left', offset: 10, type: 'xlr-female', direction: 'input', label: 'Ch 1' },
+      { side: 'left', offset: 20, type: 'xlr-female', direction: 'input', label: 'Ch 2' },
+      { side: 'left', offset: 30, type: 'xlr-female', direction: 'input', label: 'Ch 3' },
+      { side: 'left', offset: 40, type: 'xlr-female', direction: 'input', label: 'Ch 4' },
+      { side: 'left', offset: 50, type: 'xlr-female', direction: 'input', label: 'Ch 5' },
+      { side: 'left', offset: 60, type: 'xlr-female', direction: 'input', label: 'Ch 6' },
+      { side: 'left', offset: 70, type: 'xlr-female', direction: 'input', label: 'Ch 7' },
+      { side: 'left', offset: 80, type: 'xlr-female', direction: 'input', label: 'Ch 8' },
+
+      // 右側：出力ポート
+      { side: 'right', offset: 25, type: 'xlr-male', direction: 'output', label: 'Main L' },
+      { side: 'right', offset: 75, type: 'xlr-male', direction: 'output', label: 'Main R' },
+
+      // 上側：ネットワーク
+      { side: 'top', offset: 30, type: 'dante', direction: 'bidirectional', label: 'Dante 1' },
+      { side: 'top', offset: 70, type: 'dante', direction: 'bidirectional', label: 'Dante 2' },
+
+      // 下側：USB
+      { side: 'bottom', offset: 50, type: 'usb-b', direction: 'bidirectional', label: 'USB' }
+    ],
+    shape: 'rectangle',
+    color: '#7c3aed',
+    size: { width: 150, height: 80 },
+    tags: ['ミキサー', 'Dante', 'YAMAHA'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+
+  {
+    id: 'simple-computer',
+    name: 'パソコン (シンプル)',
+    category: 'コンピューター',
+    description: 'デスクトップPC - シンプル形式',
+    ports: [
+      { side: 'left', offset: 20, type: 'usb-a', direction: 'bidirectional', label: 'USB 1' },
+      { side: 'left', offset: 40, type: 'usb-a', direction: 'bidirectional', label: 'USB 2' },
+      { side: 'left', offset: 60, type: 'usb-c', direction: 'bidirectional', label: 'USB-C' },
+      { side: 'left', offset: 80, type: 'ethernet', direction: 'bidirectional', label: 'LAN' },
+      { side: 'right', offset: 30, type: 'hdmi', direction: 'output', label: 'HDMI' },
+      { side: 'right', offset: 70, type: 'trs-mini', direction: 'output', label: 'Audio' }
+    ],
+    shape: 'rectangle',
+    color: '#6b7280',
+    size: { width: 120, height: 70 },
+    tags: ['PC', 'コンピューター'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+
+  {
+    id: 'simple-hub',
+    name: 'スイッチングハブ (シンプル)',
+    category: 'ネットワーク',
+    description: '5ポート スイッチングハブ - シンプル形式',
+    ports: [
+      { side: 'bottom', offset: 10, type: 'ethernet', direction: 'bidirectional', label: 'Port 1' },
+      { side: 'bottom', offset: 30, type: 'ethernet', direction: 'bidirectional', label: 'Port 2' },
+      { side: 'bottom', offset: 50, type: 'ethernet', direction: 'bidirectional', label: 'Port 3' },
+      { side: 'bottom', offset: 70, type: 'ethernet', direction: 'bidirectional', label: 'Port 4' },
+      { side: 'bottom', offset: 90, type: 'ethernet', direction: 'bidirectional', label: 'Port 5' }
+    ],
+    shape: 'rectangle',
+    color: '#059669',
+    size: { width: 140, height: 50 },
+    tags: ['ネットワーク', 'Ethernet', 'ハブ'],
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+]
 
 // デフォルト設定
 const createDefaultSettings = (): ConnectionSettings => ({
@@ -219,20 +336,70 @@ const createDefaultSettings = (): ConnectionSettings => ({
   }
 })
 
-export const useSettingsStore = create<SettingsState>((set, get) => ({
-  settings: createDefaultSettings(),
-  showPortLabels: 'hover',
-  showWireLabels: true,
-  canvasBackgroundColor: '#f3f4f6',
-  gridColor: '#d1d5db',
-  gridEnabled: true,
-
-  addPortType: (portType) => set((state) => ({
-    settings: {
-      ...state.settings,
-      portTypes: [...state.settings.portTypes, portType]
+// LocalStorageから設定を読み込み
+const loadSettingsFromStorage = () => {
+  try {
+    const stored = localStorage.getItem('wiring-diagram-settings')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return {
+        settings: parsed.settings || createDefaultSettings(),
+        equipmentTemplates: parsed.equipmentTemplates || createDefaultEquipmentTemplates(),
+        showPortLabels: parsed.showPortLabels || 'hover',
+        showWireLabels: parsed.showWireLabels ?? true,
+        canvasBackgroundColor: parsed.canvasBackgroundColor || '#f3f4f6',
+        gridColor: parsed.gridColor || '#d1d5db',
+        gridEnabled: parsed.gridEnabled ?? true
+      }
     }
-  })),
+  } catch (error) {
+    console.warn('設定の読み込みに失敗しました:', error)
+  }
+
+  return {
+    settings: createDefaultSettings(),
+    equipmentTemplates: createDefaultEquipmentTemplates(),
+    showPortLabels: 'hover' as const,
+    showWireLabels: true,
+    canvasBackgroundColor: '#f3f4f6',
+    gridColor: '#d1d5db',
+    gridEnabled: true
+  }
+}
+
+// LocalStorageに設定を保存
+const saveSettingsToStorage = (state: Partial<SettingsState>) => {
+  try {
+    const toSave = {
+      settings: state.settings,
+      equipmentTemplates: state.equipmentTemplates,
+      showPortLabels: state.showPortLabels,
+      showWireLabels: state.showWireLabels,
+      canvasBackgroundColor: state.canvasBackgroundColor,
+      gridColor: state.gridColor,
+      gridEnabled: state.gridEnabled
+    }
+    localStorage.setItem('wiring-diagram-settings', JSON.stringify(toSave))
+  } catch (error) {
+    console.warn('設定の保存に失敗しました:', error)
+  }
+}
+
+const initialState = loadSettingsFromStorage()
+
+export const useSettingsStore = create<SettingsState>((set, get) => ({
+  ...initialState,
+
+  addPortType: (portType) => set((state) => {
+    const newState = {
+      settings: {
+        ...state.settings,
+        portTypes: [...state.settings.portTypes, portType]
+      }
+    }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
   updatePortType: (id, updates) => set((state) => ({
     settings: {
@@ -273,6 +440,80 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     }
   })),
 
+  addEquipmentTemplate: (template) => set((state) => {
+    const newState = {
+      equipmentTemplates: [...state.equipmentTemplates, template]
+    }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
+
+  updateEquipmentTemplate: (id, updates) => set((state) => ({
+    equipmentTemplates: state.equipmentTemplates.map(template =>
+      template.id === id ? { ...template, ...updates } : template
+    )
+  })),
+
+  removeEquipmentTemplate: (id) => set((state) => ({
+    equipmentTemplates: state.equipmentTemplates.filter(template => template.id !== id)
+  })),
+
+  getEquipmentTemplateById: (id) => {
+    const { equipmentTemplates } = get()
+    return equipmentTemplates.find(template => template.id === id)
+  },
+
+  exportEquipmentTemplates: () => {
+    const { equipmentTemplates } = get()
+    const dataStr = JSON.stringify(equipmentTemplates, null, 2)
+    const blob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'equipment-templates.json'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
+
+  importEquipmentTemplates: (templates: EquipmentTemplate[]) => set((state) => {
+    // 既存のテンプレートと重複しないようにマージ
+    const existingIds = new Set(state.equipmentTemplates.map(t => t.id))
+    const newTemplates = templates.filter(t => !existingIds.has(t.id))
+
+    const newState = {
+      equipmentTemplates: [...state.equipmentTemplates, ...newTemplates]
+    }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
+
+  exportEquipmentTemplatesToCSV: () => {
+    const { equipmentTemplates } = get()
+    const headers = ['id', 'name', 'category', 'description', 'tags']
+    const csvContent = [
+      headers.join(','),
+      ...equipmentTemplates.map(template => [
+        template.id,
+        `"${template.name}"`,
+        `"${template.category}"`,
+        `"${template.description}"`,
+        `"${template.tags.join(';')}"`
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'equipment-templates.csv'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
+
   updateCompatibility: (sourcePortId, targetPortIds) => set((state) => ({
     settings: {
       ...state.settings,
@@ -311,6 +552,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   resetToDefaults: () => set({
     settings: createDefaultSettings(),
+    equipmentTemplates: createDefaultEquipmentTemplates(),
     showPortLabels: 'hover',
     showWireLabels: true,
     canvasBackgroundColor: '#f3f4f6',

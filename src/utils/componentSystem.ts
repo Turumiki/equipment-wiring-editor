@@ -330,3 +330,130 @@ export function calculatePortPosition(
       return { x, y }
   }
 }
+
+// シンプルなテンプレート形式の型定義
+interface SimpleTemplatePort {
+  side: 'top' | 'right' | 'bottom' | 'left'
+  offset: number // 0-100の％
+  type: string // PortTypeの文字列
+  direction: 'input' | 'output' | 'bidirectional'
+  label: string
+}
+
+interface SimpleTemplate {
+  id: string
+  name: string
+  category: string
+  description: string
+  shape?: 'rectangle' | 'circle' | 'triangle'
+  color?: string
+  size?: { width: number; height: number }
+  ports: SimpleTemplatePort[]
+}
+
+// 文字列からenumへの変換ヘルパー
+function stringToSide(side: string): Side {
+  switch (side.toLowerCase()) {
+    case 'top': return Side.TOP
+    case 'right': return Side.RIGHT
+    case 'bottom': return Side.BOTTOM
+    case 'left': return Side.LEFT
+    default: return Side.LEFT
+  }
+}
+
+function stringToPortType(type: string): PortType {
+  const typeMap: Record<string, PortType> = {
+    'xlr-male': PortType.XLR_MALE,
+    'xlr-female': PortType.XLR_FEMALE,
+    'trs-quarter': PortType.TRS_QUARTER,
+    'ts-quarter': PortType.TS_QUARTER,
+    'trs-mini': PortType.TRS_MINI,
+    'usb-a': PortType.USB_A,
+    'usb-b': PortType.USB_B,
+    'usb-c': PortType.USB_C,
+    'ethernet': PortType.ETHERNET,
+    'dante': PortType.DANTE,
+    'hdmi': PortType.HDMI,
+    'power-ac': PortType.POWER_AC
+  }
+  return typeMap[type.toLowerCase()] || PortType.XLR_FEMALE
+}
+
+function stringToPortDirection(direction: string): PortDirection {
+  switch (direction.toLowerCase()) {
+    case 'input': return PortDirection.INPUT
+    case 'output': return PortDirection.OUTPUT
+    case 'bidirectional': return PortDirection.BIDIRECTIONAL
+    default: return PortDirection.INPUT
+  }
+}
+
+function stringToShapeType(shape: string): ShapeType {
+  switch (shape.toLowerCase()) {
+    case 'rectangle': return ShapeType.RECTANGLE
+    case 'circle': return ShapeType.CIRCLE
+    case 'triangle': return ShapeType.TRIANGLE
+    default: return ShapeType.RECTANGLE
+  }
+}
+
+// シンプルなテンプレート作成関数
+export function createEquipmentFromTemplate(template: SimpleTemplate | any): EquipmentObject {
+  // 新しいシンプル形式かチェック
+  if (template.ports && Array.isArray(template.ports)) {
+    return createEquipmentFromSimpleTemplate(template as SimpleTemplate)
+  }
+  
+  // 旧形式の場合は基本テンプレートにフォールバック
+  return createBasicEquipmentObject(
+    template.name,
+    { x: 100, y: 100 },
+    ShapeType.RECTANGLE,
+    template.id
+  )
+}
+
+// シンプルテンプレートから機材オブジェクトを作成
+function createEquipmentFromSimpleTemplate(template: SimpleTemplate): EquipmentObject {
+  // レンダーコンポーネントを作成
+  const renderComponent = createRenderComponent(
+    template.shape ? stringToShapeType(template.shape) : ShapeType.RECTANGLE,
+    template.color || '#3b82f6',
+    template.size || { width: 100, height: 60 }
+  )
+  
+  // ラベルを設定
+  if (renderComponent.data.label) {
+    renderComponent.data.label.text = template.name
+  }
+
+  // プロパティコンポーネントを作成
+  const propertyComponent = createPropertyComponent(template.name, template.description)
+
+  // ポートコンポーネントを作成
+  const ports = template.ports.map(portConfig => {
+    const port = createConnectionPortComponent(
+      stringToSide(portConfig.side),
+      Math.max(0, Math.min(100, portConfig.offset)), // 0-100に制限
+      stringToPortType(portConfig.type),
+      stringToPortDirection(portConfig.direction),
+      portConfig.label
+    )
+    return port
+  })
+
+  return {
+    id: `${template.id}-${Date.now()}`,
+    name: template.name,
+    position: { x: 100, y: 100 },
+    rotation: 0,
+    scale: { x: 1, y: 1 },
+    components: [renderComponent, propertyComponent, ...ports],
+    templateId: template.id,
+    metadata: {
+      category: template.category,
+      description: template.description
+    }
+  }
+}

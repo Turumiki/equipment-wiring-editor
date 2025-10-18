@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { exportCanvasWithBounds, exportCanvasAsPDF } from '@/utils/exportUtils'
+import { exportCanvasWithBounds, exportCanvasAsPDF, exportConnectionsAsCSV, exportProjectAsCSV } from '@/utils/exportUtils'
+import { useProjectStore } from '@/store/useProjectStore'
 
 interface ExportDialogProps {
   isOpen: boolean
@@ -7,18 +8,29 @@ interface ExportDialogProps {
 }
 
 export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
-  const [format, setFormat] = useState<'png' | 'jpeg' | 'svg' | 'pdf'>('png')
+  const [exportType, setExportType] = useState<'image' | 'data'>('image')
+  const [format, setFormat] = useState<'png' | 'jpeg' | 'svg' | 'pdf' | 'csv-connections' | 'csv-project'>('png')
   const [filename, setFilename] = useState('diagram')
   const [isExporting, setIsExporting] = useState(false)
+  const { project } = useProjectStore()
 
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      if (format === 'pdf') {
-        exportCanvasAsPDF()
+      if (exportType === 'image') {
+        if (format === 'pdf') {
+          exportCanvasAsPDF()
+        } else {
+          const fullFilename = `${filename}.${format}`
+          await exportCanvasWithBounds(format as 'png' | 'jpeg' | 'svg', fullFilename)
+        }
       } else {
-        const fullFilename = `${filename}.${format}`
-        await exportCanvasWithBounds(format, fullFilename)
+        // データエクスポート
+        if (format === 'csv-connections') {
+          exportConnectionsAsCSV(project.objects, project.wires, `${filename}.csv`)
+        } else if (format === 'csv-project') {
+          exportProjectAsCSV(project, `${filename}.csv`)
+        }
       }
       onClose()
     } catch (error) {
@@ -41,6 +53,57 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
         </div>
 
         <div className="space-y-4">
+          {/* エクスポートタイプ選択 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              エクスポートタイプ
+            </label>
+            <div className="flex gap-2">
+              <label className={`flex-1 p-3 border rounded-lg cursor-pointer transition-colors ${
+                exportType === 'image'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}>
+                <input
+                  type="radio"
+                  name="exportType"
+                  value="image"
+                  checked={exportType === 'image'}
+                  onChange={(e) => {
+                    setExportType(e.target.value as 'image' | 'data')
+                    setFormat('png')
+                  }}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className="font-medium text-sm">図面画像</div>
+                  <div className="text-xs text-gray-500">PNG/PDF等</div>
+                </div>
+              </label>
+              <label className={`flex-1 p-3 border rounded-lg cursor-pointer transition-colors ${
+                exportType === 'data'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}>
+                <input
+                  type="radio"
+                  name="exportType"
+                  value="data"
+                  checked={exportType === 'data'}
+                  onChange={(e) => {
+                    setExportType(e.target.value as 'image' | 'data')
+                    setFormat('csv-connections')
+                  }}
+                  className="sr-only"
+                />
+                <div className="text-center">
+                  <div className="font-medium text-sm">データ</div>
+                  <div className="text-xs text-gray-500">CSV等</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           {/* ファイル名 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -61,12 +124,15 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
               フォーマット
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {[
+              {(exportType === 'image' ? [
                 { value: 'png', label: 'PNG', desc: '高品質画像' },
                 { value: 'jpeg', label: 'JPEG', desc: '圧縮画像' },
                 { value: 'svg', label: 'SVG', desc: 'ベクター画像' },
                 { value: 'pdf', label: 'PDF', desc: '印刷用' }
-              ].map(option => (
+              ] : [
+                { value: 'csv-connections', label: '接続CSV', desc: '結線情報のみ' },
+                { value: 'csv-project', label: 'プロジェクトCSV', desc: '機材+結線情報' }
+              ]).map(option => (
                 <label
                   key={option.value}
                   className={`flex flex-col p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -92,10 +158,12 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
 
           {/* 説明 */}
           <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-            {format === 'png' && '透明背景対応の高品質画像形式です。'}
-            {format === 'jpeg' && 'ファイルサイズが小さい画像形式です。'}
-            {format === 'svg' && '拡大縮小しても劣化しないベクター形式です。'}
-            {format === 'pdf' && 'ブラウザの印刷機能を使用してPDFを生成します。'}
+            {exportType === 'image' && format === 'png' && '透明背景対応の高品質画像形式です。'}
+            {exportType === 'image' && format === 'jpeg' && 'ファイルサイズが小さい画像形式です。'}
+            {exportType === 'image' && format === 'svg' && '拡大縮小しても劣化しないベクター形式です。'}
+            {exportType === 'image' && format === 'pdf' && 'ブラウザの印刷機能を使用してPDFを生成します。'}
+            {exportType === 'data' && format === 'csv-connections' && '接続情報のみをCSV形式でエクスポートします。'}
+            {exportType === 'data' && format === 'csv-project' && '機材リストと接続情報を含む完全なCSVファイルを生成します。'}
           </div>
         </div>
 

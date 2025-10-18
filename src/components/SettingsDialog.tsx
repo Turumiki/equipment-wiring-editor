@@ -320,8 +320,8 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                       <div
                         key={wireType.id}
                         className={`p-3 border rounded cursor-pointer ${editingWireType?.id === wireType.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
                           }`}
                         onClick={() => setEditingWireType(wireType)}
                       >

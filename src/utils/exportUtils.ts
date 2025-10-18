@@ -211,3 +211,181 @@ export async function exportCanvasWithBounds(
     throw error
   }
 }
+
+// CSV export functionality
+export function exportConnectionsAsCSV(
+  objects: any[],
+  wires: any[],
+  filename: string = 'connections.csv'
+) {
+  try {
+    // CSVヘッダー
+    const headers = [
+      '接続元機材',
+      '接続元ポート',
+      '接続先機材', 
+      '接続先ポート',
+      'ワイヤータイプ',
+      'ラベル',
+      '備考'
+    ]
+
+    // オブジェクトIDから名前を取得するマップ
+    const objectMap = new Map(objects.map(obj => [obj.id, obj.name]))
+
+    // ポートIDからポート情報を取得するヘルパー
+    const getPortInfo = (objectId: string, portId: string) => {
+      const obj = objects.find(o => o.id === objectId)
+      if (!obj) return { name: 'Unknown', type: 'unknown' }
+      
+      const port = obj.components?.find((comp: any) => 
+        comp.id === portId && comp.type === 'connectionPort'
+      )
+      
+      return {
+        name: port?.data?.label || port?.data?.portType || 'Unknown',
+        type: port?.data?.portType || 'unknown'
+      }
+    }
+
+    // ワイヤーデータをCSV行に変換
+    const csvRows = wires.map(wire => {
+      const sourceObject = objectMap.get(wire.sourceObjectId) || 'Unknown'
+      const targetObject = objectMap.get(wire.targetObjectId) || 'Unknown'
+      const sourcePort = getPortInfo(wire.sourceObjectId, wire.sourcePortId)
+      const targetPort = getPortInfo(wire.targetObjectId, wire.targetPortId)
+
+      return [
+        sourceObject,
+        sourcePort.name,
+        targetObject,
+        targetPort.name,
+        wire.wireType || 'signal',
+        wire.label || '',
+        `${sourcePort.type} → ${targetPort.type}`
+      ]
+    })
+
+    // CSV文字列を生成
+    const csvContent = [
+      headers.join(','),
+      ...csvRows.map(row => 
+        row.map(cell => {
+          // セルにカンマや改行が含まれる場合はクォートで囲む
+          const cellStr = String(cell)
+          if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
+            return `"${cellStr.replace(/"/g, '""')}"`
+          }
+          return cellStr
+        }).join(',')
+      )
+    ].join('\n')
+
+    // BOMを追加してExcelで正しく表示されるようにする
+    const bom = '\uFEFF'
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8' })
+    
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    
+    URL.revokeObjectURL(link.href)
+  } catch (error) {
+    console.error('CSV export failed:', error)
+    throw error
+  }
+}
+
+// プロジェクト全体をCSVとしてエクスポート（機材リスト + 接続リスト）
+export function exportProjectAsCSV(
+  project: any,
+  filename: string = 'project.csv'
+) {
+  try {
+    const sheets = []
+
+    // 機材リストシート
+    const equipmentHeaders = ['ID', '機材名', '種類', 'X座標', 'Y座標', '説明']
+    const equipmentRows = project.objects.map((obj: any) => [
+      obj.id,
+      obj.name,
+      obj.metadata?.equipmentType || 'カスタム',
+      obj.position.x,
+      obj.position.y,
+      obj.description || ''
+    ])
+
+    sheets.push('# 機材リスト')
+    sheets.push(equipmentHeaders.join(','))
+    sheets.push(...equipmentRows.map((row: any[]) => 
+      row.map(cell => {
+        const cellStr = String(cell)
+        if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
+          return `"${cellStr.replace(/"/g, '""')}"`
+        }
+        return cellStr
+      }).join(',')
+    ))
+
+    sheets.push('') // 空行
+
+    // 接続リストシート
+    const connectionHeaders = [
+      '接続元機材',
+      '接続元ポート', 
+      '接続先機材',
+      '接続先ポート',
+      'ワイヤータイプ',
+      'ラベル'
+    ]
+
+    const objectMap = new Map(project.objects.map((obj: any) => [obj.id, obj.name]))
+    
+    const getPortInfo = (objectId: string, portId: string) => {
+      const obj = project.objects.find((o: any) => o.id === objectId)
+      if (!obj) return 'Unknown'
+      
+      const port = obj.components?.find((comp: any) => 
+        comp.id === portId && comp.type === 'connectionPort'
+      )
+      
+      return port?.data?.label || port?.data?.portType || 'Unknown'
+    }
+
+    const connectionRows = project.wires.map((wire: any) => [
+      objectMap.get(wire.sourceObjectId) || 'Unknown',
+      getPortInfo(wire.sourceObjectId, wire.sourcePortId),
+      objectMap.get(wire.targetObjectId) || 'Unknown', 
+      getPortInfo(wire.targetObjectId, wire.targetPortId),
+      wire.wireType || 'signal',
+      wire.label || ''
+    ])
+
+    sheets.push('# 接続リスト')
+    sheets.push(connectionHeaders.join(','))
+    sheets.push(...connectionRows.map((row: any[]) => 
+      row.map(cell => {
+        const cellStr = String(cell)
+        if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
+          return `"${cellStr.replace(/"/g, '""')}"`
+        }
+        return cellStr
+      }).join(',')
+    ))
+
+    const csvContent = sheets.join('\n')
+    const bom = '\uFEFF'
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8' })
+    
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    
+    URL.revokeObjectURL(link.href)
+  } catch (error) {
+    console.error('Project CSV export failed:', error)
+    throw error
+  }
+}
