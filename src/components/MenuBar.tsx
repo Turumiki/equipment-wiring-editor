@@ -53,7 +53,7 @@ interface MenuBarProps {
 interface MenuItemProps {
   label: string
   items: Array<{
-    label: string
+    label?: string
     shortcut?: string
     separator?: boolean
     disabled?: boolean
@@ -99,7 +99,7 @@ function MenuItem({ label, items, onItemClick, isOpen, onToggle, onClose }: Menu
                   }
                 }}
               >
-                <span>{item.label}</span>
+                <span>{item.label || ''}</span>
                 {item.shortcut && (
                   <span className="text-xs text-gray-500 ml-4 font-mono">{item.shortcut}</span>
                 )}

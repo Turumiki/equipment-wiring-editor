@@ -273,6 +273,14 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
               <div
                 key={template.id}
                 className="border border-gray-400 bg-white p-2 hover:bg-gray-50 group"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('application/reactflow', JSON.stringify({
+                    type: 'template',
+                    template: template
+                  }))
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
               >
                 <div className="flex items-center gap-2">
                   {/* テンプレートアイコン */}

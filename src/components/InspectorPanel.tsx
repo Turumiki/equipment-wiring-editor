@@ -1336,7 +1336,7 @@ export default function InspectorPanel() {
                                         <label className="block text-xs font-medium text-black mb-1">テキスト</label>
                                         <input
                                           type="text"
-                                          value={(component as RenderComponent).data.label.text}
+                                          value={(component as RenderComponent).data.label?.text || ''}
                                           onChange={(e) => {
                                             const updatedComponent = {
                                               ...component,
@@ -1360,13 +1360,13 @@ export default function InspectorPanel() {
                                       {/* フォントサイズ */}
                                       <div className="mb-2">
                                         <label className="block text-xs font-medium text-black mb-1">
-                                          フォントサイズ: {(component as RenderComponent).data.label.fontSize}px
+                                          フォントサイズ: {(component as RenderComponent).data.label?.fontSize || 12}px
                                         </label>
                                         <input
                                           type="range"
                                           min="4"
                                           max="24"
-                                          value={(component as RenderComponent).data.label.fontSize}
+                                          value={(component as RenderComponent).data.label?.fontSize || 12}
                                           onChange={(e) => {
                                             const updatedComponent = {
                                               ...component,
@@ -1392,7 +1392,7 @@ export default function InspectorPanel() {
                                         <label className="block text-xs font-medium text-black mb-1">文字色</label>
                                         <input
                                           type="color"
-                                          value={(component as RenderComponent).data.label.color}
+                                          value={(component as RenderComponent).data.label?.color || '#ffffff'}
                                           onChange={(e) => {
                                             const updatedComponent = {
                                               ...component,
@@ -1497,10 +1497,6 @@ export default function InspectorPanel() {
                               
                               {component.type === ComponentType.PROPERTY && (
                                 <div className="text-xs text-gray-600">名前・属性を管理</div>
-                              )}
-                              
-                              {component.type === ComponentType.CONNECTION_PORT && (
-                                <div className="text-xs text-gray-600">接続ポートを管理</div>
                               )}
                             </div>
                           )}

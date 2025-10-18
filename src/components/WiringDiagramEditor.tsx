@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useState, useEffect } from 'react'
+import React, { useCallback, useState, useEffect, useImperativeHandle } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -15,20 +15,22 @@ import ReactFlow, {
   Panel,
   NodeChange,
   EdgeChange,
-  ConnectionLineType
+  ConnectionLineType,
+  useReactFlow,
+  ReactFlowProvider
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
 import { useProjectStore } from '@/store/useProjectStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
-import { WireType, EquipmentObject } from '@/types'
+import { WireType, EquipmentObject, ShapeType, ComponentType } from '@/types'
 import EquipmentNode from '@/components/nodes/EquipmentNode'
 import WireEdge from '@/components/edges/WireEdge'
 
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
 import InspectorPanel from '@/components/InspectorPanel'
-import { getRenderComponent, getConnectionPortComponents } from '@/utils/componentSystem'
+import { getRenderComponent, getConnectionPortComponents, createEquipmentFromTemplate, createBasicEquipmentObject } from '@/utils/componentSystem'
 import { validateConnection } from '@/utils/connectionValidation'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import ContextMenu from '@/components/ContextMenu'
@@ -54,7 +56,148 @@ interface WiringDiagramEditorProps {
   onCloseMenus?: () => void
 }
 
-export default function WiringDiagramEditor({
+interface WiringDiagramEditorRef {
+  selectAll: () => void
+  deselectAll: () => void
+  copy: () => void
+  paste: () => void
+  deleteSelected: () => void
+  duplicateSelected: () => void
+  zoomIn: () => void
+  zoomOut: () => void
+  zoomToFit: () => void
+  zoomToActual: () => void
+  alignLeft: () => void
+  alignCenter: () => void
+  alignRight: () => void
+  distributeHorizontal: () => void
+  distributeVertical: () => void
+  validateConnections: () => void
+  applyAutoLayout: (options: any) => void
+}
+
+// ReactFlowキャンバスコンポーネント
+function ReactFlowCanvas({
+  nodes,
+  edges,
+  handleNodesChange,
+  handleEdgesChange,
+  onConnect,
+  handleReconnect,
+  handleSelectionChange,
+  isValidConnection,
+  nodeTypes,
+  edgeTypes,
+  handleNodeContextMenu,
+  handleEdgeContextMenu,
+  setContextMenu,
+  onCloseMenus,
+  addEquipmentObject,
+  getShapeForTemplate
+}: any) {
+  const { screenToFlowPosition } = useReactFlow()
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault()
+
+    const data = event.dataTransfer.getData('application/reactflow')
+
+    if (data) {
+      try {
+        const dropData = JSON.parse(data)
+
+        if (dropData.type === 'template') {
+          // ReactFlowの座標系に変換
+          const mousePosition = screenToFlowPosition({
+            x: event.clientX,
+            y: event.clientY,
+          })
+
+          // テンプレートから機材を作成
+          const template = dropData.template
+          let equipmentObject
+
+          if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
+            equipmentObject = createEquipmentFromTemplate(template)
+          } else if (template.defaultComponents && template.defaultComponents.length > 0) {
+            equipmentObject = createEquipmentFromTemplate(template)
+          } else {
+            const shape = getShapeForTemplate(template.id)
+            equipmentObject = createBasicEquipmentObject(
+              template.name,
+              mousePosition,
+              shape,
+              template.id
+            )
+          }
+
+          // 機材のサイズを取得
+          const renderComponent = equipmentObject.components.find(comp => comp.type === ComponentType.RENDER)
+          const equipmentSize = renderComponent?.data?.size || { width: 100, height: 60 }
+
+          // 機材の中心がマウス位置に来るように調整
+          const centeredPosition = {
+            x: mousePosition.x - equipmentSize.width / 2,
+            y: mousePosition.y - equipmentSize.height / 2
+          }
+
+          equipmentObject.position = centeredPosition
+          equipmentObject.templateId = template.id
+          addEquipmentObject(equipmentObject)
+        }
+      } catch (error) {
+        console.error('Failed to parse drop data:', error)
+      }
+    }
+  }
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={handleNodesChange}
+      onEdgesChange={handleEdgesChange}
+      onConnect={onConnect}
+      onReconnect={handleReconnect}
+      onSelectionChange={handleSelectionChange}
+      isValidConnection={isValidConnection}
+      nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
+      connectionLineType={ConnectionLineType.SmoothStep}
+      connectionLineStyle={{
+        stroke: '#059669',
+        strokeWidth: 2,
+        strokeDasharray: '5,5'
+      }}
+      fitView
+      className="bg-gray-200"
+      multiSelectionKeyCode="Shift"
+      deleteKeyCode="Delete"
+      onNodeContextMenu={handleNodeContextMenu}
+      onEdgeContextMenu={handleEdgeContextMenu}
+      onPaneClick={() => {
+        setContextMenu(null)
+        onCloseMenus?.()
+      }}
+      onNodeDrag={() => onCloseMenus?.()}
+      onNodeDragStart={() => onCloseMenus?.()}
+      onSelectionDragStart={() => onCloseMenus?.()}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
+      <Controls />
+      <MiniMap />
+      <Background variant={BackgroundVariant.Lines} gap={20} size={1} color="#999" />
+    </ReactFlow>
+  )
+}
+
+const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagramEditorProps>(({
   showTemplateLibrary = false,
   showTableEditor = false,
   showAutoLayout = false,
@@ -62,7 +205,7 @@ export default function WiringDiagramEditor({
   onCloseTableEditor,
   onCloseAutoLayout,
   onCloseMenus
-}: WiringDiagramEditorProps) {
+}, ref) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState<EquipmentObject | null>(null)
@@ -73,10 +216,84 @@ export default function WiringDiagramEditor({
     targetId?: string
   } | null>(null)
 
-  const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, alignSelected, distributeSelected } = useProjectStore()
+  const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
+
+  // テンプレートに応じた図形を取得
+  const getShapeForTemplate = (templateId: string): ShapeType => {
+    // 全て四角形で統一
+    return ShapeType.RECTANGLE
+  }
 
   // キーボードショートカットを有効化
   useKeyboardShortcuts()
+
+  // refの実装
+  useImperativeHandle(ref, () => ({
+    selectAll: () => {
+      // 全選択の実装
+      setSelectedObjects(project.objects.map(obj => obj.id))
+    },
+    deselectAll: () => {
+      // 選択解除の実装
+      setSelectedObjects([])
+      setSelectedWires([])
+    },
+    copy: () => {
+      // コピーの実装（今後実装）
+      console.log('Copy not implemented yet')
+    },
+    paste: () => {
+      // 貼り付けの実装（今後実装）
+      console.log('Paste not implemented yet')
+    },
+    deleteSelected: () => {
+      // 選択削除の実装
+      selectedObjectIds.forEach(id => removeEquipmentObject(id))
+      selectedWireIds.forEach(id => removeWire(id))
+    },
+    duplicateSelected: () => {
+      duplicateSelected()
+    },
+    zoomIn: () => {
+      // ズームインの実装（今後実装）
+      console.log('Zoom in not implemented yet')
+    },
+    zoomOut: () => {
+      // ズームアウトの実装（今後実装）
+      console.log('Zoom out not implemented yet')
+    },
+    zoomToFit: () => {
+      // 全体表示の実装（今後実装）
+      console.log('Zoom to fit not implemented yet')
+    },
+    zoomToActual: () => {
+      // 実際のサイズの実装（今後実装）
+      console.log('Zoom to actual not implemented yet')
+    },
+    alignLeft: () => {
+      alignSelected('left')
+    },
+    alignCenter: () => {
+      alignSelected('center-horizontal')
+    },
+    alignRight: () => {
+      alignSelected('right')
+    },
+    distributeHorizontal: () => {
+      distributeSelected('horizontal')
+    },
+    distributeVertical: () => {
+      distributeSelected('vertical')
+    },
+    validateConnections: () => {
+      // 接続検証の実装（今後実装）
+      console.log('Validate connections not implemented yet')
+    },
+    applyAutoLayout: (options: any) => {
+      // 自動レイアウトの実装（今後実装）
+      console.log('Apply auto layout not implemented yet', options)
+    }
+  }))
 
   // プロジェクトデータからReactFlowノード/エッジを生成
   useEffect(() => {
@@ -543,41 +760,26 @@ export default function WiringDiagramEditor({
           onContextMenu={handleContextMenu}
           style={{ userSelect: 'none' }}
         >
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={handleNodesChange}
-            onEdgesChange={handleEdgesChange}
-            onConnect={onConnect}
-            onReconnect={handleReconnect}
-            onSelectionChange={handleSelectionChange}
-            isValidConnection={isValidConnection}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            connectionLineType={ConnectionLineType.SmoothStep}
-            connectionLineStyle={{
-              stroke: '#059669',
-              strokeWidth: 2,
-              strokeDasharray: '5,5'
-            }}
-            fitView
-            className="bg-gray-200"
-            multiSelectionKeyCode="Shift"
-            deleteKeyCode="Delete"
-            onNodeContextMenu={handleNodeContextMenu}
-            onEdgeContextMenu={handleEdgeContextMenu}
-            onPaneClick={() => {
-              setContextMenu(null)
-              onCloseMenus?.()
-            }}
-            onNodeDrag={() => onCloseMenus?.()}
-            onNodeDragStart={() => onCloseMenus?.()}
-            onSelectionDragStart={() => onCloseMenus?.()}
-          >
-            <Controls />
-            <MiniMap />
-            <Background variant={BackgroundVariant.Lines} gap={20} size={1} color="#999" />
-          </ReactFlow>
+          <ReactFlowProvider>
+            <ReactFlowCanvas
+              nodes={nodes}
+              edges={edges}
+              handleNodesChange={handleNodesChange}
+              handleEdgesChange={handleEdgesChange}
+              onConnect={onConnect}
+              handleReconnect={handleReconnect}
+              handleSelectionChange={handleSelectionChange}
+              isValidConnection={isValidConnection}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              handleNodeContextMenu={handleNodeContextMenu}
+              handleEdgeContextMenu={handleEdgeContextMenu}
+              setContextMenu={setContextMenu}
+              onCloseMenus={onCloseMenus}
+              addEquipmentObject={addEquipmentObject}
+              getShapeForTemplate={getShapeForTemplate}
+            />
+          </ReactFlowProvider>
         </div>
       </div>
 
@@ -630,4 +832,8 @@ export default function WiringDiagramEditor({
       )}
     </div>
   )
-}
+})
+
+WiringDiagramEditor.displayName = 'WiringDiagramEditor'
+
+export default WiringDiagramEditor

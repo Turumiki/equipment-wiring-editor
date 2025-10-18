@@ -4,57 +4,21 @@ import { ConnectionTableRow, WireType, EquipmentTemplate } from '@/types'
 import { getConnectionPortComponents, getPropertyComponent } from '@/utils/componentSystem'
 import { useSettingsStore } from '@/store/useSettingsStore'
 
-// 基本的な機材テンプレート（TemplateLibraryから抜粋）
-const basicTemplates: EquipmentTemplate[] = [
-  {
-    id: 'audio-interface',
-    name: 'オーディオインターフェース',
-    category: 'オーディオ',
-    description: 'USB/Thunderbolt オーディオインターフェース',
-    defaultComponents: [],
-    tags: ['オーディオ', 'USB', 'レコーディング'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'microphone',
-    name: 'マイクロフォン',
-    category: 'オーディオ',
-    description: 'コンデンサー・ダイナミックマイク',
-    defaultComponents: [],
-    tags: ['マイク', '入力', 'XLR'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'computer',
-    name: 'パソコン',
-    category: 'コンピューター',
-    description: 'デスクトップ・ノートパソコン',
-    defaultComponents: [],
-    tags: ['PC', 'コンピューター', 'DAW'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'switching-hub',
-    name: 'スイッチングハブ',
-    category: 'ネットワーク',
-    description: 'Ethernet スイッチングハブ',
-    defaultComponents: [],
-    tags: ['ネットワーク', 'Ethernet', 'ハブ'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-]
+// 基本テンプレートは削除 - テンプレートライブラリから動的に取得
 
-// 機材テンプレートの表示名を取得
+// 機材テンプレートの表示名を取得（テンプレートライブラリから動的に取得）
 function getEquipmentTypeDisplayName(templateId: string): string {
-  const template = basicTemplates.find(template => template.id === templateId)
+  const { equipmentTemplates } = useSettingsStore.getState()
+  const { project } = useProjectStore.getState()
+  
+  // グローバルテンプレートから検索
+  let template = equipmentTemplates.find(t => t.id === templateId)
+  
+  // プロジェクトテンプレートからも検索
+  if (!template) {
+    template = project.customTemplates.find(t => t.id === templateId)
+  }
+  
   return template?.name || templateId || 'カスタム'
 }
 

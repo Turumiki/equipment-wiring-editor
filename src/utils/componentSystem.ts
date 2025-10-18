@@ -10,6 +10,8 @@ import {
   PortDirection,
   Side
 } from '@/types'
+import { useSettingsStore } from '@/store/useSettingsStore'
+import { useProjectStore } from '@/store/useProjectStore'
 
 // コンポーネント作成ヘルパー関数
 export function createRenderComponent(
@@ -194,10 +196,36 @@ export function updateComponentInObject(
   }
 }
 
-// 機材タイプに応じたポート作成
+// 機材タイプに応じたポート作成（動的テンプレートベース）
 export function createEquipmentPorts(equipmentType: string): ConnectionPortComponent[] {
   console.log('Creating ports for equipment type:', equipmentType)
   
+  // テンプレートライブラリから動的に取得
+  const { equipmentTemplates } = useSettingsStore.getState()
+  const { project } = useProjectStore.getState()
+  
+  // グローバルテンプレートから検索
+  let template = equipmentTemplates.find(t => t.id === equipmentType)
+  
+  // プロジェクトテンプレートからも検索
+  if (!template) {
+    template = project.customTemplates.find(t => t.id === equipmentType)
+  }
+  
+  // テンプレートにポート定義がある場合は使用
+  if (template && template.ports && Array.isArray(template.ports)) {
+    return template.ports.map(portConfig => {
+      return createConnectionPortComponent(
+        stringToSide(portConfig.side),
+        Math.max(0, Math.min(100, portConfig.offset)),
+        stringToPortType(portConfig.type),
+        stringToPortDirection(portConfig.direction),
+        portConfig.label
+      )
+    })
+  }
+  
+  // フォールバック：従来のハードコードされた定義
   switch (equipmentType) {
     case 'audio-interface':
       return [
