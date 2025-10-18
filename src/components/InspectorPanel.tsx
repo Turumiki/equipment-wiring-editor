@@ -17,73 +17,19 @@ import {
 } from '@/utils/portArrangement'
 import { ComponentType, Side, PortType, PortDirection, RenderComponent } from '@/types'
 
-// ポートタイプの互換性を取得
+// ポートタイプの互換性を設定ストアから取得
 function getCompatiblePorts(type: PortType): PortType[] {
-  const basicCompatibility: Partial<Record<PortType, PortType[]>> = {
-    [PortType.XLR_MALE]: [PortType.XLR_FEMALE],
-    [PortType.XLR_FEMALE]: [PortType.XLR_MALE],
-    [PortType.TRS_QUARTER]: [PortType.TRS_QUARTER, PortType.TS_QUARTER],
-    [PortType.TS_QUARTER]: [PortType.TS_QUARTER, PortType.TRS_QUARTER],
-    [PortType.USB_A]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-    [PortType.USB_B]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-    [PortType.USB_C]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-    [PortType.ETHERNET]: [PortType.ETHERNET, PortType.DANTE],
-    [PortType.DANTE]: [PortType.DANTE, PortType.ETHERNET],
-    [PortType.HDMI]: [PortType.HDMI],
-    [PortType.TRS_MINI]: [PortType.TRS_MINI],
-    [PortType.POWER_AC]: [PortType.POWER_AC],
-    [PortType.POWER_DC]: [PortType.POWER_DC],
-    [PortType.RCA]: [PortType.RCA],
-    [PortType.SPEAKON]: [PortType.SPEAKON],
-    [PortType.AES_EBU]: [PortType.AES_EBU],
-    [PortType.SPDIF]: [PortType.SPDIF],
-    [PortType.ADAT]: [PortType.ADAT],
-    [PortType.DISPLAYPORT]: [PortType.DISPLAYPORT],
-    [PortType.DVI]: [PortType.DVI],
-    [PortType.VGA]: [PortType.VGA],
-    [PortType.SDI]: [PortType.SDI],
-    [PortType.COMPOSITE]: [PortType.COMPOSITE],
-    [PortType.THUNDERBOLT]: [PortType.THUNDERBOLT],
-    [PortType.IEC]: [PortType.IEC],
-    [PortType.MIDI]: [PortType.MIDI],
-    [PortType.CUSTOM]: [PortType.CUSTOM]
-  }
+  const { settings } = useSettingsStore.getState()
+  const portTypeDefinition = settings.portTypes.find(pt => pt.name === type || pt.id === type)
+  return (portTypeDefinition?.compatibleWith as PortType[]) || [type]
 
-  return basicCompatibility[type] || [type]
 }
 
-// ポートタイプの表示名を取得
+// ポートタイプの表示名を設定ストアから取得
 function getPortTypeDisplayName(portType: PortType): string {
-  const displayNames: Record<PortType, string> = {
-    [PortType.XLR_MALE]: 'XLR オス',
-    [PortType.XLR_FEMALE]: 'XLR メス',
-    [PortType.TRS_QUARTER]: 'TRS 6.3mm',
-    [PortType.TS_QUARTER]: 'TS 6.3mm',
-    [PortType.TRS_MINI]: 'TRS 3.5mm',
-    [PortType.RCA]: 'RCA',
-    [PortType.SPEAKON]: 'Speakon',
-    [PortType.AES_EBU]: 'AES/EBU',
-    [PortType.SPDIF]: 'S/PDIF',
-    [PortType.ADAT]: 'ADAT',
-    [PortType.DANTE]: 'Dante',
-    [PortType.HDMI]: 'HDMI',
-    [PortType.DISPLAYPORT]: 'DisplayPort',
-    [PortType.DVI]: 'DVI',
-    [PortType.VGA]: 'VGA',
-    [PortType.SDI]: 'SDI',
-    [PortType.COMPOSITE]: 'コンポジット',
-    [PortType.USB_A]: 'USB-A',
-    [PortType.USB_B]: 'USB-B',
-    [PortType.USB_C]: 'USB-C',
-    [PortType.THUNDERBOLT]: 'Thunderbolt',
-    [PortType.ETHERNET]: 'Ethernet',
-    [PortType.POWER_AC]: 'AC電源',
-    [PortType.POWER_DC]: 'DC電源',
-    [PortType.IEC]: 'IEC',
-    [PortType.MIDI]: 'MIDI',
-    [PortType.CUSTOM]: 'カスタム'
-  }
-  return displayNames[portType] || portType
+  const { settings } = useSettingsStore.getState()
+  const portTypeDefinition = settings.portTypes.find(pt => pt.name === portType || pt.id === portType)
+  return portTypeDefinition?.displayName || portType
 }
 
 // タブの定義
@@ -107,7 +53,7 @@ export default function InspectorPanel() {
 
   // タブ状態を管理
   const [activeTab, setActiveTab] = useState<TabType>('overview')
-  
+
   // 折り畳み状態を管理
   const [collapsedComponents, setCollapsedComponents] = useState<Set<string>>(new Set())
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
@@ -865,11 +811,10 @@ export default function InspectorPanel() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-2 py-2 text-xs font-medium border-r border-gray-300 last:border-r-0 transition-colors ${
-                activeTab === tab.id
+              className={`flex-1 px-2 py-2 text-xs font-medium border-r border-gray-300 last:border-r-0 transition-colors ${activeTab === tab.id
                   ? 'bg-white text-black border-b-2 border-gray-600'
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-250 hover:text-black'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-center gap-1">
                 <span className="text-xs">{tab.icon}</span>
@@ -1189,7 +1134,7 @@ export default function InspectorPanel() {
             <div className="space-y-2">
               {selectedObject.components.map(component => {
                 const isCollapsed = collapsedComponents.has(component.id)
-                
+
                 if (component.type === ComponentType.CONNECTION_PORT) {
                   // ポートコンポーネントの詳細表示
                   const port = component as any
@@ -1269,9 +1214,9 @@ export default function InspectorPanel() {
                               }}
                               className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
                             >
-                              {Object.values(PortType).map(portType => (
-                                <option key={portType} value={portType}>
-                                  {getPortTypeDisplayName(portType)}
+                              {settings.portTypes.map(portTypeDef => (
+                                <option key={portTypeDef.id} value={portTypeDef.name}>
+                                  {portTypeDef.displayName}
                                 </option>
                               ))}
                             </select>

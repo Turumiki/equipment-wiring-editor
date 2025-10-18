@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { PortType, PortDirection } from '@/types'
+import { useSettingsStore } from '@/store/useSettingsStore'
 
 interface PortEditDialogProps {
   isOpen: boolean
@@ -10,38 +11,11 @@ interface PortEditDialogProps {
   initialDirection: PortDirection
 }
 
-// ポートタイプの表示名を取得
+// ポートタイプの表示名を設定ストアから取得
 function getPortTypeDisplayName(portType: PortType): string {
-  const displayNames: Record<PortType, string> = {
-    [PortType.XLR_MALE]: 'XLR オス',
-    [PortType.XLR_FEMALE]: 'XLR メス',
-    [PortType.TRS_QUARTER]: 'TRS 6.3mm',
-    [PortType.TS_QUARTER]: 'TS 6.3mm',
-    [PortType.TRS_MINI]: 'TRS 3.5mm',
-    [PortType.RCA]: 'RCA',
-    [PortType.SPEAKON]: 'Speakon',
-    [PortType.AES_EBU]: 'AES/EBU',
-    [PortType.SPDIF]: 'S/PDIF',
-    [PortType.ADAT]: 'ADAT',
-    [PortType.DANTE]: 'Dante',
-    [PortType.HDMI]: 'HDMI',
-    [PortType.DISPLAYPORT]: 'DisplayPort',
-    [PortType.DVI]: 'DVI',
-    [PortType.VGA]: 'VGA',
-    [PortType.SDI]: 'SDI',
-    [PortType.COMPOSITE]: 'コンポジット',
-    [PortType.USB_A]: 'USB-A',
-    [PortType.USB_B]: 'USB-B',
-    [PortType.USB_C]: 'USB-C',
-    [PortType.THUNDERBOLT]: 'Thunderbolt',
-    [PortType.ETHERNET]: 'Ethernet',
-    [PortType.POWER_AC]: 'AC電源',
-    [PortType.POWER_DC]: 'DC電源',
-    [PortType.IEC]: 'IEC',
-    [PortType.MIDI]: 'MIDI',
-    [PortType.CUSTOM]: 'カスタム'
-  }
-  return displayNames[portType] || portType
+  const { settings } = useSettingsStore.getState()
+  const portTypeDefinition = settings.portTypes.find(pt => pt.name === portType || pt.id === portType)
+  return portTypeDefinition?.displayName || portType
 }
 
 export default function PortEditDialog({
@@ -55,6 +29,7 @@ export default function PortEditDialog({
   const [label, setLabel] = useState(initialLabel)
   const [portType, setPortType] = useState(initialPortType)
   const [direction, setDirection] = useState(initialDirection)
+  const { settings } = useSettingsStore()
 
   useEffect(() => {
     if (isOpen) {
@@ -111,9 +86,9 @@ export default function PortEditDialog({
               onChange={(e) => setPortType(e.target.value as PortType)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             >
-              {Object.values(PortType).map(type => (
-                <option key={type} value={type}>
-                  {getPortTypeDisplayName(type)}
+              {settings.portTypes.map(portTypeDef => (
+                <option key={portTypeDef.id} value={portTypeDef.name}>
+                  {portTypeDef.displayName}
                 </option>
               ))}
             </select>
