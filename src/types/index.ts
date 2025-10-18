@@ -241,10 +241,21 @@ export interface SimpleTemplatePort {
   label: string;
 }
 
+// 機材タイプの定義（抽象的なカテゴリ）
+export interface EquipmentType {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  defaultPorts?: SimpleTemplatePort[];
+  icon?: string;
+}
+
 export interface EquipmentTemplate {
   id: string;
   name: string;
   category: string;
+  equipmentType?: string; // 機材タイプ（抽象的なカテゴリ）
   description?: string;
   thumbnail?: string;
   

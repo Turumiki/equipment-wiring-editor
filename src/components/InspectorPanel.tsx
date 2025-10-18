@@ -86,11 +86,28 @@ function getPortTypeDisplayName(portType: PortType): string {
   return displayNames[portType] || portType
 }
 
+// タブの定義
+type TabType = 'overview' | 'components'
+
+interface Tab {
+  id: TabType
+  name: string
+  icon: string
+}
+
+const TABS: Tab[] = [
+  { id: 'overview', name: '概要', icon: '📝' },
+  { id: 'components', name: 'コンポーネント', icon: '⚙️' }
+]
+
 export default function InspectorPanel() {
   const { project, selectedObjectIds, selectedWireIds, updateEquipmentObject, updateWire } = useProjectStore()
   const { pushState } = useHistoryStore()
   const { settings } = useSettingsStore()
 
+  // タブ状態を管理
+  const [activeTab, setActiveTab] = useState<TabType>('overview')
+  
   // 折り畳み状態を管理
   const [collapsedComponents, setCollapsedComponents] = useState<Set<string>>(new Set())
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
@@ -384,7 +401,7 @@ export default function InspectorPanel() {
             <div className="border-t border-gray-200 pt-4">
               <h3 className="text-sm font-medium text-black mb-3">一括ラベル・図形設定</h3>
               <div className="space-y-3">
-                
+
                 {/* ラベルフォントサイズ一括変更 */}
                 <div>
                   <label className="block text-xs font-medium text-black mb-1">
@@ -616,7 +633,7 @@ export default function InspectorPanel() {
                       })
                     })
                   }}
-                  className="px-3 py-2 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-3 py-2 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 border border-gray-500"
                 >
                   水平整列
                 </button>
@@ -630,7 +647,7 @@ export default function InspectorPanel() {
                       })
                     })
                   }}
-                  className="px-3 py-2 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                  className="px-3 py-2 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 border border-gray-500"
                 >
                   垂直整列
                 </button>
@@ -648,7 +665,7 @@ export default function InspectorPanel() {
                       })
                     })
                   }}
-                  className="px-3 py-2 text-xs bg-purple-500 text-white rounded hover:bg-purple-600"
+                  className="px-3 py-2 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 border border-gray-500"
                 >
                   等間隔（水平）
                 </button>
@@ -666,7 +683,7 @@ export default function InspectorPanel() {
                       })
                     })
                   }}
-                  className="px-3 py-2 text-xs bg-indigo-500 text-white rounded hover:bg-indigo-600"
+                  className="px-3 py-2 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 border border-gray-500"
                 >
                   等間隔（垂直）
                 </button>
@@ -841,674 +858,738 @@ export default function InspectorPanel() {
         <p className="text-xs text-black">{selectedObject.name}</p>
       </div>
 
-
+      {/* タブナビゲーション */}
+      <div className="border-b border-gray-300 bg-gray-150">
+        <div className="flex">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 px-2 py-2 text-xs font-medium border-r border-gray-300 last:border-r-0 transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-white text-black border-b-2 border-gray-600'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-250 hover:text-black'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-xs">{tab.icon}</span>
+                <span>{tab.name}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* コンテンツ */}
       <div className="flex-1 overflow-y-auto p-3">
-        <div className="space-y-2">
-          {/* プロパティ */}
-          {propertyComponent?.data.properties && Object.entries(propertyComponent.data.properties).map(([key, prop]) => (
-            <div key={key}>
-              <label className="block text-sm font-medium text-black mb-1">
-                {prop.displayName}
-              </label>
-              <input
-                type="text"
-                value={prop.value}
-                onChange={(e) => handlePropertyChange(key, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              />
-            </div>
-          ))}
-
-          {/* 位置情報 */}
-          <div className={`border-t border-gray-200 ${collapsedSections.has('position') ? 'pt-2' : 'pt-4'}`}>
-            <button
-              onClick={() => toggleSectionCollapse('position')}
-              className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('position') ? 'mb-1' : 'mb-2'}`}
-            >
-              <h3 className="text-sm font-medium text-black">位置</h3>
-              <span className="text-xs text-gray-500">
-                {collapsedSections.has('position') ? '▶' : '▼'}
-              </span>
-            </button>
-            {!collapsedSections.has('position') && (
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs text-black font-medium">X</label>
-                  <input
-                    type="number"
-                    value={Math.round(selectedObject.position.x)}
-                    onChange={(e) => updateEquipmentObject(selectedObject.id, {
-                      position: { ...selectedObject.position, x: Number(e.target.value) }
-                    }, true)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-black font-medium">Y</label>
-                  <input
-                    type="number"
-                    value={Math.round(selectedObject.position.y)}
-                    onChange={(e) => updateEquipmentObject(selectedObject.id, {
-                      position: { ...selectedObject.position, y: Number(e.target.value) }
-                    }, true)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
-                  />
-                </div>
+        {activeTab === 'overview' && (
+          <div className="space-y-2">
+            {/* プロパティ */}
+            {propertyComponent?.data.properties && Object.entries(propertyComponent.data.properties).map(([key, prop]) => (
+              <div key={key}>
+                <label className="block text-sm font-medium text-black mb-1">
+                  {prop.displayName}
+                </label>
+                <input
+                  type="text"
+                  value={prop.value}
+                  onChange={(e) => handlePropertyChange(key, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                />
               </div>
-            )}
-          </div>
+            ))}
 
-          {/* サイズ情報 */}
-          {renderComponent && (
-            <div className={`border-t border-gray-200 ${collapsedSections.has('size') ? 'pt-2' : 'pt-4'}`}>
-              <button
-                onClick={() => toggleSectionCollapse('size')}
-                className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('size') ? 'mb-1' : 'mb-2'}`}
+            {/* 機材タイプ変更 */}
+            <div className="border-t border-gray-200 pt-4">
+              <label className="block text-sm font-medium text-black mb-1">機材タイプ</label>
+              <select
+                value={selectedObject.metadata?.equipmentType || ''}
+                onChange={(e) => {
+                  const newEquipmentType = e.target.value
+                  updateEquipmentObject(selectedObject.id, {
+                    metadata: {
+                      ...selectedObject.metadata,
+                      equipmentType: newEquipmentType
+                    }
+                  })
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               >
-                <h3 className="text-sm font-medium text-black">サイズ</h3>
+                <option value="">カスタム</option>
+                <option value="mixer">ミキサー</option>
+                <option value="microphone">マイクロフォン</option>
+                <option value="speaker">スピーカー</option>
+                <option value="audio-interface">オーディオインターフェース</option>
+                <option value="computer">コンピューター</option>
+                <option value="display">ディスプレイ</option>
+                <option value="camera">カメラ</option>
+                <option value="switcher">スイッチャー</option>
+                <option value="amplifier">アンプ</option>
+                <option value="recorder">レコーダー</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                機材の抽象的なカテゴリを設定します
+              </p>
+            </div>
+
+            {/* 位置情報 */}
+            <div className={`border-t border-gray-200 ${collapsedSections.has('position') ? 'pt-2' : 'pt-4'}`}>
+              <button
+                onClick={() => toggleSectionCollapse('position')}
+                className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('position') ? 'mb-1' : 'mb-2'}`}
+              >
+                <h3 className="text-sm font-medium text-black">位置</h3>
                 <span className="text-xs text-gray-500">
-                  {collapsedSections.has('size') ? '▶' : '▼'}
+                  {collapsedSections.has('position') ? '▶' : '▼'}
                 </span>
               </button>
-              {!collapsedSections.has('size') && (
+              {!collapsedSections.has('position') && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-black font-medium">X</label>
+                    <input
+                      type="number"
+                      value={Math.round(selectedObject.position.x)}
+                      onChange={(e) => updateEquipmentObject(selectedObject.id, {
+                        position: { ...selectedObject.position, x: Number(e.target.value) }
+                      }, true)}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-black font-medium">Y</label>
+                    <input
+                      type="number"
+                      value={Math.round(selectedObject.position.y)}
+                      onChange={(e) => updateEquipmentObject(selectedObject.id, {
+                        position: { ...selectedObject.position, y: Number(e.target.value) }
+                      }, true)}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* サイズ情報 */}
+            {renderComponent && (
+              <div className={`border-t border-gray-200 ${collapsedSections.has('size') ? 'pt-2' : 'pt-4'}`}>
+                <button
+                  onClick={() => toggleSectionCollapse('size')}
+                  className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('size') ? 'mb-1' : 'mb-2'}`}
+                >
+                  <h3 className="text-sm font-medium text-black">サイズ</h3>
+                  <span className="text-xs text-gray-500">
+                    {collapsedSections.has('size') ? '▶' : '▼'}
+                  </span>
+                </button>
+                {!collapsedSections.has('size') && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs text-black font-medium">幅</label>
+                        <input
+                          type="number"
+                          min="50"
+                          max="400"
+                          value={renderComponent.data.size.width}
+                          onChange={(e) => {
+                            const newWidth = Number(e.target.value)
+                            const updatedRenderComponent = {
+                              ...renderComponent,
+                              data: {
+                                ...renderComponent.data,
+                                size: {
+                                  ...renderComponent.data.size,
+                                  width: newWidth
+                                }
+                              }
+                            }
+                            const updatedComponents = selectedObject.components.map(comp =>
+                              comp.id === renderComponent.id ? updatedRenderComponent : comp
+                            )
+                            updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                          }}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-black font-medium">高さ</label>
+                        <input
+                          type="number"
+                          min="30"
+                          max="300"
+                          value={renderComponent.data.size.height}
+                          onChange={(e) => {
+                            const newHeight = Number(e.target.value)
+                            const updatedRenderComponent = {
+                              ...renderComponent,
+                              data: {
+                                ...renderComponent.data,
+                                size: {
+                                  ...renderComponent.data.size,
+                                  height: newHeight
+                                }
+                              }
+                            }
+                            const updatedComponents = selectedObject.components.map(comp =>
+                              comp.id === renderComponent.id ? updatedRenderComponent : comp
+                            )
+                            updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                          }}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => {
+                          const updatedRenderComponent = {
+                            ...renderComponent,
+                            data: {
+                              ...renderComponent.data,
+                              size: { width: 100, height: 60 }
+                            }
+                          }
+                          const updatedComponents = selectedObject.components.map(comp =>
+                            comp.id === renderComponent.id ? updatedRenderComponent : comp
+                          )
+                          updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                        }}
+                        className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                      >
+                        デフォルト
+                      </button>
+                      <button
+                        onClick={() => {
+                          const currentSize = renderComponent.data.size
+                          const aspectRatio = currentSize.width / currentSize.height
+                          const newHeight = Math.round(currentSize.width / aspectRatio)
+                          const updatedRenderComponent = {
+                            ...renderComponent,
+                            data: {
+                              ...renderComponent.data,
+                              size: { ...currentSize, height: newHeight }
+                            }
+                          }
+                          const updatedComponents = selectedObject.components.map(comp =>
+                            comp.id === renderComponent.id ? updatedRenderComponent : comp
+                          )
+                          updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                        }}
+                        className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                      >
+                        比率維持
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ポート整列 */}
+            <div className={`border-t border-gray-200 ${collapsedSections.has('portArrangement') ? 'pt-2' : 'pt-4'}`}>
+              <button
+                onClick={() => toggleSectionCollapse('portArrangement')}
+                className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('portArrangement') ? 'mb-1' : 'mb-3'}`}
+              >
+                <h3 className="text-sm font-medium text-black">ポート整列</h3>
+                <span className="text-xs text-gray-500">
+                  {collapsedSections.has('portArrangement') ? '▶' : '▼'}
+                </span>
+              </button>
+
+              {!collapsedSections.has('portArrangement') && (
                 <>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs text-black font-medium">幅</label>
-                      <input
-                        type="number"
-                        min="50"
-                        max="400"
-                        value={renderComponent.data.size.width}
-                        onChange={(e) => {
-                          const newWidth = Number(e.target.value)
-                          const updatedRenderComponent = {
-                            ...renderComponent,
-                            data: {
-                              ...renderComponent.data,
-                              size: {
-                                ...renderComponent.data.size,
-                                width: newWidth
-                              }
-                            }
-                          }
-                          const updatedComponents = selectedObject.components.map(comp =>
-                            comp.id === renderComponent.id ? updatedRenderComponent : comp
-                          )
-                          updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
-                        }}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-black font-medium">高さ</label>
-                      <input
-                        type="number"
-                        min="30"
-                        max="300"
-                        value={renderComponent.data.size.height}
-                        onChange={(e) => {
-                          const newHeight = Number(e.target.value)
-                          const updatedRenderComponent = {
-                            ...renderComponent,
-                            data: {
-                              ...renderComponent.data,
-                              size: {
-                                ...renderComponent.data.size,
-                                height: newHeight
-                              }
-                            }
-                          }
-                          const updatedComponents = selectedObject.components.map(comp =>
-                            comp.id === renderComponent.id ? updatedRenderComponent : comp
-                          )
-                          updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
-                        }}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      onClick={() => {
-                        const updatedRenderComponent = {
-                          ...renderComponent,
-                          data: {
-                            ...renderComponent.data,
-                            size: { width: 100, height: 60 }
-                          }
-                        }
-                        const updatedComponents = selectedObject.components.map(comp =>
-                          comp.id === renderComponent.id ? updatedRenderComponent : comp
-                        )
-                        updateEquipmentObject(selectedObject.id, { components: updatedComponents })
-                      }}
-                      className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                    >
-                      デフォルト
-                    </button>
-                    <button
-                      onClick={() => {
-                        const currentSize = renderComponent.data.size
-                        const aspectRatio = currentSize.width / currentSize.height
-                        const newHeight = Math.round(currentSize.width / aspectRatio)
-                        const updatedRenderComponent = {
-                          ...renderComponent,
-                          data: {
-                            ...renderComponent.data,
-                            size: { ...currentSize, height: newHeight }
-                          }
-                        }
-                        const updatedComponents = selectedObject.components.map(comp =>
-                          comp.id === renderComponent.id ? updatedRenderComponent : comp
-                        )
-                        updateEquipmentObject(selectedObject.id, { components: updatedComponents })
-                      }}
-                      className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                      比率維持
-                    </button>
-                  </div>
+                  {(() => {
+                    const portStats = getPortStatsBySide(selectedObject)
+                    const sides = [
+                      { key: Side.LEFT, name: '左', count: portStats[Side.LEFT].count },
+                      { key: Side.RIGHT, name: '右', count: portStats[Side.RIGHT].count },
+                      { key: Side.TOP, name: '上', count: portStats[Side.TOP].count },
+                      { key: Side.BOTTOM, name: '下', count: portStats[Side.BOTTOM].count }
+                    ].filter(side => side.count > 0)
+
+                    return (
+                      <div className="space-y-3">
+                        {sides.map(side => (
+                          <div key={side.key} className="bg-gray-50 p-2 rounded border">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-xs font-medium text-black">
+                                {side.name}辺 ({side.count}ポート)
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-1 mb-2">
+                              {Object.entries(ARRANGEMENT_PRESETS).map(([key, preset]) => (
+                                <button
+                                  key={key}
+                                  onClick={() => {
+                                    const recommended = getRecommendedArrangement(selectedObject, side.key)
+                                    const options: PortArrangementOptions = {
+                                      ...recommended,
+                                      sortBy: preset.sortBy,
+                                      sortOrder: preset.sortOrder
+                                    }
+                                    const updatedObject = arrangePortsOnSide(selectedObject, options)
+                                    updateEquipmentObject(selectedObject.id, updatedObject)
+                                  }}
+                                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                                  title={preset.description}
+                                >
+                                  {preset.name}
+                                </button>
+                              ))}
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                const recommended = getRecommendedArrangement(selectedObject, side.key)
+                                const updatedObject = arrangePortsOnSide(selectedObject, recommended)
+                                updateEquipmentObject(selectedObject.id, updatedObject)
+                              }}
+                              className="w-full px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                            >
+                              自動整列
+                            </button>
+                          </div>
+                        ))}
+
+                        {sides.length === 0 && (
+                          <p className="text-xs text-gray-500 text-center py-2">
+                            ポートがありません
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </>
               )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ポート整列 */}
-          <div className={`border-t border-gray-200 ${collapsedSections.has('portArrangement') ? 'pt-2' : 'pt-4'}`}>
-            <button
-              onClick={() => toggleSectionCollapse('portArrangement')}
-              className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('portArrangement') ? 'mb-1' : 'mb-3'}`}
-            >
-              <h3 className="text-sm font-medium text-black">ポート整列</h3>
-              <span className="text-xs text-gray-500">
-                {collapsedSections.has('portArrangement') ? '▶' : '▼'}
-              </span>
-            </button>
 
-            {!collapsedSections.has('portArrangement') && (
-              <>
-                {(() => {
-                  const portStats = getPortStatsBySide(selectedObject)
-                  const sides = [
-                    { key: Side.LEFT, name: '左', count: portStats[Side.LEFT].count },
-                    { key: Side.RIGHT, name: '右', count: portStats[Side.RIGHT].count },
-                    { key: Side.TOP, name: '上', count: portStats[Side.TOP].count },
-                    { key: Side.BOTTOM, name: '下', count: portStats[Side.BOTTOM].count }
-                  ].filter(side => side.count > 0)
 
+
+
+        {activeTab === 'components' && (
+          <div className="space-y-4">
+            {/* ポート追加 */}
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={handleAddPort}
+                className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                ポート追加
+              </button>
+            </div>
+
+            {/* 全コンポーネント表示 */}
+            <div className="space-y-2">
+              {selectedObject.components.map(component => {
+                const isCollapsed = collapsedComponents.has(component.id)
+                
+                if (component.type === ComponentType.CONNECTION_PORT) {
+                  // ポートコンポーネントの詳細表示
+                  const port = component as any
                   return (
-                    <div className="space-y-3">
-                      {sides.map(side => (
-                        <div key={side.key} className="bg-gray-50 p-2 rounded border">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-medium text-black">
-                              {side.name}辺 ({side.count}ポート)
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-1 mb-2">
-                            {Object.entries(ARRANGEMENT_PRESETS).map(([key, preset]) => (
-                              <button
-                                key={key}
-                                onClick={() => {
-                                  const recommended = getRecommendedArrangement(selectedObject, side.key)
-                                  const options: PortArrangementOptions = {
-                                    ...recommended,
-                                    sortBy: preset.sortBy,
-                                    sortOrder: preset.sortOrder
+                    <div key={component.id} className={`bg-blue-50 border border-blue-200 rounded ${isCollapsed ? 'p-2' : 'p-3'}`}>
+                      <div className={`flex justify-between items-start ${isCollapsed ? 'mb-0' : 'mb-2'}`}>
+                        <button
+                          onClick={() => toggleComponentCollapse(component.id)}
+                          className="flex items-center gap-2 flex-1 text-left hover:bg-blue-100 px-1 py-0.5 rounded"
+                        >
+                          <span className="text-xs text-gray-500">
+                            {isCollapsed ? '▶' : '▼'}
+                          </span>
+                          <span className="text-xs font-medium text-blue-800">
+                            {port.data.label || getPortTypeDisplayName(port.data.portType)}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${component.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {component.enabled ? '有効' : '無効'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => handleRemovePort(component.id)}
+                          className="text-red-500 hover:text-red-700 px-2 py-1 text-xs font-medium"
+                        >
+                          削除
+                        </button>
+                      </div>
+
+                      {!isCollapsed && (
+                        <div className="space-y-2 text-xs">
+                          {/* ラベル */}
+                          <div>
+                            <label className="block text-xs font-medium text-black mb-1">ラベル</label>
+                            <input
+                              type="text"
+                              value={port.data.label || ''}
+                              onChange={(e) => {
+                                const updatedPort = {
+                                  ...port,
+                                  data: {
+                                    ...port.data,
+                                    label: e.target.value
                                   }
-                                  const updatedObject = arrangePortsOnSide(selectedObject, options)
-                                  updateEquipmentObject(selectedObject.id, updatedObject)
-                                }}
-                                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                                title={preset.description}
-                              >
-                                {preset.name}
-                              </button>
-                            ))}
+                                }
+                                const updatedComponents = selectedObject.components.map(comp =>
+                                  comp.id === port.id ? updatedPort : comp
+                                )
+                                updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                              }}
+                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                              placeholder="ポート名"
+                            />
                           </div>
-                          
-                          <button
-                            onClick={() => {
-                              const recommended = getRecommendedArrangement(selectedObject, side.key)
-                              const updatedObject = arrangePortsOnSide(selectedObject, recommended)
-                              updateEquipmentObject(selectedObject.id, updatedObject)
-                            }}
-                            className="w-full px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
-                          >
-                            自動整列
-                          </button>
+
+                          {/* ポートタイプ */}
+                          <div>
+                            <label className="block text-xs font-medium text-black mb-1">タイプ</label>
+                            <select
+                              value={port.data.portType}
+                              onChange={(e) => {
+                                const newPortType = e.target.value as PortType
+                                const updatedPort = {
+                                  ...port,
+                                  data: {
+                                    ...port.data,
+                                    portType: newPortType,
+                                    constraints: {
+                                      ...port.data.constraints,
+                                      allowedPortTypes: getCompatiblePorts(newPortType)
+                                    }
+                                  }
+                                }
+                                const updatedComponents = selectedObject.components.map(comp =>
+                                  comp.id === port.id ? updatedPort : comp
+                                )
+                                updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                              }}
+                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                            >
+                              {Object.values(PortType).map(portType => (
+                                <option key={portType} value={portType}>
+                                  {getPortTypeDisplayName(portType)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* 方向 */}
+                          <div>
+                            <label className="block text-xs font-medium text-black mb-1">方向</label>
+                            <select
+                              value={port.data.direction}
+                              onChange={(e) => {
+                                const updatedPort = {
+                                  ...port,
+                                  data: {
+                                    ...port.data,
+                                    direction: e.target.value as PortDirection
+                                  }
+                                }
+                                const updatedComponents = selectedObject.components.map(comp =>
+                                  comp.id === port.id ? updatedPort : comp
+                                )
+                                updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                              }}
+                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                            >
+                              <option value={PortDirection.INPUT}>入力</option>
+                              <option value={PortDirection.OUTPUT}>出力</option>
+                              <option value={PortDirection.BIDIRECTIONAL}>双方向</option>
+                            </select>
+                          </div>
+
+                          {/* 位置 */}
+                          <div>
+                            <label className="block text-xs font-medium text-black mb-1">配置辺</label>
+                            <select
+                              value={port.data.side}
+                              onChange={(e) => {
+                                const updatedPort = {
+                                  ...port,
+                                  data: {
+                                    ...port.data,
+                                    side: e.target.value as Side
+                                  }
+                                }
+                                const updatedComponents = selectedObject.components.map(comp =>
+                                  comp.id === port.id ? updatedPort : comp
+                                )
+                                updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                              }}
+                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                            >
+                              <option value={Side.LEFT}>左</option>
+                              <option value={Side.RIGHT}>右</option>
+                              <option value={Side.TOP}>上</option>
+                              <option value={Side.BOTTOM}>下</option>
+                            </select>
+                          </div>
                         </div>
-                      ))}
-                      
-                      {sides.length === 0 && (
-                        <p className="text-xs text-gray-500 text-center py-2">
-                          ポートがありません
-                        </p>
                       )}
                     </div>
                   )
-                })()}
-              </>
-            )}
-          </div>
+                }
 
-          {/* コンポーネント管理 */}
-          <div className={`border-t border-gray-200 ${collapsedSections.has('components') ? 'pt-2' : 'pt-4'}`}>
-            <button
-              onClick={() => toggleSectionCollapse('components')}
-              className={`flex items-center justify-between w-full text-left hover:bg-gray-50 px-1 py-0.5 rounded ${collapsedSections.has('components') ? 'mb-1' : 'mb-3'}`}
-            >
-              <h3 className="text-sm font-medium text-black">コンポーネント</h3>
-              <span className="text-xs text-gray-500">
-                {collapsedSections.has('components') ? '▶' : '▼'}
-              </span>
-            </button>
+                if (component.type === ComponentType.RENDER) {
+                  const renderComp = component as RenderComponent
+                  return (
+                    <div key={component.id} className={`bg-green-50 border border-green-200 rounded ${isCollapsed ? 'p-2' : 'p-3'}`}>
+                      <div className={`flex justify-between items-start ${isCollapsed ? 'mb-0' : 'mb-2'}`}>
+                        <button
+                          onClick={() => toggleComponentCollapse(component.id)}
+                          className="flex items-center gap-2 flex-1 text-left hover:bg-green-100 px-1 py-0.5 rounded"
+                        >
+                          <span className="text-xs text-gray-500">
+                            {isCollapsed ? '▶' : '▼'}
+                          </span>
+                          <span className="text-xs font-medium text-green-800">RENDER</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${component.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {component.enabled ? '有効' : '無効'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const updatedComponent = {
+                              ...component,
+                              enabled: !component.enabled
+                            }
+                            const updatedComponents = selectedObject.components.map(comp =>
+                              comp.id === component.id ? updatedComponent : comp
+                            )
+                            updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                          }}
+                          className={`px-2 py-1 text-xs rounded ${component.enabled ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                        >
+                          {component.enabled ? '無効化' : '有効化'}
+                        </button>
+                      </div>
 
-            {!collapsedSections.has('components') && (
-              <>
-                <div className="flex gap-2 mb-3">
-                  <button
-                    onClick={handleAddPort}
-                    className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    ポート追加
-                  </button>
-                  {/* 将来的に他のコンポーネント追加ボタンをここに */}
-                </div>
+                      {!isCollapsed && (
+                        <div className="space-y-3 text-xs">
+                          {/* ラベル設定 */}
+                          {renderComp.data.label && (
+                            <div>
+                              <h4 className="text-xs font-medium text-gray-800 mb-2">ラベル設定</h4>
 
-                {/* 全コンポーネント表示 */}
-                <div className="space-y-2">
-                  {selectedObject.components.map(component => {
-                    if (component.type === ComponentType.CONNECTION_PORT) {
-                      // ポートコンポーネントの詳細表示
-                      const port = component as any
-                      const isCollapsed = collapsedComponents.has(component.id)
-                      return (
-                        <div key={component.id} className={`bg-blue-50 border border-blue-200 rounded ${isCollapsed ? 'p-2' : 'p-3'}`}>
-                          <div className={`flex justify-between items-start ${isCollapsed ? 'mb-0' : 'mb-2'}`}>
-                            <button
-                              onClick={() => toggleComponentCollapse(component.id)}
-                              className="flex items-center gap-2 flex-1 text-left hover:bg-blue-100 px-1 py-0.5 rounded"
-                            >
-                              <span className="text-xs text-gray-500">
-                                {isCollapsed ? '▶' : '▼'}
-                              </span>
-                              <span className="text-xs font-medium text-blue-800">CONNECTION PORT</span>
-                              <span className={`text-xs px-2 py-0.5 rounded ${component.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
-                                {component.enabled ? '有効' : '無効'}
-                              </span>
-                              {port.data.label && (
-                                <span className="text-xs text-blue-600">({port.data.label})</span>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleRemovePort(component.id)}
-                              className="text-red-500 hover:text-red-700 px-2 py-1 text-xs font-medium"
-                            >
-                              削除
-                            </button>
-                          </div>
-
-                          {!isCollapsed && (
-                            <div className="space-y-2 text-xs">
-                              {/* ラベル */}
-                              <div>
-                                <label className="block text-xs font-medium text-black mb-1">ラベル</label>
+                              {/* ラベルテキスト */}
+                              <div className="mb-2">
+                                <label className="block text-xs font-medium text-black mb-1">テキスト</label>
                                 <input
                                   type="text"
-                                  value={port.data.label || ''}
+                                  value={renderComp.data.label.text}
                                   onChange={(e) => {
-                                    const updatedPort = {
-                                      ...port,
+                                    const updatedComponent = {
+                                      ...renderComp,
                                       data: {
-                                        ...port.data,
-                                        label: e.target.value
+                                        ...renderComp.data,
+                                        label: {
+                                          ...renderComp.data.label,
+                                          text: e.target.value
+                                        }
                                       }
                                     }
                                     const updatedComponents = selectedObject.components.map(comp =>
-                                      comp.id === port.id ? updatedPort : comp
+                                      comp.id === component.id ? updatedComponent : comp
                                     )
-                                    updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                                    updateEquipmentObject(selectedObject.id, { components: updatedComponents })
                                   }}
                                   className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
-                                  placeholder="ポート名"
                                 />
                               </div>
 
-                              {/* ポートタイプ */}
-                              <div>
-                                <label className="block text-xs font-medium text-black mb-1">タイプ</label>
-                                <select
-                                  value={port.data.portType}
+                              {/* ラベルフォントサイズ */}
+                              <div className="mb-2">
+                                <label className="block text-xs font-medium text-black mb-1">
+                                  フォントサイズ: {renderComp.data.label.fontSize || 12}px
+                                </label>
+                                <input
+                                  type="range"
+                                  min="4"
+                                  max="24"
+                                  value={renderComp.data.label.fontSize || 12}
                                   onChange={(e) => {
-                                    const newPortType = e.target.value as PortType
-                                    const updatedPort = {
-                                      ...port,
+                                    const updatedComponent = {
+                                      ...renderComp,
                                       data: {
-                                        ...port.data,
-                                        portType: newPortType,
-                                        constraints: {
-                                          ...port.data.constraints,
-                                          allowedPortTypes: getCompatiblePorts(newPortType)
+                                        ...renderComp.data,
+                                        label: {
+                                          ...renderComp.data.label,
+                                          fontSize: Number(e.target.value)
                                         }
                                       }
                                     }
                                     const updatedComponents = selectedObject.components.map(comp =>
-                                      comp.id === port.id ? updatedPort : comp
+                                      comp.id === component.id ? updatedComponent : comp
                                     )
-                                    updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                                    updateEquipmentObject(selectedObject.id, { components: updatedComponents })
                                   }}
-                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
-                                >
-                                  {Object.values(PortType).map(type => (
-                                    <option key={type} value={type}>
-                                      {getPortTypeDisplayName(type)}
-                                    </option>
-                                  ))}
-                                </select>
+                                  className="w-full"
+                                />
                               </div>
 
-                              {/* 方向 */}
-                              <div>
-                                <label className="block text-xs font-medium text-black mb-1">方向</label>
-                                <select
-                                  value={port.data.direction}
+                              {/* ラベル色 */}
+                              <div className="mb-2">
+                                <label className="block text-xs font-medium text-black mb-1">文字色</label>
+                                <input
+                                  type="color"
+                                  value={renderComp.data.label.color || '#ffffff'}
                                   onChange={(e) => {
-                                    const updatedPort = {
-                                      ...port,
+                                    const updatedComponent = {
+                                      ...renderComp,
                                       data: {
-                                        ...port.data,
-                                        direction: e.target.value as PortDirection
+                                        ...renderComp.data,
+                                        label: {
+                                          ...renderComp.data.label,
+                                          color: e.target.value
+                                        }
                                       }
                                     }
                                     const updatedComponents = selectedObject.components.map(comp =>
-                                      comp.id === port.id ? updatedPort : comp
+                                      comp.id === component.id ? updatedComponent : comp
                                     )
-                                    updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                                    updateEquipmentObject(selectedObject.id, { components: updatedComponents })
                                   }}
-                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
-                                >
-                                  <option value={PortDirection.INPUT}>入力</option>
-                                  <option value={PortDirection.OUTPUT}>出力</option>
-                                  <option value={PortDirection.BIDIRECTIONAL}>双方向</option>
-                                </select>
-                              </div>
-
-                              {/* 位置 */}
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <label className="block text-xs font-medium text-black mb-1">配置</label>
-                                  <select
-                                    value={port.data.position.side}
-                                    onChange={(e) => {
-                                      const updatedPort = {
-                                        ...port,
-                                        data: {
-                                          ...port.data,
-                                          position: {
-                                            ...port.data.position,
-                                            side: e.target.value as Side
-                                          }
-                                        }
-                                      }
-                                      const updatedComponents = selectedObject.components.map(comp =>
-                                        comp.id === port.id ? updatedPort : comp
-                                      )
-                                      updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
-                                    }}
-                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
-                                  >
-                                    <option value={Side.TOP}>上</option>
-                                    <option value={Side.RIGHT}>右</option>
-                                    <option value={Side.BOTTOM}>下</option>
-                                    <option value={Side.LEFT}>左</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-black mb-1">位置 (%)</label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={port.data.position.offset}
-                                    onChange={(e) => {
-                                      const updatedPort = {
-                                        ...port,
-                                        data: {
-                                          ...port.data,
-                                          position: {
-                                            ...port.data.position,
-                                            offset: Number(e.target.value)
-                                          }
-                                        }
-                                      }
-                                      const updatedComponents = selectedObject.components.map(comp =>
-                                        comp.id === port.id ? updatedPort : comp
-                                      )
-                                      updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
-                                    }}
-                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
-                                  />
-                                </div>
+                                  className="w-full h-8 border border-gray-300 rounded"
+                                />
                               </div>
                             </div>
                           )}
-                        </div>
-                      )
-                    } else {
-                      // その他のコンポーネント（RENDER、PROPERTY等）
-                      const isCollapsed = collapsedComponents.has(component.id)
-                      return (
-                        <div key={component.id} className={`bg-gray-50 border border-gray-200 rounded ${isCollapsed ? 'p-2' : 'p-3'}`}>
-                          <button
-                            onClick={() => toggleComponentCollapse(component.id)}
-                            className="flex items-center justify-between w-full text-left hover:bg-gray-100 px-1 py-0.5 rounded"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">
-                                {isCollapsed ? '▶' : '▼'}
-                              </span>
-                              <span className="text-xs font-medium text-gray-800 uppercase">{component.type}</span>
-                              <span className={`text-xs px-2 py-0.5 rounded ${component.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
-                                {component.enabled ? '有効' : '無効'}
-                              </span>
+
+                          {/* 図形設定 */}
+                          <div>
+                            <h4 className="text-xs font-medium text-gray-800 mb-2">図形設定</h4>
+
+                            {/* 背景色 */}
+                            <div className="mb-2">
+                              <label className="block text-xs font-medium text-black mb-1">背景色</label>
+                              <input
+                                type="color"
+                                value={renderComp.data.color}
+                                onChange={(e) => {
+                                  const updatedComponent = {
+                                    ...renderComp,
+                                    data: {
+                                      ...renderComp.data,
+                                      color: e.target.value
+                                    }
+                                  }
+                                  const updatedComponents = selectedObject.components.map(comp =>
+                                    comp.id === component.id ? updatedComponent : comp
+                                  )
+                                  updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                }}
+                                className="w-full h-8 border border-gray-300 rounded"
+                              />
                             </div>
-                            {/* 将来的にコンポーネント固有の操作ボタンを追加 */}
-                          </button>
 
-                          {!isCollapsed && (
-                            <div className="mt-2 space-y-3">
-                              {component.type === ComponentType.RENDER && (
-                                <div className="space-y-2">
-                                  {/* ラベル設定 */}
-                                  {(component as RenderComponent).data.label && (
-                                    <div>
-                                      <h4 className="text-xs font-medium text-gray-800 mb-2">ラベル設定</h4>
-                                      
-                                      {/* ラベルテキスト */}
-                                      <div className="mb-2">
-                                        <label className="block text-xs font-medium text-black mb-1">テキスト</label>
-                                        <input
-                                          type="text"
-                                          value={(component as RenderComponent).data.label?.text || ''}
-                                          onChange={(e) => {
-                                            const updatedComponent = {
-                                              ...component,
-                                              data: {
-                                                ...(component as RenderComponent).data,
-                                                label: {
-                                                  ...(component as RenderComponent).data.label!,
-                                                  text: e.target.value
-                                                }
-                                              }
-                                            }
-                                            const updatedComponents = selectedObject.components.map(comp =>
-                                              comp.id === component.id ? updatedComponent : comp
-                                            )
-                                            updateEquipmentObject(selectedObject.id, { components: updatedComponents })
-                                          }}
-                                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
-                                        />
-                                      </div>
-
-                                      {/* フォントサイズ */}
-                                      <div className="mb-2">
-                                        <label className="block text-xs font-medium text-black mb-1">
-                                          フォントサイズ: {(component as RenderComponent).data.label?.fontSize || 12}px
-                                        </label>
-                                        <input
-                                          type="range"
-                                          min="4"
-                                          max="24"
-                                          value={(component as RenderComponent).data.label?.fontSize || 12}
-                                          onChange={(e) => {
-                                            const updatedComponent = {
-                                              ...component,
-                                              data: {
-                                                ...(component as RenderComponent).data,
-                                                label: {
-                                                  ...(component as RenderComponent).data.label!,
-                                                  fontSize: Number(e.target.value)
-                                                }
-                                              }
-                                            }
-                                            const updatedComponents = selectedObject.components.map(comp =>
-                                              comp.id === component.id ? updatedComponent : comp
-                                            )
-                                            updateEquipmentObject(selectedObject.id, { components: updatedComponents })
-                                          }}
-                                          className="w-full"
-                                        />
-                                      </div>
-
-                                      {/* ラベル色 */}
-                                      <div className="mb-2">
-                                        <label className="block text-xs font-medium text-black mb-1">文字色</label>
-                                        <input
-                                          type="color"
-                                          value={(component as RenderComponent).data.label?.color || '#ffffff'}
-                                          onChange={(e) => {
-                                            const updatedComponent = {
-                                              ...component,
-                                              data: {
-                                                ...(component as RenderComponent).data,
-                                                label: {
-                                                  ...(component as RenderComponent).data.label!,
-                                                  color: e.target.value
-                                                }
-                                              }
-                                            }
-                                            const updatedComponents = selectedObject.components.map(comp =>
-                                              comp.id === component.id ? updatedComponent : comp
-                                            )
-                                            updateEquipmentObject(selectedObject.id, { components: updatedComponents })
-                                          }}
-                                          className="w-full h-8 border border-gray-300 rounded"
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* 図形設定 */}
-                                  <div>
-                                    <h4 className="text-xs font-medium text-gray-800 mb-2">図形設定</h4>
-                                    
-                                    {/* 背景色 */}
-                                    <div className="mb-2">
-                                      <label className="block text-xs font-medium text-black mb-1">背景色</label>
-                                      <input
-                                        type="color"
-                                        value={(component as RenderComponent).data.color}
-                                        onChange={(e) => {
-                                          const updatedComponent = {
-                                            ...component,
-                                            data: {
-                                              ...(component as RenderComponent).data,
-                                              color: e.target.value
-                                            }
-                                          }
-                                          const updatedComponents = selectedObject.components.map(comp =>
-                                            comp.id === component.id ? updatedComponent : comp
-                                          )
-                                          updateEquipmentObject(selectedObject.id, { components: updatedComponents })
-                                        }}
-                                        className="w-full h-8 border border-gray-300 rounded"
-                                      />
-                                    </div>
-
-                                    {/* 枠線色 */}
-                                    <div className="mb-2">
-                                      <label className="block text-xs font-medium text-black mb-1">枠線色</label>
-                                      <input
-                                        type="color"
-                                        value={(component as RenderComponent).data.strokeColor}
-                                        onChange={(e) => {
-                                          const updatedComponent = {
-                                            ...component,
-                                            data: {
-                                              ...(component as RenderComponent).data,
-                                              strokeColor: e.target.value
-                                            }
-                                          }
-                                          const updatedComponents = selectedObject.components.map(comp =>
-                                            comp.id === component.id ? updatedComponent : comp
-                                          )
-                                          updateEquipmentObject(selectedObject.id, { components: updatedComponents })
-                                        }}
-                                        className="w-full h-8 border border-gray-300 rounded"
-                                      />
-                                    </div>
-
-                                    {/* 枠線の太さ */}
-                                    <div className="mb-2">
-                                      <label className="block text-xs font-medium text-black mb-1">
-                                        枠線の太さ: {(component as RenderComponent).data.strokeWidth}px
-                                      </label>
-                                      <input
-                                        type="range"
-                                        min="0"
-                                        max="8"
-                                        value={(component as RenderComponent).data.strokeWidth}
-                                        onChange={(e) => {
-                                          const updatedComponent = {
-                                            ...component,
-                                            data: {
-                                              ...(component as RenderComponent).data,
-                                              strokeWidth: Number(e.target.value)
-                                            }
-                                          }
-                                          const updatedComponents = selectedObject.components.map(comp =>
-                                            comp.id === component.id ? updatedComponent : comp
-                                          )
-                                          updateEquipmentObject(selectedObject.id, { components: updatedComponents })
-                                        }}
-                                        className="w-full"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {component.type === ComponentType.PROPERTY && (
-                                <div className="text-xs text-gray-600">名前・属性を管理</div>
-                              )}
+                            {/* 枠線色 */}
+                            <div className="mb-2">
+                              <label className="block text-xs font-medium text-black mb-1">枠線色</label>
+                              <input
+                                type="color"
+                                value={renderComp.data.strokeColor}
+                                onChange={(e) => {
+                                  const updatedComponent = {
+                                    ...renderComp,
+                                    data: {
+                                      ...renderComp.data,
+                                      strokeColor: e.target.value
+                                    }
+                                  }
+                                  const updatedComponents = selectedObject.components.map(comp =>
+                                    comp.id === component.id ? updatedComponent : comp
+                                  )
+                                  updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                }}
+                                className="w-full h-8 border border-gray-300 rounded"
+                              />
                             </div>
-                          )}
+
+                            {/* 枠線の太さ */}
+                            <div className="mb-2">
+                              <label className="block text-xs font-medium text-black mb-1">
+                                枠線の太さ: {renderComp.data.strokeWidth}px
+                              </label>
+                              <input
+                                type="range"
+                                min="0"
+                                max="8"
+                                value={renderComp.data.strokeWidth}
+                                onChange={(e) => {
+                                  const updatedComponent = {
+                                    ...renderComp,
+                                    data: {
+                                      ...renderComp.data,
+                                      strokeWidth: Number(e.target.value)
+                                    }
+                                  }
+                                  const updatedComponents = selectedObject.components.map(comp =>
+                                    comp.id === component.id ? updatedComponent : comp
+                                  )
+                                  updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                                }}
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
                         </div>
-                      )
-                    }
-                  })}
-                </div>
-              </>
-            )}
+                      )}
+                    </div>
+                  )
+                }
+
+                if (component.type === ComponentType.PROPERTY) {
+                  return (
+                    <div key={component.id} className={`bg-yellow-50 border border-yellow-200 rounded ${isCollapsed ? 'p-2' : 'p-3'}`}>
+                      <div className={`flex justify-between items-start ${isCollapsed ? 'mb-0' : 'mb-2'}`}>
+                        <button
+                          onClick={() => toggleComponentCollapse(component.id)}
+                          className="flex items-center gap-2 flex-1 text-left hover:bg-yellow-100 px-1 py-0.5 rounded"
+                        >
+                          <span className="text-xs text-gray-500">
+                            {isCollapsed ? '▶' : '▼'}
+                          </span>
+                          <span className="text-xs font-medium text-yellow-800">PROPERTY</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${component.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {component.enabled ? '有効' : '無効'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const updatedComponent = {
+                              ...component,
+                              enabled: !component.enabled
+                            }
+                            const updatedComponents = selectedObject.components.map(comp =>
+                              comp.id === component.id ? updatedComponent : comp
+                            )
+                            updateEquipmentObject(selectedObject.id, { components: updatedComponents })
+                          }}
+                          className={`px-2 py-1 text-xs rounded ${component.enabled ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                        >
+                          {component.enabled ? '無効化' : '有効化'}
+                        </button>
+                      </div>
+
+                      {!isCollapsed && (
+                        <div className="text-xs text-gray-600">
+                          名前・属性を管理するコンポーネントです
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
+                return null
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

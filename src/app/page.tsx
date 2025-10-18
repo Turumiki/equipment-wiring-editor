@@ -21,7 +21,7 @@ export default function Home() {
 
   // WiringDiagramEditorの参照を取得するためのref
   const editorRef = useRef<any>(null)
-  
+
   // プロジェクトストアから保存・読み込み機能を取得
   const { saveProject, loadProject, createNewProject } = useProjectStore()
 
@@ -72,7 +72,18 @@ export default function Home() {
     // 名前を付けて保存の場合は、ファイル名を指定できるようにする
     const fileName = prompt('ファイル名を入力してください:', 'project.json')
     if (fileName) {
-      saveProject(fileName.endsWith('.json') ? fileName : fileName + '.json')
+      // プロジェクトデータを取得して直接ダウンロード
+      const { project } = useProjectStore.getState()
+      const projectData = JSON.stringify(project, null, 2)
+      const blob = new Blob([projectData], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName.endsWith('.json') ? fileName : fileName + '.json'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
     }
   }
 
