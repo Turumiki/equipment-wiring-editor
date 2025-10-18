@@ -195,7 +195,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           }
           labelStyle = {
             left: `${portOffset}%`,
-            top: '-2px',
+            top: '4px', // 機材内側に配置
             transform: 'translateX(-50%)'
           }
           break
@@ -207,9 +207,12 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
             right: '0px' // 辺の上に配置
           }
           labelStyle = {
-            right: '4px',
+            right: '8px', // 機材内側に配置
             top: `${portOffset}%`,
-            transform: 'translateY(-50%)'
+            transform: 'translateY(-15%)', // メインラベルをハンドル位置に揃える
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end'
           }
           break
         case Side.BOTTOM:
@@ -221,7 +224,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
           }
           labelStyle = {
             left: `${portOffset}%`,
-            bottom: '0px',
+            bottom: '4px', // 機材内側に配置
             transform: 'translateX(-50%)'
           }
           break
@@ -233,9 +236,12 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
             left: '0px' // 辺の上に配置
           }
           labelStyle = {
-            left: '4px',
+            left: '8px', // 機材内側に配置
             top: `${portOffset}%`,
-            transform: 'translateY(-50%)'
+            transform: 'translateY(-20%)', // メインラベルをハンドル位置に揃える
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start'
           }
           break
         default:
@@ -246,9 +252,12 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
             left: '0px'
           }
           labelStyle = {
-            left: '4px',
+            left: '8px', // 機材内側に配置
             top: `${portOffset}%`,
-            transform: 'translateY(-50%)'
+            transform: 'translateY(-50%)', // メインラベルをハンドル位置に揃える
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start'
           }
       }
 
@@ -407,8 +416,24 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
                     lineHeight: '1.2'
                   }}
                 >
-                  <div>{portLabel}</div>
-                  {showType && (
+                  {/* 上部と下部ポートでタイプを上に表示 */}
+                  {showType && (portSide === Side.TOP || portSide === Side.BOTTOM) && (
+                    <div
+                      style={{
+                        fontSize: '4px',
+                        opacity: 0.8,
+                        marginBottom: '1px'
+                      }}
+                    >
+                      {getPortTypeDisplayName(portType, direction)}
+                    </div>
+                  )}
+                  <div style={{
+                    // 左右のポートでメインラベルをハンドル位置に揃える
+                    margin: (portSide === Side.LEFT || portSide === Side.RIGHT) && showType ? '0' : undefined
+                  }}>{portLabel}</div>
+                  {/* 左右のポートでタイプを下に表示 */}
+                  {showType && (portSide === Side.LEFT || portSide === Side.RIGHT) && (
                     <div
                       style={{
                         fontSize: '4px',
