@@ -23,7 +23,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
   const renderComponent = getRenderComponent(equipmentObject)
   const portComponents = getConnectionPortComponents(equipmentObject)
   const propertyComponent = getPropertyComponent(equipmentObject)
-  const { showPortLabels } = useSettingsStore()
+  const { showPortLabels, settings } = useSettingsStore()
   const { updateEquipmentObject, project } = useProjectStore()
 
   // ポートラベルを表示するかどうか（選択時またはホバー時）
@@ -267,78 +267,49 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
         const directionText = direction === 'bidirectional' ? '' :
           direction === 'input' ? ' Input' : direction === 'output' ? ' Output' : ''
 
-        switch (portType) {
-          case 'xlr-male':
-            return `XLR Male${directionText}`
-          case 'xlr-female':
-            return `XLR Female${directionText}`
-          case 'trs-quarter':
-            return `TRS 1/4"${directionText}`
-          case 'ts-quarter':
-            return `TS 1/4"${directionText}`
-          case 'trs-mini':
-            return `TRS 3.5mm${directionText}`
-          case 'hdmi':
-            return `HDMI${directionText}`
-          case 'displayport':
-            return `DisplayPort${directionText}`
-          case 'dvi':
-            return `DVI${directionText}`
-          case 'usb-a':
-            return `USB-A${directionText}`
-          case 'usb-b':
-            return `USB-B${directionText}`
-          case 'usb-c':
-            return `USB-C${directionText}`
-          case 'thunderbolt':
-            return `Thunderbolt${directionText}`
-          case 'ethernet':
-            return `Ethernet${directionText}`
-          case 'dante':
-            return `Dante${directionText}`
-          case 'power-ac':
-            return `AC Power${directionText}`
-          case 'power-dc':
-            return `DC Power${directionText}`
-          case 'iec':
-            return `IEC Power${directionText}`
-          default:
-            return `${portType.toUpperCase()}${directionText}`
+        // 設定ストアからポートタイプ定義を取得
+        const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
+        if (portTypeDefinition) {
+          return `${portTypeDefinition.displayName || portTypeDefinition.name}${directionText}`
         }
+
+        // フォールバック：ポートタイプが見つからない場合
+        return `${portType.toUpperCase()}${directionText}`
       }
 
-      // シンプルなポートスタイル
-      const getPortColor = () => {
-        switch (portType) {
-          case 'xlr-male':
-          case 'xlr-female':
-            return direction === 'input' ? 'bg-gray-600 border-gray-800' : 'bg-gray-700 border-gray-900'
-          case 'trs-quarter':
-          case 'ts-quarter':
-          case 'trs-mini':
-            return direction === 'input' ? 'bg-gray-500 border-gray-700' : 'bg-gray-600 border-gray-800'
-          case 'hdmi':
-          case 'displayport':
-          case 'dvi':
-            return direction === 'input' ? 'bg-gray-600 border-gray-800' : 'bg-gray-700 border-gray-900'
-          case 'usb-a':
-          case 'usb-b':
-          case 'usb-c':
-          case 'thunderbolt':
-            return 'bg-gray-500 border-gray-700'
-          case 'ethernet':
-          case 'dante':
-            return 'bg-gray-600 border-gray-800'
-          case 'power-ac':
-          case 'power-dc':
-          case 'iec':
-            return 'bg-gray-700 border-gray-900'
-          default:
-            return direction === 'input' ? 'bg-gray-400 border-gray-600' : 'bg-gray-500 border-gray-700'
+      // ポートの色とスタイルを取得
+      const getPortStyle = () => {
+        // 設定ストアからポートタイプ定義を取得
+        const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
+
+        if (portTypeDefinition && portTypeDefinition.color) {
+          // カスタム色を使用（インラインスタイル）
+          return {
+            backgroundColor: portTypeDefinition.color,
+            borderColor: portTypeDefinition.color,
+            borderWidth: '2px',
+            opacity: direction === 'input' ? 0.8 : 1
+          }
         }
+
+        // フォールバック：デフォルトのTailwindクラス
+        return null
       }
 
-      const handleClasses = `w-3 h-3 border-2 ${getPortColor()}`
+      const getPortClasses = () => {
+        const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
+
+        // カスタム色がある場合はクラスを使わない
+        if (portTypeDefinition && portTypeDefinition.color) {
+          return 'w-3 h-3 border-2'
+        }
+
+        // デフォルトのTailwindクラス
+        return `w-3 h-3 border-2 ${direction === 'input' ? 'bg-gray-400 border-gray-600' : 'bg-gray-500 border-gray-700'}`
+      }
+
+      const handleClasses = getPortClasses()
+      const portStyle = getPortStyle()
       const portTypeTooltip = getPortTypeDisplayName(portType, direction)
 
       return (
@@ -363,6 +334,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
                 id={portComponent.id}
                 style={{
                   ...handleStyle,
+                  ...portStyle,
                   zIndex: 2 // sourceを上に配置してドラッグしやすくする
                 }}
                 className={handleClasses} // 通常のポートと同じ見た目
@@ -375,7 +347,10 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
               type={direction === 'input' ? 'target' : 'source'}
               position={position}
               id={portComponent.id}
-              style={handleStyle}
+              style={{
+                ...handleStyle,
+                ...portStyle
+              }}
               className={handleClasses}
               onClick={(e) => handlePortClick(e, portComponent)}
               title={`${portTypeTooltip} (ダブルクリックで編集)`}

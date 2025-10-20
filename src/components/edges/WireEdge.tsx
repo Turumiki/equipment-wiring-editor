@@ -20,11 +20,11 @@ export default function WireEdge({
   selected
 }: EdgeProps<WireEdgeData>) {
   const { showWireLabels, settings } = useSettingsStore()
-  
+
   if (!data?.wire) {
     return null
   }
-  
+
   const { wire } = data
   const { style, label, wireType } = wire
 
@@ -36,22 +36,24 @@ export default function WireEdge({
     targetY,
     targetPosition,
   })
+  
+
 
   // ワイヤータイプに応じた色とスタイル
   const getWireStyle = () => {
     // 設定ストアからワイヤータイプ設定を取得
     // wireTypeの値（例: "xlr-cable"）でnameまたはidを検索
-    const wireTypeSettings = settings.wireTypes.find(wt => 
+    const wireTypeSettings = settings.wireTypes.find(wt =>
       wt.name === wireType || wt.id === wireType
     )
-    
+
     // デバッグログは無効化
     // if (process.env.NODE_ENV === 'development') {
     //   console.log('Wire type:', wireType)
     //   console.log('Wire type settings found:', wireTypeSettings)
     //   console.log('Available wire types:', settings.wireTypes.map(wt => ({ id: wt.id, name: wt.name })))
     // }
-    
+
     // 個別のワイヤースタイルを優先し、設定ストアをフォールバックとして使用
     const baseStyle = {
       stroke: (style.color && style.color !== '') ? style.color : (wireTypeSettings?.color || '#059669'),
@@ -81,7 +83,7 @@ export default function WireEdge({
         strokeWidth="12"
         className="react-flow__edge-interaction"
       />
-      
+
       {/* 実際の表示線 */}
       <path
         id={id}
@@ -104,7 +106,7 @@ export default function WireEdge({
             className="react-flow__edge-reconnect-source"
             style={{ cursor: 'grab' }}
           />
-          
+
           {/* ターゲット側のReconnectハンドル */}
           <circle
             cx={targetX}
@@ -118,7 +120,7 @@ export default function WireEdge({
           />
         </>
       )}
-      
+
       {/* ラベル表示 */}
       {label && showWireLabels && (
         <EdgeLabelRenderer>

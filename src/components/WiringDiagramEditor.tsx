@@ -26,6 +26,7 @@ import { useSettingsStore } from '@/store/useSettingsStore'
 import { WireType, EquipmentObject, ShapeType, ComponentType } from '@/types'
 import EquipmentNode from '@/components/nodes/EquipmentNode'
 import WireEdge from '@/components/edges/WireEdge'
+import CustomConnectionLine from '@/components/edges/CustomConnectionLine'
 
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
@@ -172,12 +173,10 @@ function ReactFlowCanvas({
       isValidConnection={isValidConnection}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
-      connectionLineType={ConnectionLineType.SmoothStep}
-      connectionLineStyle={{
-        stroke: '#059669',
-        strokeWidth: 2,
-        strokeDasharray: '5,5'
-      }}
+      connectionLineComponent={CustomConnectionLine}
+      connectionRadius={20}
+      snapToGrid={false}
+      snapGrid={[15, 15]}
       fitView
       className="bg-gray-200"
       multiSelectionKeyCode="Shift"
@@ -227,7 +226,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   } | null>(null)
 
   const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
-  const { hydrate } = useSettingsStore()
+  const { hydrate, settings } = useSettingsStore()
 
   // クライアントサイドでの設定初期化
   useEffect(() => {
@@ -441,6 +440,14 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
         // ポートタイプに基づいてラベルを生成
         const getPortTypeLabel = (portType: string) => {
+          // 設定ストアからポートタイプ定義を取得
+          const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
+          if (portTypeDefinition) {
+            // displayNameまたはnameを使用し、短縮形があれば使用
+            return portTypeDefinition.shortName || portTypeDefinition.displayName || portTypeDefinition.name
+          }
+
+          // フォールバック：標準的なポートタイプの短縮形
           switch (portType) {
             case 'xlr-male':
             case 'xlr-female':
@@ -470,7 +477,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
         const wireType = sourcePort ? getWireTypeForPortType(sourcePort.data.portType) : WireType.XLR_CABLE
 
         // 設定ストアからワイヤータイプに応じたスタイルを取得
-        const { settings } = useSettingsStore.getState()
+        // settingsは既にuseSettingsStore()から取得済み
         const wireTypeSettings = settings.wireTypes.find(wt =>
           wt.name === wireType || wt.id === wireType
         )

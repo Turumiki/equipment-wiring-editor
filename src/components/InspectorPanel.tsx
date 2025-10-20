@@ -203,7 +203,7 @@ export default function InspectorPanel() {
               >
                 {settings.wireTypes.map(wireType => (
                   <option key={wireType.id} value={wireType.id}>
-                    {wireType.name}
+                    {wireType.displayName || wireType.name}
                   </option>
                 ))}
               </select>
@@ -696,7 +696,7 @@ export default function InspectorPanel() {
                     <option value="">選択してください</option>
                     {settings.wireTypes.map(wireType => (
                       <option key={wireType.id} value={wireType.id}>
-                        {wireType.name}
+                        {wireType.displayName || wireType.name}
                       </option>
                     ))}
                   </select>
@@ -812,8 +812,8 @@ export default function InspectorPanel() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 px-2 py-2 text-xs font-medium border-r border-gray-300 last:border-r-0 transition-colors ${activeTab === tab.id
-                  ? 'bg-white text-black border-b-2 border-gray-600'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-250 hover:text-black'
+                ? 'bg-white text-black border-b-2 border-gray-600'
+                : 'bg-gray-200 text-gray-600 hover:bg-gray-250 hover:text-black'
                 }`}
             >
               <div className="flex items-center justify-center gap-1">
@@ -1252,19 +1252,22 @@ export default function InspectorPanel() {
                           <div>
                             <label className="block text-xs font-medium text-black mb-1">配置辺</label>
                             <select
-                              value={port.data.side}
+                              value={port.data.position?.side || Side.LEFT}
                               onChange={(e) => {
                                 const updatedPort = {
                                   ...port,
                                   data: {
                                     ...port.data,
-                                    side: e.target.value as Side
+                                    position: {
+                                      ...port.data.position,
+                                      side: e.target.value as Side
+                                    }
                                   }
                                 }
                                 const updatedComponents = selectedObject.components.map(comp =>
                                   comp.id === port.id ? updatedPort : comp
                                 )
-                                updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
+                                updateEquipmentObject(selectedObject.id, { components: updatedComponents })
                               }}
                               className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
                             >
