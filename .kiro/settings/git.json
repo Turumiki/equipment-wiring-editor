@@ -1,0 +1,7 @@
+{
+  "commitMessage": {
+    "defaultLanguage": "japanese",
+    "format": "japanese",
+    "template": "追加|修正|更新|削除|リファクタ: {description}"
+  }
+}

@@ -375,13 +375,13 @@ interface SimpleTemplate {
   id: string
   name: string
   category: string
-  description: string
+  description?: string
   shape?: 'rectangle' | 'circle' | 'triangle'
   color?: string
   strokeColor?: string
   strokeWidth?: number
   size?: { width: number; height: number }
-  ports: SimpleTemplatePort[]
+  ports?: SimpleTemplatePort[]
 }
 
 // 文字列からenumへの変換ヘルパー
@@ -466,10 +466,10 @@ function createEquipmentFromSimpleTemplate(template: SimpleTemplate): EquipmentO
   }
 
   // プロパティコンポーネントを作成
-  const propertyComponent = createPropertyComponent(template.name, template.description)
+  const propertyComponent = createPropertyComponent(template.name, template.description || '')
 
   // ポートコンポーネントを作成
-  const ports = template.ports.map(portConfig => {
+  const ports = (template.ports || []).map(portConfig => {
     const port = createConnectionPortComponent(
       stringToSide(portConfig.side),
       Math.max(0, Math.min(100, portConfig.offset)), // 0-100に制限

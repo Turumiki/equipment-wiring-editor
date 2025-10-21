@@ -1,0 +1,10 @@
+{
+  "commitMessage": {
+    "language": "ja",
+    "locale": "ja-JP"
+  },
+  "ai": {
+    "language": "japanese",
+    "commitMessageLanguage": "ja"
+  }
+}
