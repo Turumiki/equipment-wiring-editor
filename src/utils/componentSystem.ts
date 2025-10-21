@@ -17,7 +17,8 @@ import { useProjectStore } from '@/store/useProjectStore'
 export function createRenderComponent(
   shape: ShapeType = ShapeType.RECTANGLE,
   color: string = '#6b7280',
-  size: { width: number; height: number } = { width: 100, height: 60 }
+  size: { width: number; height: number } = { width: 100, height: 60 },
+  labelText: string = ''
 ): RenderComponent {
   return {
     id: `render-${Date.now()}`,
@@ -30,10 +31,10 @@ export function createRenderComponent(
       strokeWidth: 2,
       size,
       label: {
-        text: '機材',
+        text: labelText,
         position: 'center' as any,
         fontSize: 6,
-        color: '#ffffff'
+        color: '#000000'
       }
     }
   }
@@ -377,6 +378,8 @@ interface SimpleTemplate {
   description: string
   shape?: 'rectangle' | 'circle' | 'triangle'
   color?: string
+  strokeColor?: string
+  strokeWidth?: number
   size?: { width: number; height: number }
   ports: SimpleTemplatePort[]
 }
@@ -428,48 +431,20 @@ function stringToShapeType(shape: string): ShapeType {
   }
 }
 
-// シンプルなテンプレート作成関数
-export function createEquipmentFromTemplate(template: SimpleTemplate | any): EquipmentObject {
-  // 新しいシンプル形式かチェック
+// シンプル形式テンプレート作成関数（統一）
+export function createEquipmentFromTemplate(template: SimpleTemplate): EquipmentObject {
+  // シンプル形式のテンプレートから機材オブジェクトを作成
   if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
-    return createEquipmentFromSimpleTemplate(template as SimpleTemplate)
+    return createEquipmentFromSimpleTemplate(template)
   }
 
-  // defaultComponentsが実際に定義されている場合
-  if (template.defaultComponents && Array.isArray(template.defaultComponents) && template.defaultComponents.length > 0) {
-    return createEquipmentFromDefaultComponents(template)
-  }
-
-  // それ以外は機材タイプベースの基本テンプレートにフォールバック
+  // ポートが定義されていない場合は基本的な機材オブジェクトを作成
   return createBasicEquipmentObject(
     template.name,
     { x: 100, y: 100 },
-    ShapeType.RECTANGLE,
+    template.shape ? stringToShapeType(template.shape) : ShapeType.RECTANGLE,
     template.id
   )
-}
-
-// defaultComponentsから機材オブジェクトを作成
-function createEquipmentFromDefaultComponents(template: any): EquipmentObject {
-  // defaultComponentsをそのまま使用してオブジェクトを作成
-  const components = template.defaultComponents.map((comp: any) => ({
-    ...comp,
-    id: `${comp.type}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
-  }))
-
-  return {
-    id: `${template.id}-${Date.now()}`,
-    name: template.name,
-    position: { x: 100, y: 100 },
-    rotation: 0,
-    scale: { x: 1, y: 1 },
-    components,
-    templateId: template.id,
-    metadata: {
-      category: template.category,
-      description: template.description
-    }
-  }
 }
 
 // シンプルテンプレートから機材オブジェクトを作成
@@ -477,13 +452,17 @@ function createEquipmentFromSimpleTemplate(template: SimpleTemplate): EquipmentO
   // レンダーコンポーネントを作成
   const renderComponent = createRenderComponent(
     template.shape ? stringToShapeType(template.shape) : ShapeType.RECTANGLE,
-    template.color || '#3b82f6',
-    template.size || { width: 100, height: 60 }
+    template.color || '#ffffff',
+    template.size || { width: 100, height: 60 },
+    '' // ラベルはデフォルトで空白（オーバーライド用）
   )
 
-  // ラベルを設定
-  if (renderComponent.data.label) {
-    renderComponent.data.label.text = template.name
+  // 枠線設定を適用
+  if (template.strokeColor) {
+    renderComponent.data.strokeColor = template.strokeColor
+  }
+  if (template.strokeWidth !== undefined) {
+    renderComponent.data.strokeWidth = template.strokeWidth
   }
 
   // プロパティコンポーネントを作成

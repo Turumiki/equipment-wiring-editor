@@ -266,6 +266,8 @@ export interface EquipmentTemplate {
   ports?: SimpleTemplatePort[];
   shape?: 'rectangle' | 'circle' | 'triangle';
   color?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
   size?: { width: number; height: number };
   
   tags: string[];

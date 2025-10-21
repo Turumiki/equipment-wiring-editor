@@ -54,8 +54,8 @@ export default function InspectorPanel() {
   // タブ状態を管理
   const [activeTab, setActiveTab] = useState<TabType>('overview')
 
-  // 折り畳み状態を管理
-  const [collapsedComponents, setCollapsedComponents] = useState<Set<string>>(new Set())
+  // 折り畳み状態を管理（展開されているコンポーネントのIDを保存）
+  const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set())
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
 
   // 編集完了時に履歴を保存（1秒後）
@@ -64,13 +64,13 @@ export default function InspectorPanel() {
   }, 1000, [project])
 
   const toggleComponentCollapse = (componentId: string) => {
-    const newCollapsed = new Set(collapsedComponents)
-    if (newCollapsed.has(componentId)) {
-      newCollapsed.delete(componentId)
+    const newExpanded = new Set(expandedComponents)
+    if (newExpanded.has(componentId)) {
+      newExpanded.delete(componentId)
     } else {
-      newCollapsed.add(componentId)
+      newExpanded.add(componentId)
     }
-    setCollapsedComponents(newCollapsed)
+    setExpandedComponents(newExpanded)
   }
 
   const toggleSectionCollapse = (sectionId: string) => {
@@ -1133,7 +1133,7 @@ export default function InspectorPanel() {
             {/* 全コンポーネント表示 */}
             <div className="space-y-2">
               {selectedObject.components.map(component => {
-                const isCollapsed = collapsedComponents.has(component.id)
+                const isCollapsed = !expandedComponents.has(component.id)
 
                 if (component.type === ComponentType.CONNECTION_PORT) {
                   // ポートコンポーネントの詳細表示

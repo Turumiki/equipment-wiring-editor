@@ -1,0 +1,133 @@
+[
+  {
+    "id": "camera",
+    "name": "カメラ",
+    "category": "映像",
+    "description": "デジタルカメラ",
+    "ports": [
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "hdmi",
+        "direction": "output",
+        "label": "HDMI Out"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "bidirectional",
+        "label": "USB-C"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 60
+    },
+    "tags": ["カメラ", "映像", "HDMI"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "display",
+    "name": "ディスプレイ",
+    "category": "映像",
+    "description": "液晶ディスプレイ",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "HDMI 1"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "HDMI 2"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "Power"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 120,
+      "height": 80
+    },
+    "tags": ["ディスプレイ", "映像", "HDMI"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "video-switcher",
+    "name": "映像スイッチャー",
+    "category": "映像",
+    "description": "4入力1出力 映像スイッチャー",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 20,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "Input 1"
+      },
+      {
+        "side": "left",
+        "offset": 40,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "Input 2"
+      },
+      {
+        "side": "left",
+        "offset": 60,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "Input 3"
+      },
+      {
+        "side": "left",
+        "offset": 80,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "Input 4"
+      },
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "hdmi",
+        "direction": "output",
+        "label": "Output"
+      },
+      {
+        "side": "top",
+        "offset": 50,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Control"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 140,
+      "height": 70
+    },
+    "tags": ["映像", "スイッチャー", "HDMI"],
+    "version": "1.0.0"
+  }
+]

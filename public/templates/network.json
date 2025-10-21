@@ -1,0 +1,55 @@
+[
+  {
+    "id": "simple-hub",
+    "name": "スイッチングハブ",
+    "category": "ネットワーク",
+    "description": "5ポート スイッチングハブ",
+    "ports": [
+      {
+        "side": "bottom",
+        "offset": 10,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Port 1"
+      },
+      {
+        "side": "bottom",
+        "offset": 30,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Port 2"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Port 3"
+      },
+      {
+        "side": "bottom",
+        "offset": 70,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Port 4"
+      },
+      {
+        "side": "bottom",
+        "offset": 90,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Port 5"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 140,
+      "height": 50
+    },
+    "tags": ["ネットワーク", "Ethernet", "ハブ"],
+    "version": "1.0.0"
+  }
+]

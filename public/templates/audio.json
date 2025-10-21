@@ -1,0 +1,228 @@
+[
+  {
+    "id": "audio-interface",
+    "name": "オーディオインターフェース",
+    "category": "オーディオ",
+    "description": "USB/Thunderbolt オーディオインターフェース",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 20,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Mic 1"
+      },
+      {
+        "side": "left",
+        "offset": 40,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Mic 2"
+      },
+      {
+        "side": "left",
+        "offset": 60,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Line 1"
+      },
+      {
+        "side": "left",
+        "offset": 80,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Line 2"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "trs-quarter",
+        "direction": "output",
+        "label": "Main L"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "trs-quarter",
+        "direction": "output",
+        "label": "Main R"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-b",
+        "direction": "bidirectional",
+        "label": "USB"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 120,
+      "height": 80
+    },
+    "tags": ["オーディオ", "USB", "レコーディング"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "microphone",
+    "name": "マイクロフォン",
+    "category": "オーディオ",
+    "description": "コンデンサー・ダイナミックマイク",
+    "ports": [
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "xlr-male",
+        "direction": "output",
+        "label": "XLR Out"
+      }
+    ],
+    "shape": "circle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 60,
+      "height": 60
+    },
+    "tags": ["マイク", "入力", "XLR"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "yamaha-ql1-simple",
+    "name": "YAMAHA QL1",
+    "category": "オーディオ",
+    "description": "YAMAHA QL1 デジタルミキサー",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 10,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Ch 1"
+      },
+      {
+        "side": "left",
+        "offset": 20,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Ch 2"
+      },
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Ch 3"
+      },
+      {
+        "side": "left",
+        "offset": 40,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Ch 4"
+      },
+      {
+        "side": "left",
+        "offset": 50,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Ch 5"
+      },
+      {
+        "side": "left",
+        "offset": 60,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Ch 6"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Ch 7"
+      },
+      {
+        "side": "left",
+        "offset": 80,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Ch 8"
+      },
+      {
+        "side": "right",
+        "offset": 25,
+        "type": "xlr-male",
+        "direction": "output",
+        "label": "Main L"
+      },
+      {
+        "side": "right",
+        "offset": 75,
+        "type": "xlr-male",
+        "direction": "output",
+        "label": "Main R"
+      },
+      {
+        "side": "top",
+        "offset": 30,
+        "type": "dante",
+        "direction": "bidirectional",
+        "label": "Dante 1"
+      },
+      {
+        "side": "top",
+        "offset": 70,
+        "type": "dante",
+        "direction": "bidirectional",
+        "label": "Dante 2"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-b",
+        "direction": "bidirectional",
+        "label": "USB"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 150,
+      "height": 80
+    },
+    "tags": ["ミキサー", "Dante", "YAMAHA"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "speaker",
+    "name": "スピーカー",
+    "category": "オーディオ",
+    "description": "パワードスピーカー",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 50,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Audio In"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 100
+    },
+    "tags": ["スピーカー", "出力"],
+    "version": "1.0.0"
+  }
+]

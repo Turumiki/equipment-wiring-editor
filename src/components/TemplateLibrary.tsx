@@ -25,6 +25,7 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
   } = useProjectStore()
   const {
     equipmentTemplates: globalTemplates,
+    templatesLoaded,
     addEquipmentTemplate,
     removeEquipmentTemplate,
     exportEquipmentTemplates,
@@ -263,7 +264,11 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
 
       {/* テンプレート一覧 */}
       <div className="flex-1 overflow-y-auto p-1">
-        {filteredTemplates.length === 0 ? (
+        {!templatesLoaded && templateSource === 'global' ? (
+          <div className="text-center text-gray-500 text-xs mt-4">
+            テンプレートを読み込み中...
+          </div>
+        ) : filteredTemplates.length === 0 ? (
           <div className="text-center text-gray-500 text-xs mt-4">
             {templateSource === 'project' ? 'プロジェクトにテンプレートがありません' : 'テンプレートが見つかりません'}
           </div>

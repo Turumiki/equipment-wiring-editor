@@ -85,6 +85,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
     pushToHistory(newProject)
+    
+    // 自動保存
+    setTimeout(() => get().autoSaveProject(), 100)
+    
     return { project: newProject }
   }),
 
@@ -169,6 +173,31 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  },
+
+  // プロジェクトの自動保存（ローカルストレージ）
+  autoSaveProject: () => {
+    try {
+      if (typeof window === 'undefined') return
+      const { project } = get()
+      localStorage.setItem('current-project', JSON.stringify(project))
+    } catch (error) {
+      console.warn('プロジェクトの自動保存に失敗しました:', error)
+    }
+  },
+
+  // プロジェクトの自動読み込み
+  loadAutoSavedProject: () => {
+    try {
+      if (typeof window === 'undefined') return
+      const saved = localStorage.getItem('current-project')
+      if (saved) {
+        const project = JSON.parse(saved)
+        set({ project })
+      }
+    } catch (error) {
+      console.warn('プロジェクトの自動読み込みに失敗しました:', error)
+    }
   },
 
   loadProject: (project) => set({ project }),

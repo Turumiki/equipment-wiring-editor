@@ -3,14 +3,15 @@ import {
   PortTypeDefinition,
   WireTypeDefinition,
   ConnectionSettings,
-  PortDirection,
   EquipmentTemplate
 } from '@/types'
 import { createDefaultPortTypes } from '@/utils/portTypeDefaults'
+import { loadAllTemplates, getDefaultTemplates } from '@/utils/templateLoader'
 
 interface SettingsState {
   settings: ConnectionSettings
   equipmentTemplates: EquipmentTemplate[]
+  templatesLoaded: boolean
 
   // UI設定
   showPortLabels: 'always' | 'hover' | 'selected' | 'connected' | 'connectedHover' | 'alwaysWithType' | 'hoverWithType' | 'selectedWithType' | 'connectedWithType' | 'connectedHoverWithType'
@@ -44,115 +45,11 @@ interface SettingsState {
   setGridEnabled: (enabled: boolean) => void
   resetToDefaults: () => void
   hydrate: () => void
+  loadTemplatesFromFiles: () => Promise<void>
 }
 
-// シンプルなテンプレート形式の例
-const createDefaultEquipmentTemplates = (): EquipmentTemplate[] => [
-  // 従来の基本テンプレート（createEquipmentPorts関数を使用）
-  {
-    id: 'audio-interface',
-    name: 'オーディオインターフェース',
-    category: 'オーディオ',
-    description: 'USB/Thunderbolt オーディオインターフェース',
-    defaultComponents: [],
-    tags: ['オーディオ', 'USB', 'レコーディング'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'microphone',
-    name: 'マイクロフォン',
-    category: 'オーディオ',
-    description: 'コンデンサー・ダイナミックマイク',
-    defaultComponents: [],
-    tags: ['マイク', '入力', 'XLR'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-
-  // 新しいシンプル形式のテンプレート例
-  {
-    id: 'yamaha-ql1-simple',
-    name: 'YAMAHA QL1 (シンプル)',
-    category: 'オーディオ',
-    description: 'YAMAHA QL1 デジタルミキサー - シンプル形式',
-    // シンプルなポート配列形式
-    ports: [
-      // 左側：入力ポート
-      { side: 'left', offset: 10, type: 'xlr-female', direction: 'input', label: 'Ch 1' },
-      { side: 'left', offset: 20, type: 'xlr-female', direction: 'input', label: 'Ch 2' },
-      { side: 'left', offset: 30, type: 'xlr-female', direction: 'input', label: 'Ch 3' },
-      { side: 'left', offset: 40, type: 'xlr-female', direction: 'input', label: 'Ch 4' },
-      { side: 'left', offset: 50, type: 'xlr-female', direction: 'input', label: 'Ch 5' },
-      { side: 'left', offset: 60, type: 'xlr-female', direction: 'input', label: 'Ch 6' },
-      { side: 'left', offset: 70, type: 'xlr-female', direction: 'input', label: 'Ch 7' },
-      { side: 'left', offset: 80, type: 'xlr-female', direction: 'input', label: 'Ch 8' },
-
-      // 右側：出力ポート
-      { side: 'right', offset: 25, type: 'xlr-male', direction: 'output', label: 'Main L' },
-      { side: 'right', offset: 75, type: 'xlr-male', direction: 'output', label: 'Main R' },
-
-      // 上側：ネットワーク
-      { side: 'top', offset: 30, type: 'dante', direction: 'bidirectional', label: 'Dante 1' },
-      { side: 'top', offset: 70, type: 'dante', direction: 'bidirectional', label: 'Dante 2' },
-
-      // 下側：USB
-      { side: 'bottom', offset: 50, type: 'usb-b', direction: 'bidirectional', label: 'USB' }
-    ],
-    shape: 'rectangle',
-    color: '#7c3aed',
-    size: { width: 150, height: 80 },
-    tags: ['ミキサー', 'Dante', 'YAMAHA'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-
-  {
-    id: 'simple-computer',
-    name: 'パソコン (シンプル)',
-    category: 'コンピューター',
-    description: 'デスクトップPC - シンプル形式',
-    ports: [
-      { side: 'left', offset: 20, type: 'usb-a', direction: 'bidirectional', label: 'USB 1' },
-      { side: 'left', offset: 40, type: 'usb-a', direction: 'bidirectional', label: 'USB 2' },
-      { side: 'left', offset: 60, type: 'usb-c', direction: 'bidirectional', label: 'USB-C' },
-      { side: 'left', offset: 80, type: 'ethernet', direction: 'bidirectional', label: 'LAN' },
-      { side: 'right', offset: 30, type: 'hdmi', direction: 'output', label: 'HDMI' },
-      { side: 'right', offset: 70, type: 'trs-mini', direction: 'output', label: 'Audio' }
-    ],
-    shape: 'rectangle',
-    color: '#6b7280',
-    size: { width: 120, height: 70 },
-    tags: ['PC', 'コンピューター'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-
-  {
-    id: 'simple-hub',
-    name: 'スイッチングハブ (シンプル)',
-    category: 'ネットワーク',
-    description: '5ポート スイッチングハブ - シンプル形式',
-    ports: [
-      { side: 'bottom', offset: 10, type: 'ethernet', direction: 'bidirectional', label: 'Port 1' },
-      { side: 'bottom', offset: 30, type: 'ethernet', direction: 'bidirectional', label: 'Port 2' },
-      { side: 'bottom', offset: 50, type: 'ethernet', direction: 'bidirectional', label: 'Port 3' },
-      { side: 'bottom', offset: 70, type: 'ethernet', direction: 'bidirectional', label: 'Port 4' },
-      { side: 'bottom', offset: 90, type: 'ethernet', direction: 'bidirectional', label: 'Port 5' }
-    ],
-    shape: 'rectangle',
-    color: '#059669',
-    size: { width: 140, height: 50 },
-    tags: ['ネットワーク', 'Ethernet', 'ハブ'],
-    version: '1.0.0',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-]
+// フォールバック用のデフォルトテンプレート（JSONファイル読み込み失敗時）
+const createDefaultEquipmentTemplates = (): EquipmentTemplate[] => getDefaultTemplates()
 
 // デフォルト設定
 const createDefaultSettings = (): ConnectionSettings => ({
@@ -219,33 +116,12 @@ const createDefaultSettings = (): ConnectionSettings => ({
   }
 })
 
-// LocalStorageから設定を読み込み
+// 常にデフォルト設定を使用（ローカルストレージ無効）
 const loadSettingsFromStorage = () => {
-  try {
-    // SSR環境ではlocalStorageが存在しないため、クライアントサイドでのみ実行
-    if (typeof window === 'undefined') {
-      return null
-    }
-    const stored = localStorage.getItem('wiring-diagram-settings')
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      return {
-        settings: parsed.settings || createDefaultSettings(),
-        equipmentTemplates: parsed.equipmentTemplates || createDefaultEquipmentTemplates(),
-        showPortLabels: parsed.showPortLabels || 'connectedHover',
-        showWireLabels: parsed.showWireLabels ?? true,
-        canvasBackgroundColor: parsed.canvasBackgroundColor || '#f3f4f6',
-        gridColor: parsed.gridColor || '#d1d5db',
-        gridEnabled: parsed.gridEnabled ?? true
-      }
-    }
-  } catch (error) {
-    console.warn('設定の読み込みに失敗しました:', error)
-  }
-
   return {
     settings: createDefaultSettings(),
     equipmentTemplates: createDefaultEquipmentTemplates(),
+    templatesLoaded: false,
     showPortLabels: 'connectedHover' as const,
     showWireLabels: true,
     canvasBackgroundColor: '#f3f4f6',
@@ -254,48 +130,44 @@ const loadSettingsFromStorage = () => {
   }
 }
 
-// LocalStorageに設定を保存
+// ローカルストレージ保存を無効化（開発用）
 const saveSettingsToStorage = (state: Partial<SettingsState>) => {
-  try {
-    // SSR環境ではlocalStorageが存在しないため、クライアントサイドでのみ実行
-    if (typeof window === 'undefined') {
-      return
-    }
-    const toSave = {
-      settings: state.settings,
-      equipmentTemplates: state.equipmentTemplates,
-      showPortLabels: state.showPortLabels,
-      showWireLabels: state.showWireLabels,
-      canvasBackgroundColor: state.canvasBackgroundColor,
-      gridColor: state.gridColor,
-      gridEnabled: state.gridEnabled
-    }
-    localStorage.setItem('wiring-diagram-settings', JSON.stringify(toSave))
-  } catch (error) {
-    console.warn('設定の保存に失敗しました:', error)
-  }
+  // 保存処理を無効化
+  // console.log('設定保存をスキップしました（開発モード）')
 }
 
-const initialState = loadSettingsFromStorage() || {
-  settings: createDefaultSettings(),
-  equipmentTemplates: createDefaultEquipmentTemplates(),
-  showPortLabels: 'connectedHover' as const,
-  showWireLabels: true,
-  canvasBackgroundColor: '#f3f4f6',
-  gridColor: '#e5e7eb',
-  gridEnabled: true
-}
+const initialState = loadSettingsFromStorage()
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...initialState,
 
-  // クライアントサイドでの初期化
+  // クライアントサイドでの初期化（ローカルストレージ無効）
   hydrate: () => {
-    if (typeof window !== 'undefined') {
-      const stored = loadSettingsFromStorage()
-      if (stored) {
-        set(stored)
+    // 常にデフォルト設定を使用
+    const defaultState = loadSettingsFromStorage()
+    set(defaultState)
+
+    // JSONファイルからテンプレートを非同期で読み込み
+    get().loadTemplatesFromFiles()
+  },
+
+  // JSONファイルからテンプレートを読み込み
+  loadTemplatesFromFiles: async () => {
+    try {
+      const templates = await loadAllTemplates()
+      if (templates.length > 0) {
+        set({
+          equipmentTemplates: templates,
+          templatesLoaded: true
+        })
+        console.log(`Loaded ${templates.length} templates from JSON files`)
+      } else {
+        console.warn('No templates loaded from JSON files, using defaults')
+        set({ templatesLoaded: true })
       }
+    } catch (error) {
+      console.error('Failed to load templates from JSON files:', error)
+      set({ templatesLoaded: true })
     }
   },
 
@@ -459,13 +331,18 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setGridColor: (color) => set({ gridColor: color }),
   setGridEnabled: (enabled) => set({ gridEnabled: enabled }),
 
-  resetToDefaults: () => set({
-    settings: createDefaultSettings(),
-    equipmentTemplates: createDefaultEquipmentTemplates(),
-    showPortLabels: 'connectedHover',
-    showWireLabels: true,
-    canvasBackgroundColor: '#f3f4f6',
-    gridColor: '#d1d5db',
-    gridEnabled: true
-  })
+  resetToDefaults: () => {
+    set({
+      settings: createDefaultSettings(),
+      equipmentTemplates: createDefaultEquipmentTemplates(),
+      templatesLoaded: false,
+      showPortLabels: 'connectedHover',
+      showWireLabels: true,
+      canvasBackgroundColor: '#f3f4f6',
+      gridColor: '#d1d5db',
+      gridEnabled: true
+    })
+    // リセット後にJSONファイルから再読み込み
+    get().loadTemplatesFromFiles()
+  }
 }))

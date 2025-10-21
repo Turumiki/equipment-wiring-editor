@@ -1,0 +1,30 @@
+{
+  "categories": [
+    {
+      "id": "audio",
+      "name": "オーディオ",
+      "description": "オーディオ機器のテンプレート",
+      "file": "audio.json"
+    },
+    {
+      "id": "computer",
+      "name": "コンピューター",
+      "description": "コンピューター関連機器のテンプレート",
+      "file": "computer.json"
+    },
+    {
+      "id": "network",
+      "name": "ネットワーク",
+      "description": "ネットワーク機器のテンプレート",
+      "file": "network.json"
+    },
+    {
+      "id": "video",
+      "name": "映像",
+      "description": "映像機器のテンプレート",
+      "file": "video.json"
+    }
+  ],
+  "version": "1.0.0",
+  "lastUpdated": "2024-10-21"
+}

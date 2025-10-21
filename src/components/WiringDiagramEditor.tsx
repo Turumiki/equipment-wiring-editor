@@ -443,8 +443,10 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
           // 設定ストアからポートタイプ定義を取得
           const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
           if (portTypeDefinition) {
-            // displayNameまたはnameを使用し、短縮形があれば使用
-            return portTypeDefinition.shortName || portTypeDefinition.displayName || portTypeDefinition.name
+            // 短縮形を最優先、なければフォールバックの短縮形を使用
+            if (portTypeDefinition.shortName) {
+              return portTypeDefinition.shortName
+            }
           }
 
           // フォールバック：標準的なポートタイプの短縮形
@@ -472,8 +474,6 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
           }
         }
 
-        const wireLabel = sourcePort ? getPortTypeLabel(sourcePort.data.portType) : ''
-
         const wireType = sourcePort ? getWireTypeForPortType(sourcePort.data.portType) : WireType.XLR_CABLE
 
         // 設定ストアからワイヤータイプに応じたスタイルを取得
@@ -481,6 +481,11 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
         const wireTypeSettings = settings.wireTypes.find(wt =>
           wt.name === wireType || wt.id === wireType
         )
+
+        // ワイヤータイプからラベルを生成
+        const wireLabel = wireTypeSettings ? 
+          (wireTypeSettings.shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
+          wireType
 
         const newWire = {
           id: `wire-${Date.now()}`,

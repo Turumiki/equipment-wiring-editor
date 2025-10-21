@@ -92,7 +92,10 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
   }
 
   const { shape, color, strokeColor, strokeWidth, size, label } = renderComponent.data
-  const name = propertyComponent?.data.properties.name?.value || equipmentObject.name
+  // 表示名の優先順位: レンダーコンポーネントのラベル > プロパティの名前 > オブジェクト名
+  const name = (renderComponent?.data.label?.text && renderComponent.data.label.text !== '機材' && renderComponent.data.label.text !== '')
+    ? renderComponent.data.label.text
+    : (propertyComponent?.data.properties.name?.value || equipmentObject.name)
 
   // 図形の描画
   const renderShape = () => {
