@@ -337,7 +337,7 @@ export default function InspectorPanel() {
                       </label>
                       <input
                         type="text"
-                        value={prop.value}
+                        value={prop.value || ''}
                         onChange={(e) => handleBulkPropertyChange(key, e.target.value)}
                         className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black ${prop.hasMultipleValues ? 'bg-orange-50 border-orange-200' : ''
                           }`}
@@ -983,7 +983,7 @@ export default function InspectorPanel() {
                 </label>
                 <input
                   type="text"
-                  value={prop.value}
+                  value={prop.value || ''}
                   onChange={(e) => handlePropertyChange(key, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 />
