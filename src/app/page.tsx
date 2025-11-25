@@ -135,6 +135,9 @@ export default function Home() {
         onAlignLeft={() => editorRef.current?.alignLeft()}
         onAlignCenter={() => editorRef.current?.alignCenter()}
         onAlignRight={() => editorRef.current?.alignRight()}
+        onAlignTop={() => editorRef.current?.alignTop()}
+        onAlignCenterVertical={() => editorRef.current?.alignCenterVertical()}
+        onAlignBottom={() => editorRef.current?.alignBottom()}
         onDistributeHorizontal={() => editorRef.current?.distributeHorizontal()}
         onDistributeVertical={() => editorRef.current?.distributeVertical()}
         onValidateConnections={() => editorRef.current?.validateConnections()}

@@ -75,6 +75,9 @@ interface WiringDiagramEditorRef {
   alignLeft: () => void
   alignCenter: () => void
   alignRight: () => void
+  alignTop: () => void
+  alignCenterVertical: () => void
+  alignBottom: () => void
   distributeHorizontal: () => void
   distributeVertical: () => void
   validateConnections: () => void
@@ -482,6 +485,15 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     },
     alignRight: () => {
       alignSelected('right')
+    },
+    alignTop: () => {
+      alignSelected('top')
+    },
+    alignCenterVertical: () => {
+      alignSelected('center-vertical')
+    },
+    alignBottom: () => {
+      alignSelected('bottom')
     },
     distributeHorizontal: () => {
       distributeSelected('horizontal')

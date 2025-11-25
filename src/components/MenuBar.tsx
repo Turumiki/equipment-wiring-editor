@@ -39,6 +39,9 @@ interface MenuBarProps {
   onAlignLeft: () => void
   onAlignCenter: () => void
   onAlignRight: () => void
+  onAlignTop: () => void
+  onAlignCenterVertical: () => void
+  onAlignBottom: () => void
   onDistributeHorizontal: () => void
   onDistributeVertical: () => void
   onValidateConnections: () => void
@@ -148,6 +151,9 @@ export default function MenuBar({
   onAlignLeft,
   onAlignCenter,
   onAlignRight,
+  onAlignTop,
+  onAlignCenterVertical,
+  onAlignBottom,
   onDistributeHorizontal,
   onDistributeVertical,
   onValidateConnections,
@@ -239,6 +245,10 @@ export default function MenuBar({
     { label: '左揃え', onClick: onAlignLeft },
     { label: '中央揃え', onClick: onAlignCenter },
     { label: '右揃え', onClick: onAlignRight },
+    { separator: true },
+    { label: '上揃え', onClick: onAlignTop },
+    { label: '中央揃え（縦）', onClick: onAlignCenterVertical },
+    { label: '下揃え', onClick: onAlignBottom },
     { separator: true },
     { label: '水平に分散', onClick: onDistributeHorizontal },
     { label: '垂直に分散', onClick: onDistributeVertical },
