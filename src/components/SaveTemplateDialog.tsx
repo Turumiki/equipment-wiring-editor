@@ -21,7 +21,8 @@ export default function SaveTemplateDialog({ isOpen, equipmentObject, onClose }:
   const { addTemplateToProject, project } = useProjectStore()
 
   // 既存のカテゴリを取得（グローバル + プロジェクト）
-  const allTemplates = [...equipmentTemplates, ...project.customTemplates]
+  const customTemplates = Array.isArray(project.customTemplates) ? project.customTemplates : []
+  const allTemplates = [...equipmentTemplates, ...customTemplates]
   const existingCategories = Array.from(new Set(allTemplates.map(t => t.category)))
 
   React.useEffect(() => {
@@ -49,7 +50,7 @@ export default function SaveTemplateDialog({ isOpen, equipmentObject, onClose }:
       .replace(/^-|-$/g, '')
 
     // 既存のIDと重複チェック（保存先に応じて）
-    const targetTemplates = saveLocation === 'global' ? equipmentTemplates : project.customTemplates
+    const targetTemplates = saveLocation === 'global' ? equipmentTemplates : customTemplates
     if (targetTemplates.some(t => t.id === templateId)) {
       alert(`同じ名前のテンプレートが既に${saveLocation === 'global' ? 'グローバル' : 'プロジェクト'}に存在します`)
       return
