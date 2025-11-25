@@ -98,7 +98,11 @@ function ReactFlowCanvas({
   setContextMenu,
   onCloseMenus,
   addEquipmentObject,
-  getShapeForTemplate
+  getShapeForTemplate,
+  dragStartPositions,
+  setDragStartPositions,
+  lockedDirection,
+  setLockedDirection
 }: any) {
   const { screenToFlowPosition } = useReactFlow()
 
@@ -187,8 +191,65 @@ function ReactFlowCanvas({
         setContextMenu(null)
         onCloseMenus?.()
       }}
-      onNodeDrag={() => onCloseMenus?.()}
-      onNodeDragStart={() => onCloseMenus?.()}
+      onNodeDrag={(event, node) => {
+        onCloseMenus?.()
+        
+        // Shiftキーが押されている場合、方向を固定
+        if (event.shiftKey) {
+          const startPos = dragStartPositions.get(node.id)
+          if (startPos) {
+            const dx = Math.abs(node.position.x - startPos.x)
+            const dy = Math.abs(node.position.y - startPos.y)
+            
+            // まだ方向が固定されていない場合、最初の移動方向を決定
+            if (!lockedDirection.get(node.id)) {
+              const direction = dx > dy ? 'x' : 'y'
+              setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+                const newMap = new Map(prev)
+                newMap.set(node.id, direction)
+                return newMap
+              })
+            }
+          }
+        } else {
+          // Shiftキーが離された場合、方向固定を解除
+          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+            const newMap = new Map(prev)
+            newMap.delete(node.id)
+            return newMap
+          })
+        }
+      }}
+      onNodeDragStart={(event, node) => {
+        onCloseMenus?.()
+        
+        // ドラッグ開始位置を記録
+        setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
+          const newMap = new Map(prev)
+          newMap.set(node.id, { x: node.position.x, y: node.position.y })
+          return newMap
+        })
+        
+        // 方向固定をリセット
+        setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+          const newMap = new Map(prev)
+          newMap.delete(node.id)
+          return newMap
+        })
+      }}
+      onNodeDragStop={(event, node) => {
+        // ドラッグ終了時に状態をクリア
+        setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
+          const newMap = new Map(prev)
+          newMap.delete(node.id)
+          return newMap
+        })
+        setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+          const newMap = new Map(prev)
+          newMap.delete(node.id)
+          return newMap
+        })
+      }}
       onSelectionDragStart={() => onCloseMenus?.()}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
@@ -213,6 +274,10 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState<EquipmentObject | null>(null)
+  
+  // ドラッグ中の方向固定用の状態
+  const [dragStartPositions, setDragStartPositions] = useState<Map<string, { x: number; y: number }>>(new Map())
+  const [lockedDirection, setLockedDirection] = useState<Map<string, 'x' | 'y' | null>>(new Map())
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -352,9 +417,39 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
   // ノード変更の処理
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
-    onNodesChange(changes)
+    // Shiftキーで方向固定の処理
+    const processedChanges = changes.map(change => {
+      if (change.type === 'position' && change.position) {
+        const startPos = dragStartPositions.get(change.id)
+        const lockedDir = lockedDirection.get(change.id)
+        
+        if (startPos && lockedDir) {
+          // 方向が固定されている場合、固定された方向のみ移動を許可
+          if (lockedDir === 'x') {
+            return {
+              ...change,
+              position: {
+                x: change.position.x,
+                y: startPos.y
+              }
+            }
+          } else if (lockedDir === 'y') {
+            return {
+              ...change,
+              position: {
+                x: startPos.x,
+                y: change.position.y
+              }
+            }
+          }
+        }
+      }
+      return change
+    })
 
-    changes.forEach(change => {
+    onNodesChange(processedChanges)
+
+    processedChanges.forEach(change => {
       if (change.type === 'position' && change.position) {
         // 位置変更をプロジェクトに反映
         updateEquipmentObject(change.id, { position: change.position }, true) // ドラッグ中は履歴保存をスキップ
@@ -364,7 +459,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
         removeEquipmentObject(change.id)
       }
     })
-  }, [onNodesChange, updateEquipmentObject])
+  }, [onNodesChange, updateEquipmentObject, dragStartPositions, lockedDirection])
 
   // エッジ変更の処理
   const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
@@ -442,8 +537,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
           const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
           if (portTypeDefinition) {
             // 短縮形を最優先、なければフォールバックの短縮形を使用
-            if (portTypeDefinition.shortName) {
-              return portTypeDefinition.shortName
+            if ((portTypeDefinition as any).shortName) {
+              return (portTypeDefinition as any).shortName
             }
           }
 
@@ -482,7 +577,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
         // ワイヤータイプからラベルを生成
         const wireLabel = wireTypeSettings ? 
-          (wireTypeSettings.shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
+          ((wireTypeSettings as any).shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
           wireType
 
         const newWire = {
@@ -886,6 +981,10 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
               onCloseMenus={onCloseMenus}
               addEquipmentObject={addEquipmentObject}
               getShapeForTemplate={getShapeForTemplate}
+              dragStartPositions={dragStartPositions}
+              setDragStartPositions={setDragStartPositions}
+              lockedDirection={lockedDirection}
+              setLockedDirection={setLockedDirection}
             />
           </ReactFlowProvider>
         </div>
