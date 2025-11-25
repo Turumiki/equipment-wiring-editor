@@ -158,8 +158,7 @@ export default function MenuBar({
   onShowShortcuts,
   onShowAbout
 }: MenuBarProps) {
-  const { project } = useProjectStore()
-  const { canUndo, canRedo, undo, redo } = useHistoryStore()
+  const { project, canUndo, canRedo, undo, redo } = useProjectStore()
   const [internalOpenMenu, setInternalOpenMenu] = useState<string | null>(null)
   const openMenu = externalOpenMenu !== undefined ? externalOpenMenu : internalOpenMenu
   const setOpenMenu = onMenuChange || setInternalOpenMenu
