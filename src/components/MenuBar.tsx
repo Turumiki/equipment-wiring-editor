@@ -158,7 +158,7 @@ export default function MenuBar({
   onShowShortcuts,
   onShowAbout
 }: MenuBarProps) {
-  const { project, canUndo, canRedo, undo, redo } = useProjectStore()
+  const { project, canUndo, canRedo, undo, redo, canPaste } = useProjectStore()
   const [internalOpenMenu, setInternalOpenMenu] = useState<string | null>(null)
   const openMenu = externalOpenMenu !== undefined ? externalOpenMenu : internalOpenMenu
   const setOpenMenu = onMenuChange || setInternalOpenMenu
@@ -216,8 +216,8 @@ export default function MenuBar({
     { label: 'すべて選択', shortcut: 'Ctrl+A', onClick: onSelectAll },
     { label: '選択を解除', shortcut: 'Ctrl+D', onClick: onDeselectAll },
     { separator: true },
-    { label: 'コピー', shortcut: 'Ctrl+C', onClick: onCopy },
-    { label: '貼り付け', shortcut: 'Ctrl+V', onClick: onPaste },
+    { label: 'コピー', shortcut: 'Ctrl+C', onClick: onCopy, disabled: false },
+    { label: '貼り付け', shortcut: 'Ctrl+V', onClick: onPaste, disabled: !canPaste },
     { label: '複製', shortcut: 'Ctrl+Shift+D', onClick: onDuplicate },
     { label: '削除', shortcut: 'Delete', onClick: onDelete }
   ]

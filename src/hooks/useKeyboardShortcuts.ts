@@ -8,6 +8,9 @@ export function useKeyboardShortcuts() {
     canUndo, 
     canRedo, 
     duplicateSelected,
+    copySelected,
+    pasteSelected,
+    canPaste,
     removeEquipmentObject,
     removeWire,
     selectedObjectIds,
@@ -64,17 +67,15 @@ export function useKeyboardShortcuts() {
         case 'C':
           if (isCtrlOrCmd) {
             event.preventDefault()
-            // コピー機能（現在は複製として実装）
-            duplicateSelected()
+            copySelected()
           }
           break
 
         case 'v':
         case 'V':
-          if (isCtrlOrCmd) {
+          if (isCtrlOrCmd && canPaste()) {
             event.preventDefault()
-            // ペースト機能（現在は複製として実装）
-            duplicateSelected()
+            pasteSelected()
           }
           break
 
@@ -175,6 +176,9 @@ export function useKeyboardShortcuts() {
     canUndo, 
     canRedo, 
     duplicateSelected,
+    copySelected,
+    pasteSelected,
+    canPaste,
     removeEquipmentObject,
     removeWire,
     selectedObjectIds,

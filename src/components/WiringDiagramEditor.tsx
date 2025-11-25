@@ -225,7 +225,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     equipmentId: string
   } | null>(null)
 
-  const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
+  const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, copySelected, pasteSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
   const { hydrate, settings } = useSettingsStore()
 
   // クライアントサイドでの設定初期化
@@ -254,12 +254,10 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       setSelectedWires([])
     },
     copy: () => {
-      // コピーの実装（今後実装）
-      console.log('Copy not implemented yet')
+      copySelected()
     },
     paste: () => {
-      // 貼り付けの実装（今後実装）
-      console.log('Paste not implemented yet')
+      pasteSelected()
     },
     deleteSelected: () => {
       // 選択削除の実装
@@ -608,14 +606,15 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       case 'canvas':
         const hasSelection = selectedObjectIds.length > 0 || selectedWireIds.length > 0
         const hasBothTypes = selectedObjectIds.length > 0 && selectedWireIds.length > 0
+        const { canPaste: canPasteFromStore } = useProjectStore.getState()
         
         return [
           {
             label: '貼り付け',
             onClick: () => {
-              // TODO: 貼り付け機能の実装
+              pasteSelected()
             },
-            disabled: true
+            disabled: !canPasteFromStore()
           },
           ...(hasSelection ? [
             { separator: true } as const,

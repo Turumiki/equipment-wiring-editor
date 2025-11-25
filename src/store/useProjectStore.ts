@@ -7,10 +7,17 @@ import {
 } from '@/types'
 import { useHistoryStore } from './useHistoryStore'
 
+interface ClipboardData {
+  objects: EquipmentObject[]
+  wires: Wire[]
+  copiedAt: Date
+}
+
 interface ProjectState {
   project: Project
   selectedObjectIds: string[]
   selectedWireIds: string[]
+  clipboardData: ClipboardData | null
 
   // Actions
   addEquipmentObject: (object: EquipmentObject) => void
@@ -29,6 +36,9 @@ interface ProjectState {
   canUndo: () => boolean
   canRedo: () => boolean
   duplicateSelected: () => void
+  copySelected: () => void
+  pasteSelected: () => void
+  canPaste: () => boolean
   selectAll: () => void
   deleteSelected: () => void
   clearSelection: () => void
@@ -77,6 +87,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   project: createDefaultProject(),
   selectedObjectIds: [],
   selectedWireIds: [],
+  clipboardData: null,
 
   addEquipmentObject: (object) => set((state) => {
     const newProject = {
@@ -310,6 +321,118 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       project: newProject,
       selectedObjectIds: duplicatedObjects.map(obj => obj.id)
     })
+  },
+
+  copySelected: () => {
+    const state = get()
+    const selectedObjects = state.project.objects.filter(obj =>
+      state.selectedObjectIds.includes(obj.id)
+    )
+    const selectedWires = state.project.wires.filter(wire =>
+      state.selectedWireIds.includes(wire.id)
+    )
+
+    if (selectedObjects.length === 0 && selectedWires.length === 0) return
+
+    // 選択されたオブジェクト間のワイヤーも含める
+    const selectedObjectIds = new Set(state.selectedObjectIds)
+    const relatedWires = state.project.wires.filter(wire =>
+      selectedObjectIds.has(wire.sourceObjectId) && selectedObjectIds.has(wire.targetObjectId)
+    )
+
+    // クリップボードに保存（ディープコピー）
+    const clipboardData: ClipboardData = {
+      objects: JSON.parse(JSON.stringify(selectedObjects)),
+      wires: JSON.parse(JSON.stringify([...selectedWires, ...relatedWires])),
+      copiedAt: new Date()
+    }
+
+    set({ clipboardData })
+  },
+
+  pasteSelected: () => {
+    const state = get()
+    const clipboardData = state.clipboardData
+
+    if (!clipboardData || clipboardData.objects.length === 0) return
+
+    // オブジェクトIDのマッピングを作成（元のID -> 新しいID）
+    const objectIdMap = new Map<string, string>()
+    const portIdMap = new Map<string, string>()
+
+    const pastedObjects = clipboardData.objects.map(obj => {
+      const newObjectId = `${obj.id}-paste-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+      objectIdMap.set(obj.id, newObjectId)
+
+      const pastedComponents = obj.components.map(comp => {
+        const newCompId = `${comp.id}-paste-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+
+        // ポートコンポーネントの場合、ポートIDマッピングも作成
+        if (comp.type === 'connectionPort') {
+          portIdMap.set(comp.id, newCompId)
+        }
+
+        return {
+          ...comp,
+          id: newCompId,
+          data: {
+            ...comp.data,
+            // ポートコンポーネントの場合、connectedWiresをクリア
+            ...(comp.type === 'connectionPort' ? { connectedWires: [] } : {})
+          }
+        }
+      })
+
+      return {
+        ...obj,
+        id: newObjectId,
+        position: {
+          x: obj.position.x + 50,
+          y: obj.position.y + 50
+        },
+        components: pastedComponents
+      }
+    })
+
+    // クリップボード内のワイヤーを複製
+    const pastedWires = clipboardData.wires.map(wire => {
+      const newSourceObjectId = objectIdMap.get(wire.sourceObjectId)
+      const newTargetObjectId = objectIdMap.get(wire.targetObjectId)
+      const newSourcePortId = portIdMap.get(wire.sourcePortId)
+      const newTargetPortId = portIdMap.get(wire.targetPortId)
+
+      if (!newSourceObjectId || !newTargetObjectId || !newSourcePortId || !newTargetPortId) {
+        return null // スキップ
+      }
+
+      return {
+        ...wire,
+        id: `wire-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        sourceObjectId: newSourceObjectId,
+        sourcePortId: newSourcePortId,
+        targetObjectId: newTargetObjectId,
+        targetPortId: newTargetPortId
+      }
+    }).filter(wire => wire !== null) as Wire[]
+
+    const newProject = {
+      ...state.project,
+      objects: [...state.project.objects, ...pastedObjects],
+      wires: [...state.project.wires, ...pastedWires],
+      updatedAt: new Date()
+    }
+
+    pushToHistory(newProject)
+    set({
+      project: newProject,
+      selectedObjectIds: pastedObjects.map(obj => obj.id),
+      selectedWireIds: pastedWires.map(wire => wire.id)
+    })
+  },
+
+  canPaste: () => {
+    const state = get()
+    return state.clipboardData !== null && state.clipboardData.objects.length > 0
   },
 
   selectAll: () => {
