@@ -194,6 +194,10 @@ function ReactFlowCanvas({
       onNodeDrag={(event, node) => {
         onCloseMenus?.()
         
+        // 選択されているノードを取得
+        const selectedNodes = nodes.filter((n: Node) => n.selected)
+        const isMultiSelect = selectedNodes.length > 1
+        
         // Shiftキーが押されている場合、方向を固定
         if (event.shiftKey) {
           const startPos = dragStartPositions.get(node.id)
@@ -202,17 +206,84 @@ function ReactFlowCanvas({
             const dy = Math.abs(node.position.y - startPos.y)
             
             // まだ方向が固定されていない場合、最初の移動方向を決定
-            if (!lockedDirection.get(node.id)) {
+            const currentLockedDir = lockedDirection.get(node.id)
+            if (!currentLockedDir) {
               const direction = dx > dy ? 'x' : 'y'
-              setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-                const newMap = new Map(prev)
-                newMap.set(node.id, direction)
-                return newMap
-              })
+              
+              if (isMultiSelect) {
+                // 複数選択時は、すべての選択ノードに対して同じ方向を固定
+                setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+                  const newMap = new Map(prev)
+                  selectedNodes.forEach((n: Node) => {
+                    newMap.set(n.id, direction)
+                  })
+                  return newMap
+                })
+              } else {
+                // 単一選択時は、そのノードのみ固定
+                setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+                  const newMap = new Map(prev)
+                  newMap.set(node.id, direction)
+                  return newMap
+                })
+              }
             }
           }
         } else {
           // Shiftキーが離された場合、方向固定を解除
+          if (isMultiSelect) {
+            // 複数選択時は、すべての選択ノードの方向固定を解除
+            setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+              const newMap = new Map(prev)
+              selectedNodes.forEach((n: Node) => {
+                newMap.delete(n.id)
+              })
+              return newMap
+            })
+          } else {
+            // 単一選択時は、そのノードのみ解除
+            setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+              const newMap = new Map(prev)
+              newMap.delete(node.id)
+              return newMap
+            })
+          }
+        }
+      }}
+      onNodeDragStart={(event, node) => {
+        onCloseMenus?.()
+        
+        // 選択されているノードを取得
+        const selectedNodes = nodes.filter((n: Node) => n.selected)
+        const isMultiSelect = selectedNodes.length > 1
+        
+        if (isMultiSelect) {
+          // 複数選択時は、すべての選択ノードの開始位置を記録
+          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
+            const newMap = new Map(prev)
+            selectedNodes.forEach((n: Node) => {
+              newMap.set(n.id, { x: n.position.x, y: n.position.y })
+            })
+            return newMap
+          })
+          
+          // 方向固定をリセット
+          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+            const newMap = new Map(prev)
+            selectedNodes.forEach((n: Node) => {
+              newMap.delete(n.id)
+            })
+            return newMap
+          })
+        } else {
+          // 単一選択時は、そのノードのみ記録
+          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
+            const newMap = new Map(prev)
+            newMap.set(node.id, { x: node.position.x, y: node.position.y })
+            return newMap
+          })
+          
+          // 方向固定をリセット
           setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
             const newMap = new Map(prev)
             newMap.delete(node.id)
@@ -220,37 +291,65 @@ function ReactFlowCanvas({
           })
         }
       }}
-      onNodeDragStart={(event, node) => {
+      onNodeDragStop={(event, node) => {
+        // 選択されているノードを取得
+        const selectedNodes = nodes.filter((n: Node) => n.selected)
+        const isMultiSelect = selectedNodes.length > 1
+        
+        if (isMultiSelect) {
+          // 複数選択時は、すべての選択ノードの状態をクリア
+          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
+            const newMap = new Map(prev)
+            selectedNodes.forEach((n: Node) => {
+              newMap.delete(n.id)
+            })
+            return newMap
+          })
+          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+            const newMap = new Map(prev)
+            selectedNodes.forEach((n: Node) => {
+              newMap.delete(n.id)
+            })
+            return newMap
+          })
+        } else {
+          // 単一選択時は、そのノードのみクリア
+          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
+            const newMap = new Map(prev)
+            newMap.delete(node.id)
+            return newMap
+          })
+          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+            const newMap = new Map(prev)
+            newMap.delete(node.id)
+            return newMap
+          })
+        }
+      }}
+      onSelectionDragStart={() => {
         onCloseMenus?.()
         
-        // ドラッグ開始位置を記録
-        setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
-          const newMap = new Map(prev)
-          newMap.set(node.id, { x: node.position.x, y: node.position.y })
-          return newMap
-        })
-        
-        // 方向固定をリセット
-        setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-          const newMap = new Map(prev)
-          newMap.delete(node.id)
-          return newMap
-        })
+        // 複数選択時のドラッグ開始位置を記録
+        const selectedNodes = nodes.filter((node: Node) => node.selected)
+        if (selectedNodes.length > 1) {
+          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
+            const newMap = new Map(prev)
+            selectedNodes.forEach((node: Node) => {
+              newMap.set(node.id, { x: node.position.x, y: node.position.y })
+            })
+            return newMap
+          })
+          
+          // 方向固定をリセット
+          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
+            const newMap = new Map(prev)
+            selectedNodes.forEach((node: Node) => {
+              newMap.delete(node.id)
+            })
+            return newMap
+          })
+        }
       }}
-      onNodeDragStop={(event, node) => {
-        // ドラッグ終了時に状態をクリア
-        setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
-          const newMap = new Map(prev)
-          newMap.delete(node.id)
-          return newMap
-        })
-        setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-          const newMap = new Map(prev)
-          newMap.delete(node.id)
-          return newMap
-        })
-      }}
-      onSelectionDragStart={() => onCloseMenus?.()}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
 
