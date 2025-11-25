@@ -16,9 +16,10 @@ interface PortTableEditorProps {
     selectedObject: any
     updateEquipmentObject: (id: string, updates: any, skipHistory?: boolean) => void
     maxHeight?: string
+    compact?: boolean
 }
 
-export default function PortTableEditor({ selectedObject, updateEquipmentObject, maxHeight = 'max-h-96' }: PortTableEditorProps) {
+export default function PortTableEditor({ selectedObject, updateEquipmentObject, maxHeight = 'max-h-96', compact = false }: PortTableEditorProps) {
     const { settings } = useSettingsStore()
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
     const [editingCell, setEditingCell] = useState<{ rowId: string; column: string } | null>(null)
@@ -384,10 +385,10 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                 className={`border border-gray-300 rounded overflow-auto select-none ${maxHeight}`}
                 onDragStart={(e) => e.preventDefault()}
             >
-                <table className="w-full text-sm select-none">
+                <table className={`w-full select-none ${compact ? 'text-xs' : 'text-sm'}`}>
                     <thead>
                         <tr className="bg-gray-100">
-                            <th className="w-8 px-2 py-2 text-left border-r border-gray-300">
+                            <th className={`${compact ? 'w-6 px-1 py-1' : 'w-8 px-2 py-2'} text-left border-r border-gray-300`}>
                                 <input
                                     type="checkbox"
                                     checked={selectedRows.size === rows.length && rows.length > 0}
@@ -395,12 +396,12 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                     className="rounded"
                                 />
                             </th>
-                            <th className="px-3 py-2 text-left border-r border-gray-300 font-medium text-gray-800">ラベル</th>
-                            <th className="px-3 py-2 text-left border-r border-gray-300 font-medium text-gray-800">タイプ</th>
-                            <th className="px-3 py-2 text-left border-r border-gray-300 font-medium text-gray-800">方向</th>
-                            <th className="px-3 py-2 text-left border-r border-gray-300 font-medium text-gray-800">辺</th>
-                            <th className="px-3 py-2 text-left border-r border-gray-300 font-medium text-gray-800">位置%</th>
-                            <th className="w-16 px-2 py-2 text-center font-medium text-gray-800">操作</th>
+                            <th className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} text-left border-r border-gray-300 font-medium text-gray-800`}>ラベル</th>
+                            <th className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} text-left border-r border-gray-300 font-medium text-gray-800`}>タイプ</th>
+                            <th className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} text-left border-r border-gray-300 font-medium text-gray-800`}>方向</th>
+                            <th className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} text-left border-r border-gray-300 font-medium text-gray-800`}>辺</th>
+                            <th className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} text-left border-r border-gray-300 font-medium text-gray-800`}>位置%</th>
+                            <th className={`${compact ? 'w-12 px-1 py-1' : 'w-16 px-2 py-2'} text-center font-medium text-gray-800`}>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -426,7 +427,7 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                 }}
                             >
                                 {/* チェックボックス */}
-                                <td className="w-8 px-2 py-2 border-r border-gray-300">
+                                <td className={`${compact ? 'w-6 px-1 py-1' : 'w-8 px-2 py-2'} border-r border-gray-300`}>
                                     <input
                                         type="checkbox"
                                         checked={selectedRows.has(row.id)}
@@ -446,7 +447,7 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                 </td>
 
                                 {/* ラベル */}
-                                <td className="px-3 py-2 border-r border-gray-300">
+                                <td className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} border-r border-gray-300`}>
                                     {editingCell?.rowId === row.id && editingCell?.column === 'label' ? (
                                         <input
                                             type="text"
@@ -461,7 +462,7 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                                     setEditingCell(null)
                                                 }
                                             }}
-                                            className="w-full px-1 py-0 text-sm border-none outline-none bg-transparent text-gray-900"
+                                            className={`w-full px-1 py-0 border-none outline-none bg-transparent text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}
                                             style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
                                             autoFocus
                                         />
@@ -479,12 +480,12 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                 </td>
 
                                 {/* タイプ */}
-                                <td className="px-3 py-2 border-r border-gray-300">
+                                <td className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} border-r border-gray-300`}>
                                     <select
                                         value={row.type}
                                         onChange={(e) => updateCell(row.id, 'type', e.target.value)}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="w-full px-1 py-1 text-sm border-none outline-none bg-transparent text-gray-900 cursor-pointer"
+                                        className={`w-full px-1 py-1 border-none outline-none bg-transparent text-gray-900 cursor-pointer ${compact ? 'text-xs' : 'text-sm'}`}
                                     >
                                         {settings.portTypes.map(portTypeDef => (
                                             <option key={portTypeDef.id} value={portTypeDef.name}>
@@ -495,12 +496,12 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                 </td>
 
                                 {/* 方向 */}
-                                <td className="px-3 py-2 border-r border-gray-300">
+                                <td className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} border-r border-gray-300`}>
                                     <select
                                         value={row.direction}
                                         onChange={(e) => updateCell(row.id, 'direction', e.target.value)}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="w-full px-1 py-1 text-sm border-none outline-none bg-transparent text-gray-900 cursor-pointer"
+                                        className={`w-full px-1 py-1 border-none outline-none bg-transparent text-gray-900 cursor-pointer ${compact ? 'text-xs' : 'text-sm'}`}
                                     >
                                         <option value={PortDirection.INPUT}>入力</option>
                                         <option value={PortDirection.OUTPUT}>出力</option>
@@ -509,12 +510,12 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                 </td>
 
                                 {/* 辺 */}
-                                <td className="px-3 py-2 border-r border-gray-300">
+                                <td className={`${compact ? 'px-1 py-1' : 'px-3 py-2'} border-r border-gray-300`}>
                                     <select
                                         value={row.side}
                                         onChange={(e) => updateCell(row.id, 'side', e.target.value)}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="w-full px-1 py-1 text-sm border-none outline-none bg-transparent text-gray-900 cursor-pointer"
+                                        className={`w-full px-1 py-1 border-none outline-none bg-transparent text-gray-900 cursor-pointer ${compact ? 'text-xs' : 'text-sm'}`}
                                     >
                                         <option value={Side.LEFT}>左</option>
                                         <option value={Side.RIGHT}>右</option>
@@ -524,7 +525,7 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                 </td>
 
                                 {/* 位置% */}
-                                <td className="px-3 py-2">
+                                <td className={`${compact ? 'px-1 py-1' : 'px-3 py-2'}`}>
                                     {editingCell?.rowId === row.id && editingCell?.column === 'offset' ? (
                                         <input
                                             type="number"
@@ -541,7 +542,7 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                                     setEditingCell(null)
                                                 }
                                             }}
-                                            className="w-full px-1 py-0 text-sm border-none outline-none bg-transparent text-gray-900"
+                                            className={`w-full px-1 py-0 border-none outline-none bg-transparent text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}
                                             style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
                                             autoFocus
                                         />
@@ -559,7 +560,7 @@ export default function PortTableEditor({ selectedObject, updateEquipmentObject,
                                 </td>
 
                                 {/* 削除ボタン */}
-                                <td className="w-16 px-2 py-2 text-center">
+                                <td className={`${compact ? 'w-12 px-1 py-1' : 'w-16 px-2 py-2'} text-center`}>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation()

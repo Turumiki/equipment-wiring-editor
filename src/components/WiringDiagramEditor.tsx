@@ -178,7 +178,7 @@ function ReactFlowCanvas({
       snapToGrid={false}
       snapGrid={[15, 15]}
       fitView
-      className="bg-gray-200"
+      className="bg-white"
       multiSelectionKeyCode="Shift"
       deleteKeyCode="Delete"
       onNodeContextMenu={handleNodeContextMenu}
@@ -196,7 +196,7 @@ function ReactFlowCanvas({
     >
       <Controls />
       <MiniMap />
-      <Background variant={BackgroundVariant.Lines} gap={20} size={1} color="#999" />
+      <Background variant={BackgroundVariant.Lines} gap={20} size={0.5} color="#e5e7eb" />
     </ReactFlow>
   )
 }
@@ -873,7 +873,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       </div>
 
       {/* サイドパネル */}
-      <div className="w-full lg:w-80 h-64 lg:h-full bg-gray-100 border-t lg:border-t-0 lg:border-l border-gray-400 flex flex-col overflow-hidden">
+      <div className="w-full lg:w-80 h-64 lg:h-full bg-white border-t lg:border-t-0 lg:border-l border-gray-300 flex flex-col overflow-hidden">
         {/* インスペクターパネル */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <InspectorPanel />
@@ -882,7 +882,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
       {/* テンプレートライブラリ */}
       {showTemplateLibrary && (
-        <div className="absolute top-6 left-0 w-full lg:w-80 h-[calc(100%-24px)] bg-gray-100 border-r border-gray-400 z-10">
+        <div className="absolute top-6 left-0 w-full lg:w-80 h-[calc(100%-24px)] bg-white border-r border-gray-300 z-10">
           <TemplateLibrary
             onClose={onCloseTemplateLibrary || (() => { })}
             onAddEquipment={(_template) => {
@@ -900,7 +900,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
             initialHeight={320}
             minHeight={200}
             maxHeight={600}
-            className="bg-gray-100 border-t border-gray-400"
+            className="bg-white border-t border-gray-300"
           >
             <TableEditor onClose={onCloseTableEditor || (() => { })} />
           </ResizablePanel>

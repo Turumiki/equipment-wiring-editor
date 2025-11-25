@@ -16,7 +16,7 @@ import { useProjectStore } from '@/store/useProjectStore'
 // コンポーネント作成ヘルパー関数
 export function createRenderComponent(
   shape: ShapeType = ShapeType.RECTANGLE,
-  color: string = '#6b7280',
+  color: string = '#ffffff',
   size: { width: number; height: number } = { width: 100, height: 60 },
   labelText: string = ''
 ): RenderComponent {
@@ -27,8 +27,8 @@ export function createRenderComponent(
     data: {
       shape,
       color,
-      strokeColor: '#4b5563',
-      strokeWidth: 2,
+      strokeColor: '#000000',
+      strokeWidth: 1,
       size,
       label: {
         text: labelText,

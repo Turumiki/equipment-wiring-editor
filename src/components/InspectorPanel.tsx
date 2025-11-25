@@ -642,6 +642,144 @@ export default function InspectorPanel() {
               </div>
             </div>
 
+            {/* 一括ポート追加 */}
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-medium text-black mb-3">一括ポート追加</h3>
+              <div className="space-y-3">
+                <div className="bg-green-50 p-3 rounded border border-green-200">
+                  <h4 className="text-xs font-medium text-green-800 mb-2">選択中の全機材にポートを追加</h4>
+                  
+                  <div className="space-y-2">
+                    {/* 辺の選択 */}
+                    <div>
+                      <label className="block text-xs font-medium text-black mb-1">辺</label>
+                      <select
+                        id="bulk-port-side"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                        defaultValue="left"
+                      >
+                        <option value="left">左</option>
+                        <option value="right">右</option>
+                        <option value="top">上</option>
+                        <option value="bottom">下</option>
+                      </select>
+                    </div>
+
+                    {/* ポートタイプ */}
+                    <div>
+                      <label className="block text-xs font-medium text-black mb-1">ポートタイプ</label>
+                      <select
+                        id="bulk-port-type"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                        defaultValue={PortType.XLR_FEMALE}
+                      >
+                        {settings.portTypes.map(portTypeDef => (
+                          <option key={portTypeDef.id} value={portTypeDef.name}>
+                            {portTypeDef.displayName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 方向 */}
+                    <div>
+                      <label className="block text-xs font-medium text-black mb-1">方向</label>
+                      <select
+                        id="bulk-port-direction"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                        defaultValue={PortDirection.INPUT}
+                      >
+                        <option value={PortDirection.INPUT}>入力</option>
+                        <option value={PortDirection.OUTPUT}>出力</option>
+                        <option value={PortDirection.BIDIRECTIONAL}>双方向</option>
+                      </select>
+                    </div>
+
+                    {/* ラベル */}
+                    <div>
+                      <label className="block text-xs font-medium text-black mb-1">ラベル（オプション）</label>
+                      <input
+                        type="text"
+                        id="bulk-port-label"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                        placeholder="ポートラベル"
+                      />
+                    </div>
+
+                    {/* オフセット */}
+                    <div>
+                      <label className="block text-xs font-medium text-black mb-1">
+                        位置（オフセット）: <span id="bulk-port-offset-value">50</span>%
+                      </label>
+                      <input
+                        type="range"
+                        id="bulk-port-offset"
+                        min="0"
+                        max="100"
+                        defaultValue="50"
+                        className="w-full"
+                        onChange={(e) => {
+                          const valueDisplay = document.getElementById('bulk-port-offset-value')
+                          if (valueDisplay) {
+                            valueDisplay.textContent = e.target.value
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {/* 追加ボタン */}
+                    <button
+                      onClick={() => {
+                        const sideSelect = document.getElementById('bulk-port-side') as HTMLSelectElement
+                        const typeSelect = document.getElementById('bulk-port-type') as HTMLSelectElement
+                        const directionSelect = document.getElementById('bulk-port-direction') as HTMLSelectElement
+                        const labelInput = document.getElementById('bulk-port-label') as HTMLInputElement
+                        const offsetInput = document.getElementById('bulk-port-offset') as HTMLInputElement
+
+                        if (!sideSelect || !typeSelect || !directionSelect || !offsetInput) return
+
+                        // Side enumの値を取得（文字列から変換）
+                        const sideValue = sideSelect.value as Side
+                        const side = sideValue
+                        const portType = typeSelect.value as PortType
+                        const direction = directionSelect.value as PortDirection
+                        const label = labelInput.value || ''
+                        const offset = parseInt(offsetInput.value)
+
+                        // 選択中の全機材にポートを追加
+                        selectedObjects.forEach((obj, index) => {
+                          // ラベルが空の場合は自動生成
+                          const portLabel = label || (index === 0 ? 'New Port' : `New Port ${index + 1}`)
+                          
+                          const newPort = createConnectionPortComponent(
+                            side,
+                            offset,
+                            portType,
+                            direction,
+                            portLabel
+                          )
+
+                          const updatedComponents = [...obj.components, newPort]
+                          updateEquipmentObject(obj.id, { components: updatedComponents })
+                        })
+
+                        // 入力フィールドをリセット
+                        if (labelInput) labelInput.value = ''
+                        if (offsetInput) {
+                          offsetInput.value = '50'
+                          const valueDisplay = document.getElementById('bulk-port-offset-value')
+                          if (valueDisplay) valueDisplay.textContent = '50'
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-xs bg-green-500 text-white rounded hover:bg-green-600 font-medium"
+                    >
+                      全機材にポートを追加
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 注意事項 */}
             <div className="border-t border-gray-200 pt-4">
               <div className="bg-blue-50 border border-blue-200 rounded p-3">
@@ -650,6 +788,7 @@ export default function InspectorPanel() {
                   <li>• 共通プロパティのみ編集可能です</li>
                   <li>• 異なる値を持つプロパティは背景がオレンジ色で表示されます</li>
                   <li>• 位置調整は選択した全てのオブジェクトに適用されます</li>
+                  <li>• 一括ポート追加は選択した全機材に同じポートを追加します</li>
                 </ul>
               </div>
             </div>
@@ -1927,6 +2066,7 @@ export default function InspectorPanel() {
               <PortTableEditor 
                 selectedObject={selectedObject}
                 updateEquipmentObject={updateEquipmentObject}
+                compact={true}
               />
             </div>
           </div>

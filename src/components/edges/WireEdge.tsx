@@ -64,9 +64,9 @@ export default function WireEdge({
     if (selected) {
       return {
         ...baseStyle,
-        stroke: '#3b82f6',
-        strokeWidth: Math.max(baseStyle.strokeWidth + 2, 4), // 選択時は最低4pxの太さ
-        filter: 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.5))', // 青い光る効果
+        stroke: '#2563eb',
+        strokeWidth: Math.max(baseStyle.strokeWidth + 1, 3), // 選択時は少し太く
+        opacity: 1,
       }
     }
 

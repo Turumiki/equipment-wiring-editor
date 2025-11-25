@@ -100,7 +100,7 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
   // 図形の描画
   const renderShape = () => {
     const baseClasses = 'border-solid'
-    const selectedClasses = selected ? 'ring-1 ring-gray-600' : ''
+    const selectedClasses = selected ? 'ring-2 ring-blue-500' : ''
 
     const style = {
       backgroundColor: color,
@@ -280,35 +280,18 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
         return `${portType.toUpperCase()}${directionText}`
       }
 
-      // ポートの色とスタイルを取得
+      // ポートの色とスタイルを取得（常に黒色、透明度なし）
       const getPortStyle = () => {
-        // 設定ストアからポートタイプ定義を取得
-        const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
-
-        if (portTypeDefinition && portTypeDefinition.color) {
-          // カスタム色を使用（インラインスタイル）
-          return {
-            backgroundColor: portTypeDefinition.color,
-            borderColor: portTypeDefinition.color,
-            borderWidth: '2px',
-            opacity: direction === 'input' ? 0.8 : 1
-          }
+        return {
+          backgroundColor: '#000000',
+          borderColor: '#000000',
+          borderWidth: '2px',
+          opacity: 1
         }
-
-        // フォールバック：デフォルトのTailwindクラス
-        return null
       }
 
       const getPortClasses = () => {
-        const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
-
-        // カスタム色がある場合はクラスを使わない
-        if (portTypeDefinition && portTypeDefinition.color) {
-          return 'w-3 h-3 border-2'
-        }
-
-        // デフォルトのTailwindクラス
-        return `w-3 h-3 border-2 ${direction === 'input' ? 'bg-gray-400 border-gray-600' : 'bg-gray-500 border-gray-700'}`
+        return 'w-3 h-3 border-2 bg-black border-black'
       }
 
       const handleClasses = getPortClasses()
@@ -446,23 +429,27 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
         onMouseEnter={() => setShowLabels(true)}
         onMouseLeave={() => setShowLabels(false)}
       >
+        {/* ラベル（図形の上部外側） */}
+        {label && (
+          <div
+            className="absolute pointer-events-none select-none"
+            style={{
+              color: label.color,
+              fontSize: label.fontSize,
+              fontWeight: 500,
+              top: `-${label.fontSize + 4}px`,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {name}
+          </div>
+        )}
+
         {/* メイン図形 */}
         <div className="relative flex items-center justify-center">
           {renderShape()}
-
-          {/* ラベル */}
-          {label && (
-            <div
-              className="absolute pointer-events-none select-none"
-              style={{
-                color: label.color,
-                fontSize: label.fontSize,
-                fontWeight: 500
-              }}
-            >
-              {name}
-            </div>
-          )}
         </div>
 
         {/* ポートハンドル */}

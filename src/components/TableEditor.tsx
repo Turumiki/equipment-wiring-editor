@@ -47,8 +47,10 @@ export default function TableEditor({ onClose }: TableEditorProps) {
       return {
         id: wire.id,
         sourceObject: sourceObjectName,
+        sourceObjectId: wire.sourceObjectId,
         sourcePort: sourcePort?.data.label || sourcePort?.data.portType || 'Unknown',
         targetObject: targetObjectName,
+        targetObjectId: wire.targetObjectId,
         targetPort: targetPort?.data.label || targetPort?.data.portType || 'Unknown',
         wireType: wire.wireType,
         label: wire.label,
@@ -222,9 +224,31 @@ export default function TableEditor({ onClose }: TableEditorProps) {
             <tbody>
               {connectionRows.map(row => (
                 <tr key={row.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-4 py-2 text-black">{row.sourceObject}</td>
+                  <td className="px-4 py-2">
+                    <input
+                      type="text"
+                      value={row.sourceObject}
+                      onChange={(e) => {
+                        if (row.sourceObjectId) {
+                          handleUpdateEquipmentName(row.sourceObjectId, e.target.value)
+                        }
+                      }}
+                      className="w-full text-xs border border-gray-300 rounded px-2 py-1 text-black"
+                    />
+                  </td>
                   <td className="px-4 py-2 text-black">{row.sourcePort}</td>
-                  <td className="px-4 py-2 text-black">{row.targetObject}</td>
+                  <td className="px-4 py-2">
+                    <input
+                      type="text"
+                      value={row.targetObject}
+                      onChange={(e) => {
+                        if (row.targetObjectId) {
+                          handleUpdateEquipmentName(row.targetObjectId, e.target.value)
+                        }
+                      }}
+                      className="w-full text-xs border border-gray-300 rounded px-2 py-1 text-black"
+                    />
+                  </td>
                   <td className="px-4 py-2 text-black">{row.targetPort}</td>
                   <td className="px-4 py-2">
                     <select

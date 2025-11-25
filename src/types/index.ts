@@ -309,8 +309,10 @@ export interface ProjectMetadata {
 export interface ConnectionTableRow {
   id: string;
   sourceObject: string;
+  sourceObjectId?: string;
   sourcePort: string;
   targetObject: string;
+  targetObjectId?: string;
   targetPort: string;
   wireType: WireType;
   label?: string;

@@ -71,8 +71,8 @@ function MenuItem({ label, items, onItemClick, isOpen, onToggle, onClose }: Menu
   return (
     <div className="relative" ref={menuRef}>
       <button
-        className={`px-2 py-1 text-xs font-medium hover:bg-blue-100 hover:text-blue-800 ${
-          isOpen ? 'bg-blue-100 text-blue-800' : 'text-gray-700'
+        className={`px-2 py-1 text-xs font-medium hover:bg-gray-100 hover:text-gray-900 ${
+          isOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-800'
         }`}
         onClick={onToggle}
       >
@@ -80,15 +80,15 @@ function MenuItem({ label, items, onItemClick, isOpen, onToggle, onClose }: Menu
       </button>
       
       {isOpen && (
-        <div className="absolute top-full left-0 bg-white border border-gray-400 shadow-md py-1 z-50 min-w-48">
+        <div className="absolute top-full left-0 bg-white border border-gray-300 shadow-lg py-1 z-50 min-w-48">
           {items.map((item, index) => (
             item.separator ? (
               <div key={index} className="border-t border-gray-300 my-1" />
             ) : (
               <button
                 key={index}
-                className={`w-full px-3 py-1 text-left text-xs hover:bg-blue-50 flex justify-between items-center ${
-                  item.disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-800'
+                className={`w-full px-3 py-1 text-left text-xs hover:bg-gray-100 flex justify-between items-center ${
+                  item.disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-900'
                 }`}
                 disabled={item.disabled}
                 onClick={() => {
@@ -257,7 +257,7 @@ export default function MenuBar({
   ]
 
   return (
-    <div ref={menuBarRef} className="bg-gray-50 border-b border-gray-400 flex items-center h-6 text-sm select-none shadow-sm">
+    <div ref={menuBarRef} className="bg-white border-b border-gray-300 flex items-center h-6 text-sm select-none shadow-sm">
       <MenuItem 
         label="ファイル" 
         items={fileMenuItems} 
@@ -300,7 +300,7 @@ export default function MenuBar({
       />
       
       {/* プロジェクト名表示 */}
-      <div className="flex-1 text-center text-xs text-gray-700 font-medium">
+      <div className="flex-1 text-center text-xs text-gray-800 font-medium">
         {project.name || '無題のプロジェクト'}
       </div>
     </div>

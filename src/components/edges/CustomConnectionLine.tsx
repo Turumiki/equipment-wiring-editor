@@ -126,9 +126,9 @@ export default function CustomConnectionLine({
       <g>
         <path
           fill="none"
-          stroke="#059669"
-          strokeWidth={2}
-          strokeDasharray="5,5"
+          stroke="#4b5563"
+          strokeWidth={1.5}
+          strokeDasharray="4,4"
           d={edgePath}
           className="react-flow__connection-path"
         />
@@ -140,9 +140,9 @@ export default function CustomConnectionLine({
       <g>
         <path
           fill="none"
-          stroke="#059669"
-          strokeWidth={2}
-          strokeDasharray="5,5"
+          stroke="#4b5563"
+          strokeWidth={1.5}
+          strokeDasharray="4,4"
           d={`M${fromX},${fromY} L${toX},${toY}`}
           className="react-flow__connection-path"
         />
