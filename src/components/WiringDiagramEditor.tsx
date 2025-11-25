@@ -606,6 +606,9 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
     switch (contextMenu.type) {
       case 'canvas':
+        const hasSelection = selectedObjectIds.length > 0 || selectedWireIds.length > 0
+        const hasBothTypes = selectedObjectIds.length > 0 && selectedWireIds.length > 0
+        
         return [
           {
             label: '貼り付け',
@@ -613,7 +616,24 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
               // TODO: 貼り付け機能の実装
             },
             disabled: true
-          }
+          },
+          ...(hasSelection ? [
+            { separator: true } as const,
+            ...(hasBothTypes ? [
+              {
+                label: '機材のみ選択',
+                onClick: () => {
+                  setSelectedWires([])
+                }
+              },
+              {
+                label: 'エッジのみ選択',
+                onClick: () => {
+                  setSelectedObjects([])
+                }
+              }
+            ] : [])
+          ] : [])
         ]
 
       case 'node':
@@ -713,7 +733,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       default:
         return []
     }
-  }, [contextMenu, selectedObjectIds, setSelectedObjects, duplicateSelected, removeEquipmentObject, removeWire])
+  }, [contextMenu, selectedObjectIds, selectedWireIds, setSelectedObjects, setSelectedWires, duplicateSelected, removeEquipmentObject, removeWire])
 
   // 自動レイアウトの適用
   const handleAutoLayout = useCallback((options: LayoutOptions) => {
