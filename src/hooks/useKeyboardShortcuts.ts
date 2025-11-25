@@ -31,7 +31,7 @@ export function useKeyboardShortcuts() {
       if (activeElement && (
         activeElement.tagName === 'INPUT' || 
         activeElement.tagName === 'TEXTAREA' ||
-        activeElement.contentEditable === 'true'
+        (activeElement as HTMLElement).contentEditable === 'true'
       )) {
         return
       }
@@ -39,22 +39,22 @@ export function useKeyboardShortcuts() {
       switch (event.key) {
         case 'z':
         case 'Z':
-          if (isCtrlOrCmd && !event.shiftKey && canUndo()) {
-            event.preventDefault()
-            undo()
+          if (isCtrlOrCmd) {
+            if (event.shiftKey && canRedo()) {
+              // Ctrl+Shift+Z: Redo
+              event.preventDefault()
+              redo()
+            } else if (!event.shiftKey && canUndo()) {
+              // Ctrl+Z: Undo
+              event.preventDefault()
+              undo()
+            }
           }
           break
 
         case 'y':
         case 'Y':
           if (isCtrlOrCmd && canRedo()) {
-            event.preventDefault()
-            redo()
-          }
-          break
-
-        case 'Z':
-          if (isCtrlOrCmd && event.shiftKey && canRedo()) {
             event.preventDefault()
             redo()
           }
