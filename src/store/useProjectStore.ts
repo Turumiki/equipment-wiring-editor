@@ -22,6 +22,7 @@ interface ProjectState {
   // Actions
   addEquipmentObject: (object: EquipmentObject) => void
   updateEquipmentObject: (id: string, updates: Partial<EquipmentObject>, skipHistory?: boolean) => void
+  updateMultipleEquipmentObjects: (updates: { [id: string]: Partial<EquipmentObject> }, skipHistory?: boolean) => void
   removeEquipmentObject: (id: string) => void
   addWire: (wire: Wire) => void
   updateWire: (id: string, updates: Partial<Wire>) => void
@@ -79,8 +80,12 @@ const createDefaultProject = (): Project => ({
   updatedAt: new Date()
 })
 
-const pushToHistory = (project: Project) => {
-  useHistoryStore.getState().pushState(project)
+const pushToHistory = (project: Project, immediate = false) => {
+  if (immediate) {
+    useHistoryStore.getState().pushStateImmediate(project)
+  } else {
+    useHistoryStore.getState().pushState(project)
+  }
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
@@ -95,7 +100,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       objects: [...state.project.objects, object],
       updatedAt: new Date()
     }
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 追加は即座に保存
     
     // 自動保存
     setTimeout(() => get().autoSaveProject(), 100)
@@ -112,7 +117,22 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
     if (!skipHistory) {
-      pushToHistory(newProject)
+      pushToHistory(newProject) // デバウンス付きで履歴に保存
+    }
+    return { project: newProject }
+  }),
+
+  // 複数のオブジェクトを一括更新（履歴は一度だけ保存）
+  updateMultipleEquipmentObjects: (updates: { [id: string]: Partial<EquipmentObject> }, skipHistory = false) => set((state) => {
+    const newProject = {
+      ...state.project,
+      objects: state.project.objects.map(obj =>
+        updates[obj.id] ? { ...obj, ...updates[obj.id] } : obj
+      ),
+      updatedAt: new Date()
+    }
+    if (!skipHistory) {
+      pushToHistory(newProject) // デバウンス付きで履歴に保存
     }
     return { project: newProject }
   }),
@@ -126,7 +146,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       ),
       updatedAt: new Date()
     }
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 削除は即座に保存
     return {
       project: newProject,
       selectedObjectIds: state.selectedObjectIds.filter(objId => objId !== id)
@@ -139,7 +159,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       wires: [...state.project.wires, wire],
       updatedAt: new Date()
     }
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 追加は即座に保存
     return { project: newProject }
   }),
 
@@ -151,7 +171,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       ),
       updatedAt: new Date()
     }
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 更新は即座に保存
     return { project: newProject }
   }),
 
@@ -161,7 +181,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       wires: state.project.wires.filter(wire => wire.id !== id),
       updatedAt: new Date()
     }
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 削除は即座に保存
     return {
       project: newProject,
       selectedWireIds: state.selectedWireIds.filter(wireId => wireId !== id)
@@ -316,7 +336,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
 
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 複製は即座に保存
     set({
       project: newProject,
       selectedObjectIds: duplicatedObjects.map(obj => obj.id)
@@ -422,7 +442,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
 
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 貼り付けは即座に保存
     set({
       project: newProject,
       selectedObjectIds: pastedObjects.map(obj => obj.id),
@@ -462,7 +482,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
 
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 削除は即座に保存
     set({
       project: newProject,
       selectedObjectIds: [],
@@ -536,7 +556,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
 
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 整列は即座に保存
     set({ project: newProject })
   },
 
@@ -591,7 +611,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
 
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // 配布は即座に保存
     set({ project: newProject })
   },
 
@@ -608,7 +628,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         ),
         updatedAt: new Date()
       }
-      pushToHistory(newProject)
+      pushToHistory(newProject, true) // テンプレート更新は即座に保存
       return { project: newProject }
     } else {
       // 新規追加
@@ -617,7 +637,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         customTemplates: [...state.project.customTemplates, { ...template, createdAt: new Date(), updatedAt: new Date() }],
         updatedAt: new Date()
       }
-      pushToHistory(newProject)
+      pushToHistory(newProject, true) // テンプレート追加は即座に保存
       return { project: newProject }
     }
   }),
@@ -628,7 +648,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       customTemplates: state.project.customTemplates.filter(t => t.id !== templateId),
       updatedAt: new Date()
     }
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // テンプレート削除は即座に保存
     return { project: newProject }
   }),
 
@@ -640,7 +660,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       ),
       updatedAt: new Date()
     }
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // テンプレート更新は即座に保存
     return { project: newProject }
   }),
 
@@ -690,7 +710,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       customTemplates,
       updatedAt: new Date()
     }
-    pushToHistory(newProject)
+    pushToHistory(newProject, true) // テンプレートインポートは即座に保存
     return { project: newProject }
   }),
 

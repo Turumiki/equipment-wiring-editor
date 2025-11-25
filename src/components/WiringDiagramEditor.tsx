@@ -296,6 +296,33 @@ function ReactFlowCanvas({
         const selectedNodes = nodes.filter((n: Node) => n.selected)
         const isMultiSelect = selectedNodes.length > 1
         
+        // ドラッグされたノードの最終位置を履歴に保存
+        if (isMultiSelect) {
+          // 複数選択時は、すべての選択ノードの位置を一度に更新して履歴に保存
+          const { updateMultipleEquipmentObjects } = useProjectStore.getState()
+          const updates: { [id: string]: { position: { x: number; y: number } } } = {}
+          
+          selectedNodes.forEach((n: Node) => {
+            const startPos = dragStartPositions.get(n.id)
+            if (startPos && (startPos.x !== n.position.x || startPos.y !== n.position.y)) {
+              // 位置が変更されていた場合のみ更新
+              updates[n.id] = { position: n.position }
+            }
+          })
+          
+          if (Object.keys(updates).length > 0) {
+            // すべてのノードの位置を一度に更新（履歴は一度だけ保存）
+            updateMultipleEquipmentObjects(updates, false)
+          }
+        } else {
+          // 単一選択時は、位置が変更されていた場合のみ履歴に保存
+          const startPos = dragStartPositions.get(node.id)
+          if (startPos && (startPos.x !== node.position.x || startPos.y !== node.position.y)) {
+            const { updateEquipmentObject } = useProjectStore.getState()
+            updateEquipmentObject(node.id, { position: node.position }, false) // 履歴に保存
+          }
+        }
+        
         if (isMultiSelect) {
           // 複数選択時は、すべての選択ノードの状態をクリア
           setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
@@ -389,7 +416,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     equipmentId: string
   } | null>(null)
 
-  const { project, addWire, updateWire, updateEquipmentObject, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, copySelected, pasteSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
+  const { project, addWire, updateWire, updateEquipmentObject, updateMultipleEquipmentObjects, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, copySelected, pasteSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
   const { hydrate, settings } = useSettingsStore()
 
   // クライアントサイドでの設定初期化
