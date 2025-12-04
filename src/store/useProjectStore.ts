@@ -32,6 +32,8 @@ interface ProjectState {
   saveProject: () => void
   loadProject: (project: Project) => void
   createNewProject: () => void
+  autoSaveProject: () => void
+  loadAutoSavedProject: () => boolean
   undo: () => void
   redo: () => void
   canUndo: () => boolean
@@ -241,7 +243,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   // プロジェクトの自動読み込み
   loadAutoSavedProject: () => {
     try {
-      if (typeof window === 'undefined') return
+      if (typeof window === 'undefined') return false
       const saved = localStorage.getItem('current-project')
       if (saved) {
         const projectData = JSON.parse(saved)

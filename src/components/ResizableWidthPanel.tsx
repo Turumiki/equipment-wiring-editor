@@ -24,11 +24,23 @@ export default function ResizableWidthPanel({
   const panelRef = useRef<HTMLDivElement>(null)
   const startX = useRef(0)
   const startWidth = useRef(0)
+  const onWidthChangeRef = useRef(onWidthChange)
+  const sideRef = useRef(side)
+  const minWidthRef = useRef(minWidth)
+  const maxWidthRef = useRef(maxWidth)
 
   // 初期幅が変更された場合に更新
   useEffect(() => {
     setWidth(initialWidth)
   }, [initialWidth])
+
+  // refを更新
+  useEffect(() => {
+    onWidthChangeRef.current = onWidthChange
+    sideRef.current = side
+    minWidthRef.current = minWidth
+    maxWidthRef.current = maxWidth
+  }, [onWidthChange, side, minWidth, maxWidth]) // onWidthChangeは親から渡されるコールバックなので依存配列に含める
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -42,20 +54,22 @@ export default function ResizableWidthPanel({
   }
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return
+    if (!isResizing) return
 
-      const deltaX = side === 'right' 
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = sideRef.current === 'right' 
         ? startX.current - e.clientX // 右側パネルの場合、左方向が正の値
         : e.clientX - startX.current // 左側パネルの場合、右方向が正の値
       
       const newWidth = Math.min(
-        Math.max(startWidth.current + deltaX, minWidth),
-        maxWidth
+        Math.max(startWidth.current + deltaX, minWidthRef.current),
+        maxWidthRef.current
       )
       
       setWidth(newWidth)
-      onWidthChange?.(newWidth)
+      if (onWidthChangeRef.current) {
+        onWidthChangeRef.current(newWidth)
+      }
     }
 
     const handleMouseUp = () => {
@@ -64,16 +78,14 @@ export default function ResizableWidthPanel({
       document.body.style.userSelect = ''
     }
 
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-    }
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isResizing, minWidth, maxWidth, onWidthChange, side])
+  }, [isResizing])
 
   return (
     <div

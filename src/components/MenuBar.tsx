@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useHistoryStore } from '@/store/useHistoryStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
@@ -167,7 +167,14 @@ export default function MenuBar({
   const { project, canUndo, canRedo, undo, redo, canPaste } = useProjectStore()
   const [internalOpenMenu, setInternalOpenMenu] = useState<string | null>(null)
   const openMenu = externalOpenMenu !== undefined ? externalOpenMenu : internalOpenMenu
-  const setOpenMenu = onMenuChange || setInternalOpenMenu
+  // setOpenMenuをuseRefで保持して安定した参照を確保
+  const setOpenMenuRef = useRef(onMenuChange || setInternalOpenMenu)
+  useEffect(() => {
+    setOpenMenuRef.current = onMenuChange || setInternalOpenMenu
+  }, [onMenuChange])
+  const setOpenMenu = useCallback((value: string | null) => {
+    setOpenMenuRef.current(value)
+  }, [])
   const menuBarRef = useRef<HTMLDivElement>(null)
 
   // 外側クリックでメニューを閉じる
@@ -175,7 +182,7 @@ export default function MenuBar({
     const handleClickOutside = (event: MouseEvent) => {
       if (menuBarRef.current && !menuBarRef.current.contains(event.target as Node)) {
         console.log('Clicked outside menu bar, closing menu')
-        setOpenMenu(null)
+        setOpenMenuRef.current(null)
       }
     }
 
@@ -187,7 +194,7 @@ export default function MenuBar({
         document.removeEventListener('mousedown', handleClickOutside)
       }
     }
-  }, [openMenu, setOpenMenu])
+  }, [openMenu]) // setOpenMenuRefはuseRefで保持されているため、依存配列に含める必要はない
 
   const handleItemClick = (item: any) => {
     // メニューアイテムがクリックされた時の共通処理

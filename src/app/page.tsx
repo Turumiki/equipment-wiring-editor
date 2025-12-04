@@ -8,6 +8,7 @@ import ExportDialog from '@/components/ExportDialog'
 import CSVImportDialog from '@/components/CSVImportDialog'
 import AutoLayoutDialog from '@/components/AutoLayoutDialog'
 import { useProjectStore } from '@/store/useProjectStore'
+import { Project } from '@/types'
 
 export default function Home() {
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(true)
@@ -37,10 +38,12 @@ export default function Home() {
   useEffect(() => {
     // デバウンス用のタイマー
     let saveTimer: NodeJS.Timeout | null = null
+    let previousProject: Project | null = null
     
-    const unsubscribe = useProjectStore.subscribe(
-      (state) => state.project,
-      () => {
+    const unsubscribe = useProjectStore.subscribe((state) => {
+      // プロジェクトが変更された場合のみ自動保存
+      if (previousProject !== state.project) {
+        previousProject = state.project
         // デバウンスして自動保存（300ms後に保存）
         if (saveTimer) {
           clearTimeout(saveTimer)
@@ -49,7 +52,7 @@ export default function Home() {
           useProjectStore.getState().autoSaveProject()
         }, 300)
       }
-    )
+    })
     return () => {
       unsubscribe()
       if (saveTimer) {

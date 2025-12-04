@@ -243,7 +243,7 @@ export default function TemplatePortEditor({
                 }}
                 onClick={(e) => {
                   e.stopPropagation()
-                  setSelectedPortId(port.id)
+                  setSelectedPortId(port.id || null)
                 }}
                 onMouseDown={(e) => handleDragStart(e, portId)}
               >

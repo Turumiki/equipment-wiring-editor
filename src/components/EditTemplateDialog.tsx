@@ -22,7 +22,7 @@ export default function EditTemplateDialog({
   const [templateCategory, setTemplateCategory] = useState('')
   const [templateDescription, setTemplateDescription] = useState('')
   const [templateTags, setTemplateTags] = useState('')
-  const [templatePorts, setTemplatePorts] = useState<SimpleTemplatePort[]>([])
+  const [templatePorts, setTemplatePorts] = useState<(SimpleTemplatePort & { id: string })[]>([])
   
   const { updateEquipmentTemplate, equipmentTemplates } = useSettingsStore()
   const { updateTemplateInProject, project } = useProjectStore()
@@ -215,7 +215,13 @@ export default function EditTemplateDialog({
         ) : (
           <TemplatePortEditor
             ports={templatePorts}
-            onPortsChange={setTemplatePorts}
+            onPortsChange={(ports) => {
+              // idが存在しない場合は生成
+              setTemplatePorts(ports.map((port, index) => ({
+                ...port,
+                id: port.id || `port-${index}`
+              })))
+            }}
             size={template.size || { width: 200, height: 120 }}
           />
         )}

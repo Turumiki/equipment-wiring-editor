@@ -426,7 +426,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   // クライアントサイドでの設定初期化
   useEffect(() => {
     hydrate()
-  }, [hydrate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // hydrateはZustandストアから取得した関数で安定しているため、依存配列は空でOK
 
   // テンプレートに応じた図形を取得
   const getShapeForTemplate = (templateId: string): ShapeType => {
