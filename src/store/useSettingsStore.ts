@@ -99,6 +99,33 @@ const createDefaultSettings = (): ConnectionSettings => ({
       color: '#8b5cf6',
       strokeWidth: 2,
       supportedPortTypes: ['hdmi']
+    },
+    {
+      id: 'sdi-cable',
+      name: 'sdi-cable',
+      displayName: 'SDIケーブル',
+      description: 'SDI映像ケーブル',
+      color: '#dc2626',
+      strokeWidth: 2,
+      supportedPortTypes: ['sdi']
+    },
+    {
+      id: 'composite-cable',
+      name: 'composite-cable',
+      displayName: 'コンポジットケーブル',
+      description: 'コンポジットビデオケーブル',
+      color: '#f59e0b',
+      strokeWidth: 2,
+      supportedPortTypes: ['composite']
+    },
+    {
+      id: 'rca-cable',
+      name: 'rca-cable',
+      displayName: 'RCAケーブル',
+      description: 'RCAオーディオ/ビデオケーブル',
+      color: '#3b82f6',
+      strokeWidth: 2,
+      supportedPortTypes: ['rca']
     }
   ],
 
@@ -112,7 +139,10 @@ const createDefaultSettings = (): ConnectionSettings => ({
     'usb-c': ['usb-a', 'usb-b', 'usb-c', 'thunderbolt'],
     'ethernet': ['ethernet', 'dante'],
     'dante': ['dante', 'ethernet'],
-    'hdmi': ['hdmi']
+    'hdmi': ['hdmi'],
+    'sdi': ['sdi'],
+    'composite': ['composite'],
+    'rca': ['rca']
   }
 })
 

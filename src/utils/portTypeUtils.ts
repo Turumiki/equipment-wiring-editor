@@ -80,6 +80,12 @@ export function getWireTypeForPortType(portType: string): WireType {
       return WireType.ETHERNET_CABLE
     case 'hdmi':
       return WireType.HDMI_CABLE
+    case 'sdi':
+      return WireType.SDI_CABLE
+    case 'composite':
+      return WireType.COMPOSITE_CABLE
+    case 'rca':
+      return WireType.RCA_CABLE
     case 'displayport':
       return WireType.DISPLAYPORT_CABLE
     case 'power-ac':
