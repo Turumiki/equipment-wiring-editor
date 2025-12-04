@@ -134,7 +134,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
         </div>
 
         {/* コンテンツ */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden flex flex-col">
           {activeTab === 'ui' && (
             <div className="p-6">
               <h3 className="text-lg font-medium text-black mb-6">UI設定</h3>
@@ -458,7 +458,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
           )}
 
           {activeTab === 'compatibility' && (
-            <div className="h-full overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-4">
               <h3 className="text-lg font-medium text-black mb-4">互換性マトリックス</h3>
               <div className="overflow-x-auto">
                 <table className="w-full border border-gray-300">
