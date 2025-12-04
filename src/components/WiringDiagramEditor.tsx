@@ -105,9 +105,9 @@ function ReactFlowCanvas({
   dragStartPositions,
   setDragStartPositions,
   lockedDirection,
-  setLockedDirection
+  setLockedDirection,
 }: any) {
-  const { screenToFlowPosition } = useReactFlow()
+  const { screenToFlowPosition, getViewport } = useReactFlow()
 
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault()
@@ -435,6 +435,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
 
   // キーボードショートカットを有効化
   useKeyboardShortcuts()
+
 
   // refの実装
   useImperativeHandle(ref, () => ({

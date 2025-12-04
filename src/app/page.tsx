@@ -10,7 +10,7 @@ import AutoLayoutDialog from '@/components/AutoLayoutDialog'
 import { useProjectStore } from '@/store/useProjectStore'
 
 export default function Home() {
-  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(true)
   const [showTableEditor, setShowTableEditor] = useState(false)
   const [showAutoLayout, setShowAutoLayout] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
