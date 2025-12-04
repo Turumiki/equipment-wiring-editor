@@ -224,5 +224,65 @@
     },
     "tags": ["スピーカー", "出力"],
     "version": "1.0.0"
+  },
+  {
+    "id": "arc-studio",
+    "name": "ARC Studio",
+    "category": "オーディオ",
+    "description": "IK Multimedia ARC Studio ルーム音響補正プロセッサー",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "xlr-male",
+        "direction": "input",
+        "label": "Input L"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "xlr-male",
+        "direction": "input",
+        "label": "Input R"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "xlr-female",
+        "direction": "output",
+        "label": "Output L"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "xlr-female",
+        "direction": "output",
+        "label": "Output R"
+      },
+      {
+        "side": "top",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "bidirectional",
+        "label": "USB"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "Power"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 140,
+      "height": 80
+    },
+    "tags": ["オーディオ", "ARC", "IK Multimedia", "音響補正", "プロセッサー"],
+    "version": "1.0.0"
   }
 ]
