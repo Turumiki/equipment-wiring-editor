@@ -284,5 +284,177 @@
     },
     "tags": ["オーディオ", "ARC", "IK Multimedia", "音響補正", "プロセッサー"],
     "version": "1.0.0"
+  },
+  {
+    "id": "rme-fireface-ucx",
+    "name": "RME Fireface UCX",
+    "category": "オーディオ",
+    "description": "RME Fireface UCX オーディオインターフェース（初代）",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 10,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Mic 1"
+      },
+      {
+        "side": "left",
+        "offset": 20,
+        "type": "xlr-female",
+        "direction": "input",
+        "label": "Mic 2"
+      },
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Line 3"
+      },
+      {
+        "side": "left",
+        "offset": 40,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Line 4"
+      },
+      {
+        "side": "left",
+        "offset": 50,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Line 5"
+      },
+      {
+        "side": "left",
+        "offset": 60,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Line 6"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Line 7"
+      },
+      {
+        "side": "left",
+        "offset": 80,
+        "type": "trs-quarter",
+        "direction": "input",
+        "label": "Line 8"
+      },
+      {
+        "side": "right",
+        "offset": 10,
+        "type": "trs-quarter",
+        "direction": "output",
+        "label": "Out 1"
+      },
+      {
+        "side": "right",
+        "offset": 20,
+        "type": "trs-quarter",
+        "direction": "output",
+        "label": "Out 2"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "trs-quarter",
+        "direction": "output",
+        "label": "Out 3"
+      },
+      {
+        "side": "right",
+        "offset": 40,
+        "type": "trs-quarter",
+        "direction": "output",
+        "label": "Out 4"
+      },
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "trs-quarter",
+        "direction": "output",
+        "label": "Out 5"
+      },
+      {
+        "side": "right",
+        "offset": 60,
+        "type": "trs-quarter",
+        "direction": "output",
+        "label": "Out 6"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "trs-mini",
+        "direction": "output",
+        "label": "Phones"
+      },
+      {
+        "side": "top",
+        "offset": 20,
+        "type": "adat",
+        "direction": "bidirectional",
+        "label": "ADAT"
+      },
+      {
+        "side": "top",
+        "offset": 40,
+        "type": "spdif",
+        "direction": "bidirectional",
+        "label": "SPDIF"
+      },
+      {
+        "side": "top",
+        "offset": 60,
+        "type": "aes-ebu",
+        "direction": "bidirectional",
+        "label": "AES/EBU"
+      },
+      {
+        "side": "top",
+        "offset": 80,
+        "type": "midi",
+        "direction": "bidirectional",
+        "label": "MIDI"
+      },
+      {
+        "side": "bottom",
+        "offset": 30,
+        "type": "usb-b",
+        "direction": "bidirectional",
+        "label": "USB"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "Power"
+      },
+      {
+        "side": "bottom",
+        "offset": 70,
+        "type": "thunderbolt",
+        "direction": "bidirectional",
+        "label": "FireWire"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 200,
+      "height": 100
+    },
+    "tags": ["オーディオ", "RME", "Fireface", "インターフェース", "USB", "FireWire"],
+    "version": "1.0.0"
   }
 ]

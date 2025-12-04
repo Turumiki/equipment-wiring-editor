@@ -163,6 +163,62 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       defaultDirection: PortDirection.BIDIRECTIONAL,
       maxConnections: 1
     },
+    // デジタルオーディオ
+    {
+      id: PortType.ADAT,
+      name: PortType.ADAT,
+      displayName: 'ADAT',
+      description: 'ADATオプティカル（デジタルオーディオ）',
+      color: '#7c3aed',
+      category: 'audio',
+      compatibleWith: [PortType.ADAT],
+      defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
+    {
+      id: PortType.SPDIF,
+      name: PortType.SPDIF,
+      displayName: 'SPDIF',
+      description: 'SPDIF（デジタルオーディオ）',
+      color: '#7c3aed',
+      category: 'audio',
+      compatibleWith: [PortType.SPDIF],
+      defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
+    {
+      id: PortType.AES_EBU,
+      name: PortType.AES_EBU,
+      displayName: 'AES/EBU',
+      description: 'AES/EBU（デジタルオーディオ）',
+      color: '#7c3aed',
+      category: 'audio',
+      compatibleWith: [PortType.AES_EBU],
+      defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
+    {
+      id: PortType.MIDI,
+      name: PortType.MIDI,
+      displayName: 'MIDI',
+      description: 'MIDIコネクタ',
+      color: '#6366f1',
+      category: 'data',
+      compatibleWith: [PortType.MIDI],
+      defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
+    {
+      id: PortType.THUNDERBOLT,
+      name: PortType.THUNDERBOLT,
+      displayName: 'Thunderbolt/FireWire',
+      description: 'Thunderbolt/FireWireコネクタ',
+      color: '#6366f1',
+      category: 'data',
+      compatibleWith: [PortType.THUNDERBOLT],
+      defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
     // 電源
     {
       id: PortType.POWER_AC,

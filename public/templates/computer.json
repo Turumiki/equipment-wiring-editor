@@ -58,5 +58,55 @@
     },
     "tags": ["PC", "コンピューター"],
     "version": "1.0.0"
+  },
+  {
+    "id": "keyboard",
+    "name": "キーボード",
+    "category": "コンピューター",
+    "description": "USBキーボード",
+    "ports": [
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "usb-a",
+        "direction": "output",
+        "label": "USB"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 150,
+      "height": 60
+    },
+    "tags": ["キーボード", "入力機器", "USB"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "mouse",
+    "name": "マウス",
+    "category": "コンピューター",
+    "description": "USBマウス",
+    "ports": [
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "usb-a",
+        "direction": "output",
+        "label": "USB"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 50
+    },
+    "tags": ["マウス", "入力機器", "USB"],
+    "version": "1.0.0"
   }
 ]
