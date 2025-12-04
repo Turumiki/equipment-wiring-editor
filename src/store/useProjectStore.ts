@@ -119,6 +119,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (!skipHistory) {
       pushToHistory(newProject) // デバウンス付きで履歴に保存
     }
+    // 自動保存
+    setTimeout(() => get().autoSaveProject(), 100)
     return { project: newProject }
   }),
 
@@ -134,6 +136,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (!skipHistory) {
       pushToHistory(newProject) // デバウンス付きで履歴に保存
     }
+    // 自動保存
+    setTimeout(() => get().autoSaveProject(), 100)
     return { project: newProject }
   }),
 
@@ -147,6 +151,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
     pushToHistory(newProject, true) // 削除は即座に保存
+    // 自動保存
+    setTimeout(() => get().autoSaveProject(), 100)
     return {
       project: newProject,
       selectedObjectIds: state.selectedObjectIds.filter(objId => objId !== id)
@@ -172,6 +178,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
     pushToHistory(newProject, true) // 更新は即座に保存
+    // 自動保存
+    setTimeout(() => get().autoSaveProject(), 100)
     return { project: newProject }
   }),
 
@@ -182,6 +190,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       updatedAt: new Date()
     }
     pushToHistory(newProject, true) // 削除は即座に保存
+    // 自動保存
+    setTimeout(() => get().autoSaveProject(), 100)
     return {
       project: newProject,
       selectedWireIds: state.selectedWireIds.filter(wireId => wireId !== id)
@@ -211,7 +221,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     try {
       if (typeof window === 'undefined') return
       const { project } = get()
-      localStorage.setItem('current-project', JSON.stringify(project))
+      // Dateオブジェクトを文字列に変換して保存
+      const projectToSave = {
+        ...project,
+        createdAt: project.createdAt.toISOString(),
+        updatedAt: project.updatedAt.toISOString(),
+        customTemplates: project.customTemplates.map(t => ({
+          ...t,
+          createdAt: t.createdAt.toISOString(),
+          updatedAt: t.updatedAt.toISOString()
+        }))
+      }
+      localStorage.setItem('current-project', JSON.stringify(projectToSave))
     } catch (error) {
       console.warn('プロジェクトの自動保存に失敗しました:', error)
     }
@@ -223,11 +244,24 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       if (typeof window === 'undefined') return
       const saved = localStorage.getItem('current-project')
       if (saved) {
-        const project = JSON.parse(saved)
-        set({ project })
+        const projectData = JSON.parse(saved)
+        // 日付文字列をDateオブジェクトに変換
+        projectData.createdAt = new Date(projectData.createdAt)
+        projectData.updatedAt = new Date(projectData.updatedAt)
+        if (projectData.customTemplates) {
+          projectData.customTemplates = projectData.customTemplates.map((template: any) => ({
+            ...template,
+            createdAt: new Date(template.createdAt),
+            updatedAt: new Date(template.updatedAt)
+          }))
+        }
+        set({ project: projectData })
+        return true
       }
+      return false
     } catch (error) {
       console.warn('プロジェクトの自動読み込みに失敗しました:', error)
+      return false
     }
   },
 

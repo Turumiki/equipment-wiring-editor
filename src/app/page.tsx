@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import WiringDiagramEditor from '@/components/WiringDiagramEditor'
 import MenuBar from '@/components/MenuBar'
 import SettingsDialog from '@/components/SettingsDialog'
@@ -23,7 +23,40 @@ export default function Home() {
   const editorRef = useRef<any>(null)
 
   // プロジェクトストアから保存・読み込み機能を取得
-  const { saveProject, loadProject, createNewProject } = useProjectStore()
+  const { saveProject, loadProject, createNewProject, loadAutoSavedProject, project } = useProjectStore()
+
+  // アプリ起動時に自動保存されたプロジェクトを読み込む
+  useEffect(() => {
+    const loaded = loadAutoSavedProject()
+    if (loaded) {
+      console.log('自動保存されたプロジェクトを読み込みました')
+    }
+  }, []) // 初回マウント時のみ実行
+
+  // プロジェクトが変更されたときに自動保存（Zustandのsubscribeを使用）
+  useEffect(() => {
+    // デバウンス用のタイマー
+    let saveTimer: NodeJS.Timeout | null = null
+    
+    const unsubscribe = useProjectStore.subscribe(
+      (state) => state.project,
+      () => {
+        // デバウンスして自動保存（300ms後に保存）
+        if (saveTimer) {
+          clearTimeout(saveTimer)
+        }
+        saveTimer = setTimeout(() => {
+          useProjectStore.getState().autoSaveProject()
+        }, 300)
+      }
+    )
+    return () => {
+      unsubscribe()
+      if (saveTimer) {
+        clearTimeout(saveTimer)
+      }
+    }
+  }, [])
 
   const handleNewProject = () => {
     if (confirm('新しいプロジェクトを作成しますか？現在の作業内容は失われます。')) {
