@@ -98,3 +98,23 @@ export function getWireTypeForPortType(portType: string): WireType {
       return WireType.XLR_CABLE
   }
 }
+
+/**
+ * 2つのポートタイプから適切なワイヤータイプを決定する
+ * TRS to XLRケーブルなどの異なるポートタイプ間の接続に対応
+ */
+export function getWireTypeForConnection(sourcePortType: string, targetPortType: string): WireType {
+  // TRSとXLRの接続の場合、TRSケーブルとして扱う（TRS to XLRケーブル）
+  const isTRS = ['trs-quarter', 'ts-quarter', 'trs-mini'].includes(sourcePortType) || 
+                ['trs-quarter', 'ts-quarter', 'trs-mini'].includes(targetPortType)
+  const isXLR = ['xlr-male', 'xlr-female'].includes(sourcePortType) || 
+                ['xlr-male', 'xlr-female'].includes(targetPortType)
+  
+  if (isTRS && isXLR) {
+    // TRS to XLRケーブル - TRSケーブルとして扱う
+    return WireType.TRS_CABLE
+  }
+  
+  // その他の場合は、ソースポートタイプに基づいて決定
+  return getWireTypeForPortType(sourcePortType)
+}

@@ -13,7 +13,7 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       description: 'XLRオスコネクタ（マイク出力等）',
       color: '#3b82f6',
       category: 'audio',
-      compatibleWith: [PortType.XLR_FEMALE],
+      compatibleWith: [PortType.XLR_FEMALE, PortType.TRS_QUARTER],
       defaultDirection: PortDirection.OUTPUT,
       maxConnections: 1
     },
@@ -24,7 +24,7 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       description: 'XLRメスコネクタ（マイク入力等）',
       color: '#3b82f6',
       category: 'audio',
-      compatibleWith: [PortType.XLR_MALE],
+      compatibleWith: [PortType.XLR_MALE, PortType.TRS_QUARTER],
       defaultDirection: PortDirection.INPUT,
       maxConnections: 1
     },
@@ -35,7 +35,7 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       description: '6.3mm TRSコネクタ（楽器・ライン）',
       color: '#059669',
       category: 'audio',
-      compatibleWith: [PortType.TRS_QUARTER, PortType.TS_QUARTER],
+      compatibleWith: [PortType.TRS_QUARTER, PortType.TS_QUARTER, PortType.XLR_MALE, PortType.XLR_FEMALE],
       defaultDirection: PortDirection.BIDIRECTIONAL,
       maxConnections: 1
     },
@@ -128,6 +128,28 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       category: 'video',
       compatibleWith: [PortType.HDMI],
       defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
+    {
+      id: PortType.DISPLAYPORT,
+      name: PortType.DISPLAYPORT,
+      displayName: 'DisplayPort',
+      description: 'DisplayPortコネクタ',
+      color: '#dc2626',
+      category: 'video',
+      compatibleWith: [PortType.DISPLAYPORT],
+      defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
+    {
+      id: PortType.VGA,
+      name: PortType.VGA,
+      displayName: 'VGA',
+      description: 'VGAコネクタ',
+      color: '#dc2626',
+      category: 'video',
+      compatibleWith: [PortType.VGA],
+      defaultDirection: PortDirection.OUTPUT,
       maxConnections: 1
     },
     {

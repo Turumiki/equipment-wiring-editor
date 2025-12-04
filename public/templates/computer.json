@@ -108,5 +108,107 @@
     },
     "tags": ["マウス", "入力機器", "USB"],
     "version": "1.0.0"
+  },
+  {
+    "id": "windows-desktop-pc",
+    "name": "Windows デスクトップPC",
+    "category": "コンピューター",
+    "description": "Windows 10/11 デスクトップPC",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 10,
+        "type": "usb-a",
+        "direction": "bidirectional",
+        "label": "USB 1"
+      },
+      {
+        "side": "left",
+        "offset": 20,
+        "type": "usb-a",
+        "direction": "bidirectional",
+        "label": "USB 2"
+      },
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "usb-a",
+        "direction": "bidirectional",
+        "label": "USB 3"
+      },
+      {
+        "side": "left",
+        "offset": 40,
+        "type": "usb-a",
+        "direction": "bidirectional",
+        "label": "USB 4"
+      },
+      {
+        "side": "left",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "bidirectional",
+        "label": "USB-C"
+      },
+      {
+        "side": "left",
+        "offset": 60,
+        "type": "trs-mini",
+        "direction": "output",
+        "label": "Audio Out"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "trs-mini",
+        "direction": "input",
+        "label": "Audio In"
+      },
+      {
+        "side": "left",
+        "offset": 80,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN"
+      },
+      {
+        "side": "right",
+        "offset": 20,
+        "type": "hdmi",
+        "direction": "output",
+        "label": "HDMI"
+      },
+      {
+        "side": "right",
+        "offset": 40,
+        "type": "displayport",
+        "direction": "output",
+        "label": "DisplayPort"
+      },
+      {
+        "side": "right",
+        "offset": 60,
+        "type": "vga",
+        "direction": "output",
+        "label": "VGA"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "Power"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 140,
+      "height": 90
+    },
+    "tags": ["PC", "コンピューター", "Windows", "デスクトップ"],
+    "version": "1.0.0"
   }
 ]

@@ -33,7 +33,7 @@ import TableEditor from '@/components/TableEditor'
 import InspectorPanel from '@/components/InspectorPanel'
 import ResizablePanel from '@/components/ResizablePanel'
 import { getRenderComponent, getConnectionPortComponents, createEquipmentFromTemplate, createBasicEquipmentObject } from '@/utils/componentSystem'
-import { getWireTypeForPortType } from '@/utils/portTypeUtils'
+import { getWireTypeForPortType, getWireTypeForConnection } from '@/utils/portTypeUtils'
 import { validateConnection } from '@/utils/connectionValidation'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import ContextMenu from '@/components/ContextMenu'
@@ -706,7 +706,10 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
           }
         }
 
-        const wireType = sourcePort ? getWireTypeForPortType(sourcePort.data.portType) : WireType.XLR_CABLE
+        // 両方のポートタイプを考慮してワイヤータイプを決定（TRS to XLRケーブルなどに対応）
+        const wireType = (sourcePort && targetPort) 
+          ? getWireTypeForConnection(sourcePort.data.portType, targetPort.data.portType)
+          : (sourcePort ? getWireTypeForPortType(sourcePort.data.portType) : WireType.XLR_CABLE)
 
         // 設定ストアからワイヤータイプに応じたスタイルを取得
         // settingsは既にuseSettingsStore()から取得済み
