@@ -34,6 +34,10 @@ body {
     @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black;
   }
   
+  .input-field textarea {
+    @apply bg-white text-black;
+  }
+  
   .input-field-sm {
     @apply w-full px-2 py-1 text-sm border border-gray-300 rounded bg-white text-black;
   }
@@ -52,6 +56,12 @@ body {
   
   .select-field-xs {
     @apply w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black;
+  }
+  
+  /* チェックボックスのスタイル */
+  input[type="checkbox"] {
+    @apply bg-white border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500;
+    accent-color: #2563eb;
   }
 }
 

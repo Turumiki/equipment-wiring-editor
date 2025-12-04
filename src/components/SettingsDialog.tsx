@@ -144,7 +144,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                   <select
                     value={showPortLabels}
                     onChange={(e) => setShowPortLabels(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                    className="select-field"
                   >
                     <optgroup label="ポート名のみ">
                       <option value="always">常に表示</option>
@@ -251,7 +251,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                             setEditingPortType(updated)
                             updatePortType(editingPortType.id, { displayName: e.target.value })
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                          className="input-field"
                         />
                       </div>
                       <div>
@@ -263,7 +263,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                             setEditingPortType(updated)
                             updatePortType(editingPortType.id, { description: e.target.value })
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                          className="input-field"
                           rows={3}
                         />
                       </div>
@@ -289,7 +289,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                             setEditingPortType(updated)
                             updatePortType(editingPortType.id, { category: e.target.value as any })
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                          className="select-field"
                         >
                           <option value="audio">オーディオ</option>
                           <option value="video">映像</option>
@@ -377,7 +377,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                             setEditingWireType(updated)
                             updateWireType(editingWireType.id, { displayName: e.target.value })
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                          className="input-field"
                         />
                       </div>
                       <div>
@@ -389,7 +389,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                             setEditingWireType(updated)
                             updateWireType(editingWireType.id, { description: e.target.value })
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                          className="input-field"
                           rows={3}
                         />
                       </div>
@@ -418,7 +418,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                             setEditingWireType(updated)
                             updateWireType(editingWireType.id, { strokeWidth: Number(e.target.value) })
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                          className="input-field"
                         />
                       </div>
                       <div>
