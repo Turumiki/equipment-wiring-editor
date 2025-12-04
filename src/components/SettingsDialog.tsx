@@ -458,7 +458,7 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
           )}
 
           {activeTab === 'compatibility' && (
-            <div className="p-4 overflow-auto">
+            <div className="h-full overflow-auto p-4">
               <h3 className="text-lg font-medium text-black mb-4">互換性マトリックス</h3>
               <div className="overflow-x-auto">
                 <table className="w-full border border-gray-300">
