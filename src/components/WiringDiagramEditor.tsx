@@ -32,6 +32,7 @@ import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
 import InspectorPanel from '@/components/InspectorPanel'
 import ResizablePanel from '@/components/ResizablePanel'
+import ResizableWidthPanel from '@/components/ResizableWidthPanel'
 import { getRenderComponent, getConnectionPortComponents, createEquipmentFromTemplate, createBasicEquipmentObject } from '@/utils/componentSystem'
 import { getWireTypeForPortType, getWireTypeForConnection } from '@/utils/portTypeUtils'
 import { validateConnection } from '@/utils/connectionValidation'
@@ -1132,13 +1133,26 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
         </div>
       </div>
 
-      {/* サイドパネル */}
-      <div className="w-full lg:w-80 h-64 lg:h-full bg-white border-t lg:border-t-0 lg:border-l border-gray-300 flex flex-col overflow-hidden">
-        {/* インスペクターパネル */}
+      {/* サイドパネル（モバイル） */}
+      <div className="w-full lg:hidden h-64 bg-white border-t border-gray-300 flex flex-col overflow-hidden">
         <div className="flex-1 min-h-0 overflow-hidden">
           <InspectorPanel />
         </div>
       </div>
+
+      {/* サイドパネル（デスクトップ - リサイズ可能） */}
+      <ResizableWidthPanel
+        initialWidth={320}
+        minWidth={200}
+        maxWidth={800}
+        className="hidden lg:flex h-full bg-white border-l border-gray-300 flex-col overflow-hidden"
+        side="right"
+      >
+        {/* インスペクターパネル */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <InspectorPanel />
+        </div>
+      </ResizableWidthPanel>
 
       {/* テンプレートライブラリ */}
       {showTemplateLibrary && (
