@@ -21,6 +21,13 @@ export default function TemplatePortEditor({
   const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
   const [draggingPortId, setDraggingPortId] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const previewContainerRef = useRef<HTMLDivElement>(null)
+  
+  // ズームとパンの状態
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const panStartRef = useRef({ x: 0, y: 0 })
 
   // ポートの追加
   const handleAddPort = () => {
@@ -155,6 +162,49 @@ export default function TemplatePortEditor({
     setDraggingPortId(null)
   }
 
+  // 中ボタンドラッグでパン開始
+  const handleMiddleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 1) { // 中ボタン
+      e.preventDefault()
+      setIsPanning(true)
+      panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }
+    }
+  }
+
+  // パン中
+  const handlePanMove = useCallback((e: MouseEvent) => {
+    if (!isPanning) return
+    setPan({
+      x: e.clientX - panStartRef.current.x,
+      y: e.clientY - panStartRef.current.y
+    })
+  }, [isPanning])
+
+  // パン終了
+  const handlePanEnd = () => {
+    setIsPanning(false)
+  }
+
+  // ホイールでズーム
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? 0.9 : 1.1
+    const newZoom = Math.max(0.5, Math.min(3, zoom * delta))
+    setZoom(newZoom)
+  }
+
+  // パン用のイベントリスナー
+  React.useEffect(() => {
+    if (isPanning) {
+      document.addEventListener('mousemove', handlePanMove)
+      document.addEventListener('mouseup', handlePanEnd)
+      return () => {
+        document.removeEventListener('mousemove', handlePanMove)
+        document.removeEventListener('mouseup', handlePanEnd)
+      }
+    }
+  }, [isPanning, handlePanMove])
+
   // マウスイベントの設定
   React.useEffect(() => {
     if (draggingPortId) {
@@ -217,12 +267,25 @@ export default function TemplatePortEditor({
         </div>
         
         <div 
-          ref={containerRef}
-          className="relative mx-auto border-2 border-gray-400 bg-gray-50"
-          style={{ width: size.width, height: size.height }}
-          onMouseMove={handleDrag}
-          onMouseUp={handleDragEnd}
+          ref={previewContainerRef}
+          className="relative overflow-hidden border-2 border-gray-400 bg-gray-50 mx-auto"
+          style={{ width: '100%', height: '400px', cursor: isPanning ? 'grabbing' : 'grab' }}
+          onMouseDown={handleMiddleMouseDown}
+          onWheel={handleWheel}
+          onContextMenu={(e) => e.preventDefault()} // 中ボタンのコンテキストメニューを無効化
         >
+          <div
+            ref={containerRef}
+            className="relative mx-auto border-2 border-gray-400 bg-gray-50"
+            style={{ 
+              width: size.width, 
+              height: size.height,
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: 'center center'
+            }}
+            onMouseMove={handleDrag}
+            onMouseUp={handleDragEnd}
+          >
           {/* ポート表示 */}
           {ports.map((port, index) => {
             const portId = (port as any).id || `port-${index}`
@@ -255,6 +318,7 @@ export default function TemplatePortEditor({
               </div>
             )
           })}
+          </div>
         </div>
       </div>
 
