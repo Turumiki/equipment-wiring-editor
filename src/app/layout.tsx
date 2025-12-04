@@ -4,6 +4,9 @@ import './globals.css'
 export const metadata: Metadata = {
   title: '機材結線図ツール',
   description: 'Reactflowを使用した機材結線図作成ツール',
+  icons: {
+    icon: '/icon.svg',
+  },
 }
 
 export default function RootLayout({

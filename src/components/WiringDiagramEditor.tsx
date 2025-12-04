@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useState, useEffect, useImperativeHandle } from 'react'
+import React, { useCallback, useState, useEffect, useImperativeHandle, memo, useMemo } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -86,7 +86,7 @@ interface WiringDiagramEditorRef {
 }
 
 // ReactFlowキャンバスコンポーネント
-function ReactFlowCanvas({
+const ReactFlowCanvas = memo(function ReactFlowCanvas({
   nodes,
   edges,
   handleNodesChange,
@@ -95,8 +95,6 @@ function ReactFlowCanvas({
   handleReconnect,
   handleSelectionChange,
   isValidConnection,
-  nodeTypes,
-  edgeTypes,
   handleNodeContextMenu,
   handleEdgeContextMenu,
   setContextMenu,
@@ -109,6 +107,10 @@ function ReactFlowCanvas({
   setLockedDirection,
 }: any) {
   const { screenToFlowPosition, getViewport } = useReactFlow()
+
+  // nodeTypesとedgeTypesをメモ化してReact Flowの警告を回避
+  const memoizedNodeTypes = useMemo(() => nodeTypes, [])
+  const memoizedEdgeTypes = useMemo(() => edgeTypes, [])
 
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault()
@@ -179,8 +181,8 @@ function ReactFlowCanvas({
       onReconnect={handleReconnect}
       onSelectionChange={handleSelectionChange}
       isValidConnection={isValidConnection}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
+      nodeTypes={memoizedNodeTypes}
+      edgeTypes={memoizedEdgeTypes}
       connectionLineComponent={CustomConnectionLine}
       connectionRadius={20}
       snapToGrid={false}
@@ -390,7 +392,7 @@ function ReactFlowCanvas({
       <Background variant={BackgroundVariant.Lines} gap={20} size={0.5} color="#e5e7eb" />
     </ReactFlow>
   )
-}
+})
 
 const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagramEditorProps>(({
   showTemplateLibrary = false,
@@ -1117,8 +1119,6 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
               handleReconnect={handleReconnect}
               handleSelectionChange={handleSelectionChange}
               isValidConnection={isValidConnection}
-              nodeTypes={nodeTypes}
-              edgeTypes={edgeTypes}
               handleNodeContextMenu={handleNodeContextMenu}
               handleEdgeContextMenu={handleEdgeContextMenu}
               setContextMenu={setContextMenu}
