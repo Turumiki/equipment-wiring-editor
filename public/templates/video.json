@@ -129,5 +129,79 @@
     },
     "tags": ["映像", "スイッチャー", "HDMI"],
     "version": "1.0.0"
+  },
+  {
+    "id": "vc-1-sc",
+    "name": "VC-1-SC",
+    "category": "映像",
+    "description": "Roland VC-1-SC SDI/HDMI双方向変換コンバーター",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 20,
+        "type": "sdi",
+        "direction": "bidirectional",
+        "label": "SDI In/Out"
+      },
+      {
+        "side": "left",
+        "offset": 40,
+        "type": "hdmi",
+        "direction": "bidirectional",
+        "label": "HDMI In/Out"
+      },
+      {
+        "side": "left",
+        "offset": 60,
+        "type": "composite",
+        "direction": "input",
+        "label": "Composite In"
+      },
+      {
+        "side": "left",
+        "offset": 80,
+        "type": "rca",
+        "direction": "input",
+        "label": "Audio In"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "bidirectional",
+        "label": "SDI Out"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "hdmi",
+        "direction": "bidirectional",
+        "label": "HDMI Out"
+      },
+      {
+        "side": "top",
+        "offset": 50,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Network Control"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "Power"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 160,
+      "height": 90
+    },
+    "tags": ["映像", "VC-1-SC", "SDI", "HDMI", "Roland", "コンバーター"],
+    "version": "1.0.0"
   }
 ]

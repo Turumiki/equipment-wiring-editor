@@ -130,6 +130,39 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       defaultDirection: PortDirection.BIDIRECTIONAL,
       maxConnections: 1
     },
+    {
+      id: PortType.SDI,
+      name: PortType.SDI,
+      displayName: 'SDI',
+      description: 'SDIコネクタ（Serial Digital Interface）',
+      color: '#dc2626',
+      category: 'video',
+      compatibleWith: [PortType.SDI],
+      defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
+    {
+      id: PortType.COMPOSITE,
+      name: PortType.COMPOSITE,
+      displayName: 'コンポジット',
+      description: 'コンポジットビデオコネクタ',
+      color: '#dc2626',
+      category: 'video',
+      compatibleWith: [PortType.COMPOSITE],
+      defaultDirection: PortDirection.INPUT,
+      maxConnections: 1
+    },
+    {
+      id: PortType.RCA,
+      name: PortType.RCA,
+      displayName: 'RCA',
+      description: 'RCAコネクタ（オーディオ・ビデオ）',
+      color: '#3b82f6',
+      category: 'audio',
+      compatibleWith: [PortType.RCA],
+      defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
     // 電源
     {
       id: PortType.POWER_AC,

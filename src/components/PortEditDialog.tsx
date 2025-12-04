@@ -70,7 +70,7 @@ export default function PortEditDialog({
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              className="input-field"
               placeholder="ポート名を入力"
               autoFocus
             />
@@ -84,7 +84,7 @@ export default function PortEditDialog({
             <select
               value={portType}
               onChange={(e) => setPortType(e.target.value as PortType)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              className="select-field"
             >
               {settings.portTypes.map(portTypeDef => (
                 <option key={portTypeDef.id} value={portTypeDef.name}>
@@ -102,7 +102,7 @@ export default function PortEditDialog({
             <select
               value={direction}
               onChange={(e) => setDirection(e.target.value as PortDirection)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              className="select-field"
             >
               <option value={PortDirection.INPUT}>入力</option>
               <option value={PortDirection.OUTPUT}>出力</option>

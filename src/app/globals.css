@@ -28,6 +28,33 @@ body {
   }
 }
 
+@layer components {
+  /* 共通の入力フィールドスタイル */
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black;
+  }
+  
+  .input-field-sm {
+    @apply w-full px-2 py-1 text-sm border border-gray-300 rounded bg-white text-black;
+  }
+  
+  .input-field-xs {
+    @apply w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black;
+  }
+  
+  .select-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black;
+  }
+  
+  .select-field-sm {
+    @apply w-full px-2 py-1 text-sm border border-gray-300 rounded bg-white text-black;
+  }
+  
+  .select-field-xs {
+    @apply w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black;
+  }
+}
+
 /* ReactFlowのスタイルをConnectCad風に調整 */
 .react-flow__controls {
   background: white;

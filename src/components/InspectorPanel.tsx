@@ -194,7 +194,7 @@ export default function InspectorPanel() {
                 type="text"
                 value={selectedWire.label || ''}
                 onChange={(e) => updateWire(selectedWire.id, { label: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                className="input-field"
                 placeholder="ワイヤーのラベル"
               />
             </div>
@@ -205,7 +205,7 @@ export default function InspectorPanel() {
               <select
                 value={selectedWire.wireType}
                 onChange={(e) => updateWire(selectedWire.id, { wireType: e.target.value as any })}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                className="w-full px-3 py-2 border border-gray-300 rounded bg-white text-black"
               >
                 {settings.wireTypes.map(wireType => (
                   <option key={wireType.id} value={wireType.id}>
@@ -339,7 +339,7 @@ export default function InspectorPanel() {
                         type="text"
                         value={prop.value || ''}
                         onChange={(e) => handleBulkPropertyChange(key, e.target.value)}
-                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black ${prop.hasMultipleValues ? 'bg-orange-50 border-orange-200' : ''
+                        className={`input-field ${prop.hasMultipleValues ? 'bg-orange-50 border-orange-200' : ''
                           }`}
                         placeholder={prop.hasMultipleValues ? '複数の値があります' : ''}
                       />
@@ -655,7 +655,7 @@ export default function InspectorPanel() {
                       <label className="block text-xs font-medium text-black mb-1">辺</label>
                       <select
                         id="bulk-port-side"
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                        className="select-field-xs"
                         defaultValue="left"
                       >
                         <option value="left">左</option>
@@ -670,7 +670,7 @@ export default function InspectorPanel() {
                       <label className="block text-xs font-medium text-black mb-1">ポートタイプ</label>
                       <select
                         id="bulk-port-type"
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                        className="select-field-xs"
                         defaultValue={PortType.XLR_FEMALE}
                       >
                         {settings.portTypes.map(portTypeDef => (
@@ -686,7 +686,7 @@ export default function InspectorPanel() {
                       <label className="block text-xs font-medium text-black mb-1">方向</label>
                       <select
                         id="bulk-port-direction"
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                        className="select-field-xs"
                         defaultValue={PortDirection.INPUT}
                       >
                         <option value={PortDirection.INPUT}>入力</option>
@@ -701,7 +701,7 @@ export default function InspectorPanel() {
                       <input
                         type="text"
                         id="bulk-port-label"
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                        className="input-field-xs"
                         placeholder="ポートラベル"
                       />
                     </div>
@@ -835,7 +835,7 @@ export default function InspectorPanel() {
                         updateWire(wire.id, { wireType: e.target.value as any })
                       })
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                    className="select-field"
                     defaultValue=""
                   >
                     <option value="">選択してください</option>
@@ -985,7 +985,7 @@ export default function InspectorPanel() {
                   type="text"
                   value={prop.value || ''}
                   onChange={(e) => handlePropertyChange(key, e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  className="input-field"
                 />
               </div>
             ))}
@@ -1004,7 +1004,7 @@ export default function InspectorPanel() {
                     }
                   })
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                className="select-field"
               >
                 <option value="">カスタム</option>
                 <option value="mixer">ミキサー</option>
@@ -1044,7 +1044,7 @@ export default function InspectorPanel() {
                       onChange={(e) => updateEquipmentObject(selectedObject.id, {
                         position: { ...selectedObject.position, x: Number(e.target.value) }
                       }, true)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                      className="input-field-sm"
                     />
                   </div>
                   <div>
@@ -1055,7 +1055,7 @@ export default function InspectorPanel() {
                       onChange={(e) => updateEquipmentObject(selectedObject.id, {
                         position: { ...selectedObject.position, y: Number(e.target.value) }
                       }, true)}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                      className="input-field-sm"
                     />
                   </div>
                 </div>
@@ -1101,7 +1101,7 @@ export default function InspectorPanel() {
                             )
                             updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
                           }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                          className="input-field-sm"
                         />
                       </div>
                       <div>
@@ -1128,7 +1128,7 @@ export default function InspectorPanel() {
                             )
                             updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
                           }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded text-black"
+                          className="input-field-sm"
                         />
                       </div>
                     </div>
@@ -1327,7 +1327,7 @@ export default function InspectorPanel() {
                                         updateEquipmentObject(selectedObject.id, { components: updatedComponents })
                                       }
                                     }}
-                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                                    className="select-field-xs"
                                     defaultValue=""
                                   >
                                     <option value="">選択してください</option>
@@ -1361,7 +1361,7 @@ export default function InspectorPanel() {
                                         updateEquipmentObject(selectedObject.id, { components: updatedComponents })
                                       }
                                     }}
-                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                                    className="select-field-xs"
                                     defaultValue=""
                                   >
                                     <option value="">選択してください</option>
@@ -1655,7 +1655,7 @@ export default function InspectorPanel() {
                                 )
                                 updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
                               }}
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                              className="input-field-xs"
                               placeholder="ポート名"
                             />
                           </div>
@@ -1683,7 +1683,7 @@ export default function InspectorPanel() {
                                 )
                                 updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
                               }}
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                              className="select-field-xs"
                             >
                               {settings.portTypes.map(portTypeDef => (
                                 <option key={portTypeDef.id} value={portTypeDef.name}>
@@ -1711,7 +1711,7 @@ export default function InspectorPanel() {
                                 )
                                 updateEquipmentObject(selectedObject.id, { components: updatedComponents }, true)
                               }}
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                              className="select-field-xs"
                             >
                               <option value={PortDirection.INPUT}>入力</option>
                               <option value={PortDirection.OUTPUT}>出力</option>
@@ -1740,7 +1740,7 @@ export default function InspectorPanel() {
                                 )
                                 updateEquipmentObject(selectedObject.id, { components: updatedComponents })
                               }}
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                              className="select-field-xs"
                             >
                               <option value={Side.LEFT}>左</option>
                               <option value={Side.RIGHT}>右</option>
@@ -1852,7 +1852,7 @@ export default function InspectorPanel() {
                                     )
                                     updateEquipmentObject(selectedObject.id, { components: updatedComponents })
                                   }}
-                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded bg-white text-black"
+                                  className="input-field-xs"
                                 />
                               </div>
 
