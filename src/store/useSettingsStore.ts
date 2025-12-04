@@ -259,15 +259,23 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     return newState
   }),
 
-  updateEquipmentTemplate: (id, updates) => set((state) => ({
-    equipmentTemplates: state.equipmentTemplates.map(template =>
-      template.id === id ? { ...template, ...updates } : template
-    )
-  })),
+  updateEquipmentTemplate: (id, updates) => set((state) => {
+    const newState = {
+      equipmentTemplates: state.equipmentTemplates.map(template =>
+        template.id === id ? { ...template, ...updates } : template
+      )
+    }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
-  removeEquipmentTemplate: (id) => set((state) => ({
-    equipmentTemplates: state.equipmentTemplates.filter(template => template.id !== id)
-  })),
+  removeEquipmentTemplate: (id) => set((state) => {
+    const newState = {
+      equipmentTemplates: state.equipmentTemplates.filter(template => template.id !== id)
+    }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
   getEquipmentTemplateById: (id) => {
     const { equipmentTemplates } = get()

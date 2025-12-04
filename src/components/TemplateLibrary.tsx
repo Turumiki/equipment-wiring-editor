@@ -3,6 +3,7 @@ import { EquipmentTemplate, ShapeType } from '@/types'
 import { createBasicEquipmentObject, createEquipmentFromTemplate } from '@/utils/componentSystem'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
+import EditTemplateDialog from '@/components/EditTemplateDialog'
 
 interface TemplateLibraryProps {
   onClose: () => void
@@ -14,6 +15,8 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
   const [selectedCategory, setSelectedCategory] = useState<string>('全て')
   const [searchTerm, setSearchTerm] = useState('')
   const [templateSource, setTemplateSource] = useState<'global' | 'project'>('global')
+  const [editingTemplate, setEditingTemplate] = useState<EquipmentTemplate | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
   const {
     addEquipmentObject,
     project,
@@ -99,6 +102,16 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
   const handleCopyToGlobal = (template: EquipmentTemplate) => {
     addEquipmentTemplate(template)
     alert(`テンプレート「${template.name}」をグローバルテンプレートにコピーしました`)
+  }
+
+  const handleEditTemplate = (template: EquipmentTemplate) => {
+    setEditingTemplate(template)
+    setShowEditDialog(true)
+  }
+
+  const handleCloseEditDialog = () => {
+    setShowEditDialog(false)
+    setEditingTemplate(null)
   }
 
   const handleAddTemplate = (template: EquipmentTemplate) => {
@@ -318,6 +331,18 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
 
                   {/* 管理ボタン */}
                   <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* 編集 */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditTemplate(template)
+                      }}
+                      className="px-1 py-0.5 text-xs bg-yellow-500 text-white hover:bg-yellow-600"
+                      title="編集"
+                    >
+                      ✏️
+                    </button>
+
                     {/* 単体エクスポート */}
                     <button
                       onClick={(e) => {
@@ -373,6 +398,14 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
           </div>
         )}
       </div>
+
+      {/* テンプレート編集ダイアログ */}
+      <EditTemplateDialog
+        isOpen={showEditDialog}
+        template={editingTemplate}
+        templateSource={templateSource}
+        onClose={handleCloseEditDialog}
+      />
     </div>
   )
 }
