@@ -152,10 +152,24 @@
       },
       {
         "side": "left",
-        "offset": 60,
-        "type": "vga",
+        "offset": 50,
+        "type": "rca",
         "direction": "input",
-        "label": "RGB/COMPONENT IN"
+        "label": "VIDEO"
+      },
+      {
+        "side": "left",
+        "offset": 60,
+        "type": "rca",
+        "direction": "input",
+        "label": "L"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "rca",
+        "direction": "input",
+        "label": "R"
       },
       {
         "side": "left",
@@ -209,6 +223,457 @@
       "height": 90
     },
     "tags": ["映像", "VC-1-SC", "SDI", "HDMI", "Roland", "コンバーター"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "bmd-micro-bidirect-3g",
+    "name": "Micro Converter BiDirect SDI/HDMI 3G",
+    "category": "映像",
+    "description": "Blackmagic Design Micro Converter BiDirectional SDI/HDMI 3G",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "input",
+        "label": "SDI In"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "HDMI In"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Out"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "hdmi",
+        "direction": "output",
+        "label": "HDMI Out"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "input",
+        "label": "Power/Ctrl"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 60
+    },
+    "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "HDMI", "Micro Converter"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "bmd-micro-hdmi-sdi-3g",
+    "name": "Micro Converter HDMI to SDI 3G",
+    "category": "映像",
+    "description": "Blackmagic Design Micro Converter HDMI to SDI 3G",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 50,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "HDMI In"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Out 1"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Out 2"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "input",
+        "label": "Power/Ctrl"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 50
+    },
+    "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "HDMI", "Micro Converter"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "bmd-micro-sdi-hdmi-3g",
+    "name": "Micro Converter SDI to HDMI 3G",
+    "category": "映像",
+    "description": "Blackmagic Design Micro Converter SDI to HDMI 3G",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "input",
+        "label": "SDI In"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Loop"
+      },
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "hdmi",
+        "direction": "output",
+        "label": "HDMI Out"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "input",
+        "label": "Power/Ctrl"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 50
+    },
+    "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "HDMI", "Micro Converter"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "bmd-micro-bidirect-12g",
+    "name": "Micro Converter BiDirect SDI/HDMI 12G",
+    "category": "映像",
+    "description": "Blackmagic Design Micro Converter BiDirectional SDI/HDMI 12G",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "input",
+        "label": "SDI In"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "HDMI In"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Out"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "hdmi",
+        "direction": "output",
+        "label": "HDMI Out"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "input",
+        "label": "Power/Ctrl"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 60
+    },
+    "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "HDMI", "Micro Converter", "12G"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "bmd-micro-hdmi-sdi-12g",
+    "name": "Micro Converter HDMI to SDI 12G",
+    "category": "映像",
+    "description": "Blackmagic Design Micro Converter HDMI to SDI 12G",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 50,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "HDMI In"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Out 1"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Out 2"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "input",
+        "label": "Power/Ctrl"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 50
+    },
+    "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "HDMI", "Micro Converter", "12G"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "bmd-micro-sdi-hdmi-12g",
+    "name": "Micro Converter SDI to HDMI 12G",
+    "category": "映像",
+    "description": "Blackmagic Design Micro Converter SDI to HDMI 12G",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "input",
+        "label": "SDI In"
+      },
+      {
+        "side": "left",
+        "offset": 70,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Loop"
+      },
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "hdmi",
+        "direction": "output",
+        "label": "HDMI Out"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "usb-c",
+        "direction": "input",
+        "label": "Power/Ctrl"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 80,
+      "height": 50
+    },
+    "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "HDMI", "Micro Converter", "12G"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "bmd-mini-updowncross-hd",
+    "name": "Mini Converter UpDownCross HD",
+    "category": "映像",
+    "description": "Blackmagic Design Mini Converter UpDownCross HD",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 25,
+        "type": "sdi",
+        "direction": "input",
+        "label": "SDI In"
+      },
+      {
+        "side": "left",
+        "offset": 50,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Loop"
+      },
+      {
+        "side": "left",
+        "offset": 75,
+        "type": "hdmi",
+        "direction": "input",
+        "label": "HDMI In"
+      },
+      {
+        "side": "right",
+        "offset": 25,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Out 1"
+      },
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "sdi",
+        "direction": "output",
+        "label": "SDI Out 2"
+      },
+      {
+        "side": "right",
+        "offset": 75,
+        "type": "hdmi",
+        "direction": "output",
+        "label": "HDMI Out"
+      },
+      {
+        "side": "top",
+        "offset": 50,
+        "type": "bnc",
+        "direction": "input",
+        "label": "Ref In"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "12V DC"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 120,
+      "height": 80
+    },
+    "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "HDMI", "Mini Converter"],
+    "version": "1.0.0"
+  },
+  {
+    "id": "bmd-mini-sdi-distribution",
+    "name": "Mini Converter SDI Distribution",
+    "category": "映像",
+    "description": "Blackmagic Design Mini Converter SDI Distribution 4K",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 50,
+        "type": "sdi",
+        "direction": "input",
+        "label": "SDI In"
+      },
+      {
+        "side": "right",
+        "offset": 10,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 1"
+      },
+      {
+        "side": "right",
+        "offset": 20,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 2"
+      },
+      {
+        "side": "right",
+        "offset": 30,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 3" },
+      {
+        "side": "right",
+        "offset": 40,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 4"
+      },
+      {
+        "side": "right",
+        "offset": 60,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 5"
+      },
+      {
+        "side": "right",
+        "offset": 70,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 6"
+      },
+      {
+        "side": "right",
+        "offset": 80,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 7"
+      },
+      {
+        "side": "right",
+        "offset": 90,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 8"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "12V DC"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 140,
+      "height": 100
+    },
+    "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "分配器", "Mini Converter"],
     "version": "1.0.0"
   }
 ]

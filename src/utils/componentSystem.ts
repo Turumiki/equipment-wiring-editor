@@ -397,20 +397,61 @@ function stringToSide(side: string): Side {
 
 function stringToPortType(type: string): PortType {
   const typeMap: Record<string, PortType> = {
+    // オーディオ
     'xlr-male': PortType.XLR_MALE,
     'xlr-female': PortType.XLR_FEMALE,
     'trs-quarter': PortType.TRS_QUARTER,
     'ts-quarter': PortType.TS_QUARTER,
     'trs-mini': PortType.TRS_MINI,
+    'rca': PortType.RCA,
+    'speakon': PortType.SPEAKON,
+    
+    // デジタルオーディオ
+    'aes-ebu': PortType.AES_EBU,
+    'spdif': PortType.SPDIF,
+    'adat': PortType.ADAT,
+    'dante': PortType.DANTE,
+    
+    // 映像
+    'hdmi': PortType.HDMI,
+    'displayport': PortType.DISPLAYPORT,
+    'dvi': PortType.DVI,
+    'vga': PortType.VGA,
+    'sdi': PortType.SDI,
+    'bnc': PortType.BNC,
+    'composite': PortType.COMPOSITE,
+    
+    // データ・ネットワーク
     'usb-a': PortType.USB_A,
     'usb-b': PortType.USB_B,
     'usb-c': PortType.USB_C,
+    'thunderbolt': PortType.THUNDERBOLT,
     'ethernet': PortType.ETHERNET,
-    'dante': PortType.DANTE,
-    'hdmi': PortType.HDMI,
-    'power-ac': PortType.POWER_AC
+    
+    // 電源
+    'power-ac': PortType.POWER_AC,
+    'power-dc': PortType.POWER_DC,
+    'iec': PortType.IEC,
+    
+    // その他
+    'midi': PortType.MIDI,
+    'custom': PortType.CUSTOM
   }
-  return typeMap[type.toLowerCase()] || PortType.XLR_FEMALE
+  
+  // マップにあれば返す
+  if (typeMap[type.toLowerCase()]) {
+    return typeMap[type.toLowerCase()]
+  }
+
+  // Enumの値そのものならそのまま返す（動的対応）
+  const values = Object.values(PortType) as string[]
+  if (values.includes(type.toLowerCase())) {
+    return type.toLowerCase() as PortType
+  }
+
+  // 見つからない場合はデフォルト
+  console.warn(`Unknown port type: ${type}, falling back to XLR_FEMALE`)
+  return PortType.XLR_FEMALE
 }
 
 function stringToPortDirection(direction: string): PortDirection {

@@ -81,6 +81,7 @@ export function getWireTypeForPortType(portType: string): WireType {
     case 'hdmi':
       return WireType.HDMI_CABLE
     case 'sdi':
+    case 'bnc':
       return WireType.SDI_CABLE
     case 'composite':
       return WireType.COMPOSITE_CABLE

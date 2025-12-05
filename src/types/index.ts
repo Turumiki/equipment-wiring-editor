@@ -93,6 +93,7 @@ export enum PortType {
   DVI = 'dvi',
   VGA = 'vga',
   SDI = 'sdi',
+  BNC = 'bnc',
   COMPOSITE = 'composite',
 
   // データ・ネットワーク

@@ -159,8 +159,19 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       description: 'SDIコネクタ（Serial Digital Interface）',
       color: '#dc2626',
       category: 'video',
-      compatibleWith: [PortType.SDI],
+      compatibleWith: [PortType.SDI, PortType.BNC],
       defaultDirection: PortDirection.BIDIRECTIONAL,
+      maxConnections: 1
+    },
+    {
+      id: PortType.BNC,
+      name: PortType.BNC,
+      displayName: 'BNC',
+      description: 'BNCコネクタ（映像・同期信号）',
+      color: '#dc2626',
+      category: 'video',
+      compatibleWith: [PortType.BNC, PortType.SDI, PortType.COMPOSITE],
+      defaultDirection: PortDirection.INPUT,
       maxConnections: 1
     },
     {
