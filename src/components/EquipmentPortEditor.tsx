@@ -229,7 +229,7 @@ export default function EquipmentPortEditor({
         <div 
           ref={previewContainerRef}
           className="relative overflow-hidden border-2 border-gray-400 bg-gray-50 mx-auto"
-          style={{ width: '100%', height: '400px', cursor: isPanning ? 'grabbing' : 'grab' }}
+          style={{ width: '100%', height: '200px', cursor: isPanning ? 'grabbing' : 'grab' }}
           onMouseDown={handleMiddleMouseDown}
           onWheel={handleWheel}
           onContextMenu={(e) => e.preventDefault()} // 中ボタンのコンテキストメニューを無効化
