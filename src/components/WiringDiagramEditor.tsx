@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useState, useEffect, useImperativeHandle, memo, useMemo } from 'react'
+import React, { useCallback, useState, useEffect, useImperativeHandle, memo, useMemo, useRef } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -40,8 +40,9 @@ import ContextMenu from '@/components/ContextMenu'
 
 import SaveTemplateDialog from '@/components/SaveTemplateDialog'
 import PortEditDialog from '@/components/PortEditDialog'
+import TemplateSelectionDialog from '@/components/TemplateSelectionDialog'
 import { autoLayout, LayoutOptions } from '@/utils/autoLayout'
-import { PortType, PortDirection } from '@/types'
+import { PortType, PortDirection, EquipmentTemplate } from '@/types'
 
 interface WiringDiagramEditorProps {
   showTemplateLibrary?: boolean
@@ -84,6 +85,8 @@ function ReactFlowCanvas({
   handleNodesChange,
   handleEdgesChange,
   onConnect,
+  onConnectStart,
+  onConnectEnd,
   handleReconnect,
   handleSelectionChange,
   isValidConnection,
@@ -97,8 +100,31 @@ function ReactFlowCanvas({
   setDragStartPositions,
   lockedDirection,
   setLockedDirection,
+  connectionStartData,
+  flowPositionRef,
 }: any) {
   const { screenToFlowPosition, getViewport } = useReactFlow()
+
+  // onConnectEndをラップして座標変換を行う
+  const handleConnectEnd = useCallback((event: MouseEvent | TouchEvent) => {
+    if (connectionStartData) {
+      // マウス位置を取得
+      const clientX = 'clientX' in event ? event.clientX : event.touches?.[0]?.clientX || 0
+      const clientY = 'clientY' in event ? event.clientY : event.touches?.[0]?.clientY || 0
+
+      // ReactFlowの座標系に変換
+      const flowPosition = screenToFlowPosition({
+        x: clientX,
+        y: clientY,
+      })
+
+      // 座標変換済みの位置をrefに保存（親コンポーネントで使用）
+      flowPositionRef.current = flowPosition
+    }
+    
+    // 元のonConnectEndを呼び出し
+    onConnectEnd?.(event)
+  }, [connectionStartData, screenToFlowPosition, onConnectEnd])
 
   // Fast Refresh対策として、外部ファイルからインポートした場合でもuseMemoでラップすることで
   // 再レンダリング時のオブジェクト再生成を防ぐ
@@ -175,6 +201,8 @@ function ReactFlowCanvas({
       onNodesChange={handleNodesChange}
       onEdgesChange={handleEdgesChange}
       onConnect={onConnect}
+      onConnectStart={onConnectStart}
+      onConnectEnd={handleConnectEnd}
       onReconnect={handleReconnect}
       onSelectionChange={handleSelectionChange}
       isValidConnection={isValidConnection}
@@ -418,6 +446,14 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     portId: string
     equipmentId: string
   } | null>(null)
+  const [showTemplateSelectionDialog, setShowTemplateSelectionDialog] = useState(false)
+  const [connectionStartData, setConnectionStartData] = useState<{
+    sourceObjectId: string
+    sourcePortId: string
+    sourcePortType: PortType
+    sourcePortDirection: PortDirection
+    dropPosition: { x: number; y: number }
+  } | null>(null)
 
   const { project, addWire, updateWire, updateEquipmentObject, updateMultipleEquipmentObjects, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, copySelected, pasteSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
   const { hydrate, settings } = useSettingsStore()
@@ -614,8 +650,104 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     })
   }, [onEdgesChange])
 
+  // 接続開始時の処理
+  const onConnectStart = useCallback(
+    (event: React.MouseEvent | React.TouchEvent, params: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
+      console.log('=== onConnectStart called ===', params)
+      
+      if (!params.nodeId || !params.handleId) return
+
+      const sourceObject = project.objects.find(obj => obj.id === params.nodeId)
+      if (!sourceObject) {
+        console.log('Source object not found:', params.nodeId)
+        return
+      }
+
+      const sourcePortComponents = getConnectionPortComponents(sourceObject)
+      const sourcePort = sourcePortComponents.find(port => port.id === params.handleId)
+      if (!sourcePort) {
+        console.log('Source port not found:', params.handleId)
+        return
+      }
+
+      console.log('Connection started from:', {
+        object: sourceObject.name,
+        port: sourcePort.data.label,
+        type: sourcePort.data.portType
+      })
+
+      // 接続開始情報を記録（onConnectEndで使用）
+      setConnectionStartData({
+        sourceObjectId: params.nodeId,
+        sourcePortId: params.handleId,
+        sourcePortType: sourcePort.data.portType,
+        sourcePortDirection: sourcePort.data.direction,
+        dropPosition: { x: 0, y: 0 } // 後で更新
+      })
+    },
+    [project.objects]
+  )
+
+  // 座標変換用のref（ReactFlowCanvasからアクセス可能にする）
+  const flowPositionRef = useRef<{ x: number; y: number } | null>(null)
+  
+  // 接続開始データをrefで保持（コールバック内で最新の値を参照するため）
+  const connectionStartDataRef = useRef<typeof connectionStartData>(null)
+  useEffect(() => {
+    connectionStartDataRef.current = connectionStartData
+  }, [connectionStartData])
+  
+  // 接続が確立されたかどうかを追跡
+  const connectionEstablishedRef = useRef(false)
+
+  // 接続終了時の処理
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      console.log('=== onConnectEnd called ===', {
+        connectionEstablished: connectionEstablishedRef.current,
+        connectionStartData: connectionStartDataRef.current
+      })
+
+      // 接続が確立された場合は何もしない
+      if (connectionEstablishedRef.current) {
+        console.log('Connection established, skipping dialog')
+        connectionEstablishedRef.current = false
+        return
+      }
+
+      // 接続が確立されなかった場合（キャンバス上でドロップ）のみ処理
+      const currentConnectionData = connectionStartDataRef.current
+      if (!currentConnectionData) {
+        console.log('No connection start data')
+        return
+      }
+
+      // マウス位置を取得
+      const clientX = 'clientX' in event ? event.clientX : event.touches?.[0]?.clientX || 0
+      const clientY = 'clientY' in event ? event.clientY : event.touches?.[0]?.clientY || 0
+
+      console.log('Showing template selection dialog at:', { clientX, clientY })
+
+      // 接続開始情報を更新してダイアログを表示
+      setConnectionStartData({
+        ...currentConnectionData,
+        dropPosition: { x: clientX, y: clientY }
+      })
+      setShowTemplateSelectionDialog(true)
+    },
+    []
+  )
+
   const onConnect = useCallback(
     (params: Connection) => {
+      console.log('=== onConnect called ===')
+      // 接続が確立されたことを記録
+      connectionEstablishedRef.current = true
+      
+      // 接続が確立された場合は、接続開始情報をクリア
+      setConnectionStartData(null)
+      setShowTemplateSelectionDialog(false)
+
       // デバッグログは開発時のみ有効
       const DEBUG = process.env.NODE_ENV === 'development' && false // falseに設定してログを無効化
 
@@ -746,6 +878,116 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       }
     },
     [addWire, project.objects]
+  )
+
+  // テンプレート選択時の処理
+  const handleTemplateSelect = useCallback(
+    (template: EquipmentTemplate, flowPosition?: { x: number; y: number }) => {
+      if (!connectionStartData) return
+
+      const sourceObject = project.objects.find(obj => obj.id === connectionStartData.sourceObjectId)
+      if (!sourceObject) return
+
+      // 座標が渡されていない場合は、dropPositionを使用（後で変換される）
+      const mousePosition = flowPosition || { x: connectionStartData.dropPosition.x, y: connectionStartData.dropPosition.y }
+
+      // テンプレートから機材を作成
+      let newEquipmentObject
+      if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
+        newEquipmentObject = createEquipmentFromTemplate(template)
+      } else if (template.defaultComponents && template.defaultComponents.length > 0) {
+        newEquipmentObject = createEquipmentFromTemplate(template)
+      } else {
+        const shape = getShapeForTemplate(template.id)
+        newEquipmentObject = createBasicEquipmentObject(
+          template.name,
+          mousePosition,
+          shape,
+          template.id
+        )
+      }
+
+      // 機材のサイズを取得
+      const renderComponent = newEquipmentObject.components.find(comp => comp.type === ComponentType.RENDER)
+      const equipmentSize = renderComponent?.data?.size || { width: 100, height: 60 }
+
+      // 機材の中心がマウス位置に来るように調整
+      const centeredPosition = {
+        x: mousePosition.x - equipmentSize.width / 2,
+        y: mousePosition.y - equipmentSize.height / 2
+      }
+
+      newEquipmentObject.position = centeredPosition
+      newEquipmentObject.templateId = template.id
+
+      // 機材を追加
+      addEquipmentObject(newEquipmentObject)
+
+      // 互換性のあるポートを見つけて接続
+      const targetPortComponents = getConnectionPortComponents(newEquipmentObject)
+      const compatiblePort = targetPortComponents.find(port => {
+        const portType = port.data.portType
+        const portDirection = port.data.direction
+
+        // ポートタイプの互換性チェック
+        const { settings } = useSettingsStore.getState()
+        const sourcePortTypeDef = settings.portTypes.find(pt => pt.id === connectionStartData.sourcePortType || pt.name === connectionStartData.sourcePortType)
+        const compatiblePortTypes = sourcePortTypeDef?.compatibleWith || [connectionStartData.sourcePortType]
+        const isTypeCompatible = compatiblePortTypes.includes(portType) || portType === connectionStartData.sourcePortType
+
+        // 方向の互換性チェック
+        let isDirectionCompatible = false
+        if (connectionStartData.sourcePortDirection === PortDirection.BIDIRECTIONAL || portDirection === PortDirection.BIDIRECTIONAL) {
+          isDirectionCompatible = true
+        } else if (connectionStartData.sourcePortDirection === PortDirection.OUTPUT && portDirection === PortDirection.INPUT) {
+          isDirectionCompatible = true
+        } else if (connectionStartData.sourcePortDirection === PortDirection.INPUT && portDirection === PortDirection.OUTPUT) {
+          isDirectionCompatible = true
+        }
+
+        return isTypeCompatible && isDirectionCompatible
+      })
+
+      if (compatiblePort) {
+        // 接続を作成
+        const sourcePortComponents = getConnectionPortComponents(sourceObject)
+        const sourcePort = sourcePortComponents.find(port => port.id === connectionStartData.sourcePortId)
+        
+        if (sourcePort) {
+          const wireType = getWireTypeForConnection(sourcePort.data.portType, compatiblePort.data.portType)
+          const wireTypeSettings = settings.wireTypes.find(wt =>
+            wt.name === wireType || wt.id === wireType
+          )
+
+          const wireLabel = wireTypeSettings ? 
+            ((wireTypeSettings as any).shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
+            wireType
+
+          const newWire = {
+            id: `wire-${Date.now()}`,
+            sourceObjectId: connectionStartData.sourceObjectId,
+            sourcePortId: connectionStartData.sourcePortId,
+            targetObjectId: newEquipmentObject.id,
+            targetPortId: compatiblePort.id,
+            wireType: wireType,
+            style: {
+              color: wireTypeSettings?.color || '#059669',
+              strokeWidth: wireTypeSettings?.strokeWidth || 2,
+              strokeDashArray: wireTypeSettings?.strokeDashArray
+            },
+            label: wireLabel,
+            metadata: {}
+          }
+
+          addWire(newWire)
+        }
+      }
+
+      // 接続開始情報をクリア
+      setConnectionStartData(null)
+      setShowTemplateSelectionDialog(false)
+    },
+    [connectionStartData, project.objects, addEquipmentObject, addWire, settings.wireTypes, getShapeForTemplate]
   )
 
   // ノード・エッジ選択の処理
@@ -1113,6 +1355,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
               handleNodesChange={handleNodesChange}
               handleEdgesChange={handleEdgesChange}
               onConnect={onConnect}
+              onConnectStart={onConnectStart}
+              onConnectEnd={onConnectEnd}
               handleReconnect={handleReconnect}
               handleSelectionChange={handleSelectionChange}
               isValidConnection={isValidConnection}
@@ -1126,6 +1370,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
               setDragStartPositions={setDragStartPositions}
               lockedDirection={lockedDirection}
               setLockedDirection={setLockedDirection}
+              connectionStartData={connectionStartData}
+              flowPositionRef={flowPositionRef}
             />
           </ReactFlowProvider>
         </div>
@@ -1201,6 +1447,23 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
         initialPortType={getEditingPortInfo()?.portType || PortType.XLR_FEMALE}
         initialDirection={getEditingPortInfo()?.direction || PortDirection.INPUT}
       />
+
+      {/* テンプレート選択ダイアログ */}
+      {showTemplateSelectionDialog && connectionStartData && (
+        <TemplateSelectionDialog
+          sourcePortType={connectionStartData.sourcePortType}
+          sourcePortDirection={connectionStartData.sourcePortDirection}
+          dropPosition={connectionStartData.dropPosition}
+          onSelect={(template) => {
+            // 座標変換はReactFlowCanvas内で行うため、ここではundefinedを渡す
+            handleTemplateSelect(template)
+          }}
+          onClose={() => {
+            setShowTemplateSelectionDialog(false)
+            setConnectionStartData(null)
+          }}
+        />
+      )}
 
       {/* コンテキストメニュー */}
       {contextMenu && (
