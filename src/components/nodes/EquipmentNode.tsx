@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, memo } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
 import { EquipmentObject, Side, ShapeType } from '@/types'
 import {
@@ -18,7 +18,7 @@ interface EquipmentNodeData {
   onPortEdit?: (portId: string, equipmentId: string) => void
 }
 
-export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNodeData>) {
+const EquipmentNode = ({ data, selected }: NodeProps<EquipmentNodeData>) => {
   const { equipmentObject, isSelected, onPortEdit } = data
   const renderComponent = getRenderComponent(equipmentObject)
   const portComponents = getConnectionPortComponents(equipmentObject)
@@ -458,3 +458,5 @@ export default function EquipmentNode({ data, selected }: NodeProps<EquipmentNod
     </ResizableNodeSelected>
   )
 }
+
+export default memo(EquipmentNode)

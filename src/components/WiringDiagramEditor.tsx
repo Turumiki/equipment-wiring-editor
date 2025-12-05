@@ -24,9 +24,8 @@ import 'reactflow/dist/style.css'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { WireType, EquipmentObject, ShapeType, ComponentType } from '@/types'
-import EquipmentNode from '@/components/nodes/EquipmentNode'
-import WireEdge from '@/components/edges/WireEdge'
 import CustomConnectionLine from '@/components/edges/CustomConnectionLine'
+import { nodeTypes, edgeTypes } from '@/components/flowTypes'
 
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
@@ -43,14 +42,6 @@ import SaveTemplateDialog from '@/components/SaveTemplateDialog'
 import PortEditDialog from '@/components/PortEditDialog'
 import { autoLayout, LayoutOptions } from '@/utils/autoLayout'
 import { PortType, PortDirection } from '@/types'
-
-const nodeTypes = {
-  equipment: EquipmentNode,
-}
-
-const edgeTypes = {
-  wire: WireEdge,
-}
 
 interface WiringDiagramEditorProps {
   showTemplateLibrary?: boolean
@@ -86,7 +77,8 @@ interface WiringDiagramEditorRef {
 }
 
 // ReactFlowキャンバスコンポーネント
-const ReactFlowCanvas = memo(function ReactFlowCanvas({
+// エディタ系ツールでは参照関係が複雑になるため、memoを削除して直接レンダリング
+function ReactFlowCanvas({
   nodes,
   edges,
   handleNodesChange,
@@ -108,9 +100,14 @@ const ReactFlowCanvas = memo(function ReactFlowCanvas({
 }: any) {
   const { screenToFlowPosition, getViewport } = useReactFlow()
 
-  // nodeTypesとedgeTypesをメモ化してReact Flowの警告を回避
-  const memoizedNodeTypes = useMemo(() => nodeTypes, [])
-  const memoizedEdgeTypes = useMemo(() => edgeTypes, [])
+  // Fast Refresh対策として、外部ファイルからインポートした場合でもuseMemoでラップすることで
+  // 再レンダリング時のオブジェクト再生成を防ぐ
+  const memoizedNodeTypes = useMemo(() => ({
+    equipment: nodeTypes.equipment
+  }), [])
+  const memoizedEdgeTypes = useMemo(() => ({
+    wire: edgeTypes.wire
+  }), [])
 
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault()
@@ -392,7 +389,7 @@ const ReactFlowCanvas = memo(function ReactFlowCanvas({
       <Background variant={BackgroundVariant.Lines} gap={20} size={0.5} color="#e5e7eb" />
     </ReactFlow>
   )
-})
+}
 
 const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagramEditorProps>(({
   showTemplateLibrary = false,

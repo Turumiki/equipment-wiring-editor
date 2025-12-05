@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { EdgeProps, getSmoothStepPath, EdgeLabelRenderer, ConnectionLineType } from 'reactflow'
 import { Wire, WireType } from '@/types'
 import { useSettingsStore } from '@/store/useSettingsStore'
@@ -8,7 +8,7 @@ interface WireEdgeData {
   isSelected?: boolean
 }
 
-export default function WireEdge({
+const WireEdge = ({
   id,
   sourceX,
   sourceY,
@@ -18,7 +18,7 @@ export default function WireEdge({
   targetPosition,
   data,
   selected
-}: EdgeProps<WireEdgeData>) {
+}: EdgeProps<WireEdgeData>) => {
   const { showWireLabels, settings } = useSettingsStore()
 
   if (!data?.wire) {
@@ -143,3 +143,5 @@ export default function WireEdge({
     </>
   )
 }
+
+export default memo(WireEdge)

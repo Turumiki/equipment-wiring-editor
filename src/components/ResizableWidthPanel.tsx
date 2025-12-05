@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 
 interface ResizableWidthPanelProps {
   children: React.ReactNode
@@ -21,75 +21,108 @@ export default function ResizableWidthPanel({
 }: ResizableWidthPanelProps) {
   const [width, setWidth] = useState(initialWidth)
   const [isResizing, setIsResizing] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
-  const startX = useRef(0)
-  const startWidth = useRef(0)
-  const onWidthChangeRef = useRef(onWidthChange)
-  const sideRef = useRef(side)
-  const minWidthRef = useRef(minWidth)
-  const maxWidthRef = useRef(maxWidth)
+  
+  // 状態を保持するためのRef
+  const widthRef = useRef(width)
+  const animationFrameRef = useRef<number | null>(null)
+  
+  // マウス位置計算用
+  const startXRef = useRef(0)
+  const startWidthRef = useRef(0)
+  
+  // PropsをRefで保持
+  const propsRef = useRef({ onWidthChange, side, minWidth, maxWidth })
+  
+  useEffect(() => {
+    propsRef.current = { onWidthChange, side, minWidth, maxWidth }
+  }, [onWidthChange, side, minWidth, maxWidth])
+
+  // widthステートが変更されたらRefも更新
+  useEffect(() => {
+    widthRef.current = width
+  }, [width])
 
   // 初期幅が変更された場合に更新
   useEffect(() => {
     setWidth(initialWidth)
   }, [initialWidth])
 
-  // refを更新
-  useEffect(() => {
-    onWidthChangeRef.current = onWidthChange
-    sideRef.current = side
-    minWidthRef.current = minWidth
-    maxWidthRef.current = maxWidth
-  }, [onWidthChange, side, minWidth, maxWidth]) // onWidthChangeは親から渡されるコールバックなので依存配列に含める
-
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
-    setIsResizing(true)
-    startX.current = e.clientX
-    startWidth.current = width
+    e.stopPropagation()
     
-    // カーソルを変更
+    setIsResizing(true)
+    startXRef.current = e.clientX
+    startWidthRef.current = widthRef.current
+    
     document.body.style.cursor = 'ew-resize'
     document.body.style.userSelect = 'none'
-  }
+  }, [])
 
   useEffect(() => {
     if (!isResizing) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = sideRef.current === 'right' 
-        ? startX.current - e.clientX // 右側パネルの場合、左方向が正の値
-        : e.clientX - startX.current // 左側パネルの場合、右方向が正の値
+      e.preventDefault()
       
-      const newWidth = Math.min(
-        Math.max(startWidth.current + deltaX, minWidthRef.current),
-        maxWidthRef.current
-      )
-      
-      setWidth(newWidth)
-      if (onWidthChangeRef.current) {
-        onWidthChangeRef.current(newWidth)
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current)
       }
+
+      const clientX = e.clientX
+      
+      animationFrameRef.current = requestAnimationFrame(() => {
+        const { onWidthChange, side, minWidth, maxWidth } = propsRef.current
+        
+        const deltaX = side === 'right' 
+          ? startXRef.current - clientX // 右側パネルの場合、左方向が正の値
+          : clientX - startXRef.current // 左側パネルの場合、右方向が正の値
+        
+        let newWidth = startWidthRef.current + deltaX
+        
+        // NaNチェック
+        if (Number.isNaN(newWidth)) return
+        
+        // 範囲制限
+        newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth))
+        
+        setWidth(newWidth)
+        if (onWidthChange) {
+          onWidthChange(newWidth)
+        }
+        
+        animationFrameRef.current = null
+      })
     }
 
     const handleMouseUp = () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
+      }
       setIsResizing(false)
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
+    // windowに対してイベントリスナーを設定
+    window.addEventListener('mousemove', handleMouseMove, { passive: false })
+    window.addEventListener('mouseup', handleMouseUp)
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+      
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
     }
   }, [isResizing])
 
   return (
     <div
-      ref={panelRef}
       className={`relative flex flex-shrink-0 ${className}`}
       style={{ width: `${width}px`, minWidth: `${minWidth}px`, maxWidth: `${maxWidth}px` }}
     >
@@ -122,4 +155,3 @@ export default function ResizableWidthPanel({
     </div>
   )
 }
-

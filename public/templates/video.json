@@ -140,57 +140,64 @@
         "side": "left",
         "offset": 20,
         "type": "sdi",
-        "direction": "bidirectional",
-        "label": "SDI In/Out"
+        "direction": "input",
+        "label": "SDI IN"
       },
       {
         "side": "left",
         "offset": 40,
         "type": "hdmi",
-        "direction": "bidirectional",
-        "label": "HDMI In/Out"
+        "direction": "input",
+        "label": "HDMI IN"
       },
       {
         "side": "left",
         "offset": 60,
-        "type": "composite",
+        "type": "vga",
         "direction": "input",
-        "label": "Composite In"
+        "label": "RGB/COMPONENT IN"
       },
       {
         "side": "left",
         "offset": 80,
         "type": "rca",
         "direction": "input",
-        "label": "Audio In"
+        "label": "AUDIO IN"
       },
       {
         "side": "right",
         "offset": 30,
         "type": "sdi",
-        "direction": "bidirectional",
-        "label": "SDI Out"
+        "direction": "output",
+        "label": "SDI OUT"
       },
       {
         "side": "right",
-        "offset": 70,
+        "offset": 60,
         "type": "hdmi",
-        "direction": "bidirectional",
-        "label": "HDMI Out"
+        "direction": "output",
+        "label": "HDMI OUT"
+      },
+      {
+        "side": "right",
+        "offset": 90,
+        "type": "rca",
+        "direction": "output",
+        "label": "AUDIO OUT"
       },
       {
         "side": "top",
         "offset": 50,
-        "type": "ethernet",
+        "type": "usb-b",
         "direction": "bidirectional",
-        "label": "Network Control"
+        "label": "USB"
       },
       {
         "side": "bottom",
         "offset": 50,
         "type": "power-ac",
         "direction": "input",
-        "label": "Power"
+        "label": "DC IN"
       }
     ],
     "shape": "rectangle",
