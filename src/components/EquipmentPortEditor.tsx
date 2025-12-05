@@ -111,61 +111,91 @@ export default function EquipmentPortEditor({
   React.useEffect(() => {
     if (!draggingPortId) return
 
+    let rafId: number | null = null
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return
-      const rect = containerRef.current.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
+      if (!previewContainerRef.current || !containerRef.current) return
+      
+      // コンテナの実際の位置を取得（transformが適用された後の位置）
+      // パンとズームは既に反映されている
+      const containerRect = containerRef.current.getBoundingClientRect()
+      
+      // マウス位置をコンテナ基準に変換（コンテナの左上角を原点とする）
+      const mouseX = e.clientX - containerRect.left
+      const mouseY = e.clientY - containerRect.top
+      
+      // ズームを考慮して実際のコンテナ内の座標に変換
+      // getBoundingClientRect()で取得した位置は既にtransformが適用された後の実際の位置
+      // ズームで割ることで、実際のコンテナサイズでの座標に変換
+      const actualX = mouseX / zoom
+      const actualY = mouseY / zoom
 
       const port = portComponents.find(p => p.id === draggingPortId)
       if (!port) return
 
-      const centerX = size.width / 2
-      const centerY = size.height / 2
-      const relX = x - centerX
-      const relY = y - centerY
-
       let newSide: Side = port.data.position?.side || Side.LEFT
       let offset = port.data.position?.offset || 50
 
+      // コンテナの中心からの相対位置で判定
+      const centerX = size.width / 2
+      const centerY = size.height / 2
+      const relX = actualX - centerX
+      const relY = actualY - centerY
+
       if (Math.abs(relX) > Math.abs(relY)) {
         newSide = relX > 0 ? Side.RIGHT : Side.LEFT
-        offset = Math.max(0, Math.min(100, (y / size.height) * 100))
+        // コンテナの高さに対する相対位置（0-100%）
+        offset = Math.max(0, Math.min(100, (actualY / size.height) * 100))
       } else {
         newSide = relY > 0 ? Side.BOTTOM : Side.TOP
-        offset = Math.max(0, Math.min(100, (x / size.width) * 100))
+        // コンテナの幅に対する相対位置（0-100%）
+        offset = Math.max(0, Math.min(100, (actualX / size.width) * 100))
       }
 
-      const updatedComponents = equipmentObject.components.map(comp => {
-        if (comp.id === draggingPortId && comp.type === ComponentType.CONNECTION_PORT) {
-          return {
-            ...comp,
-            data: {
-              ...comp.data,
-              position: {
-                side: newSide,
-                offset: offset
+      // requestAnimationFrameでスムーズに更新
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
+
+      rafId = requestAnimationFrame(() => {
+        const updatedComponents = equipmentObject.components.map(comp => {
+          if (comp.id === draggingPortId && comp.type === ComponentType.CONNECTION_PORT) {
+            return {
+              ...comp,
+              data: {
+                ...comp.data,
+                position: {
+                  side: newSide,
+                  offset: offset
+                }
               }
             }
           }
-        }
-        return comp
+          return comp
+        })
+        onPortsChange(updatedComponents)
       })
-      onPortsChange(updatedComponents)
     }
 
     const handleMouseUp = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+      }
       setDraggingPortId(null)
     }
 
-    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mousemove', handleMouseMove, { passive: true })
     document.addEventListener('mouseup', handleMouseUp)
 
     return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [draggingPortId, portComponents, size, equipmentObject.components, onPortsChange])
+  }, [draggingPortId, portComponents, size, equipmentObject.components, onPortsChange, zoom, pan])
 
   // 中ボタンドラッグでパン開始
   const handleMiddleMouseDown = (e: React.MouseEvent) => {
@@ -253,7 +283,9 @@ export default function EquipmentPortEditor({
             return (
               <div
                 key={port.id}
-                className={`absolute cursor-move transition-all ${
+                className={`absolute cursor-move ${
+                  draggingPortId === port.id ? '' : 'transition-all'
+                } ${
                   isSelected ? 'ring-2 ring-blue-500 z-10' : ''
                 }`}
                 style={{
