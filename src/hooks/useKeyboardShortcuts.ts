@@ -21,7 +21,8 @@ export function useKeyboardShortcuts() {
     deleteSelected,
     clearSelection,
     alignSelected,
-    distributeSelected
+    distributeSelected,
+    moveSelected
   } = useProjectStore()
 
   useEffect(() => {
@@ -129,24 +130,44 @@ export function useKeyboardShortcuts() {
           if (isCtrlOrCmd && event.shiftKey) {
             event.preventDefault()
             alignSelected('left')
+          } else if (!isCtrlOrCmd && !event.altKey) {
+            // 移動 (矢印キーのみ: 1px, Shift+矢印キー: 10px)
+            event.preventDefault()
+            const delta = event.shiftKey ? 10 : 1
+            moveSelected(-delta, 0)
           }
           break
         case 'ArrowRight':
           if (isCtrlOrCmd && event.shiftKey) {
             event.preventDefault()
             alignSelected('right')
+          } else if (!isCtrlOrCmd && !event.altKey) {
+            // 移動
+            event.preventDefault()
+            const delta = event.shiftKey ? 10 : 1
+            moveSelected(delta, 0)
           }
           break
         case 'ArrowUp':
           if (isCtrlOrCmd && event.shiftKey) {
             event.preventDefault()
             alignSelected('top')
+          } else if (!isCtrlOrCmd && !event.altKey) {
+            // 移動
+            event.preventDefault()
+            const delta = event.shiftKey ? 10 : 1
+            moveSelected(0, -delta)
           }
           break
         case 'ArrowDown':
           if (isCtrlOrCmd && event.shiftKey) {
             event.preventDefault()
             alignSelected('bottom')
+          } else if (!isCtrlOrCmd && !event.altKey) {
+            // 移動
+            event.preventDefault()
+            const delta = event.shiftKey ? 10 : 1
+            moveSelected(0, delta)
           }
           break
 
@@ -189,7 +210,8 @@ export function useKeyboardShortcuts() {
     deleteSelected,
     clearSelection,
     alignSelected,
-    distributeSelected
+    distributeSelected,
+    moveSelected
   ])
 }
 

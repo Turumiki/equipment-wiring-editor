@@ -47,6 +47,7 @@ interface ProjectState {
   clearSelection: () => void
   alignSelected: (direction: 'left' | 'right' | 'top' | 'bottom' | 'center-horizontal' | 'center-vertical') => void
   distributeSelected: (direction: 'horizontal' | 'vertical') => void
+  moveSelected: (deltaX: number, deltaY: number) => void
   
   // テンプレート管理
   addTemplateToProject: (template: EquipmentTemplate) => void
@@ -552,9 +553,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         })
         break
       case 'right':
-        referenceValue = Math.max(...selectedObjects.map(obj => obj.position.x))
+        // 右端の最大値を求める（サイズを考慮）
+        referenceValue = Math.max(...selectedObjects.map(obj => {
+          const renderComp = obj.components.find(c => c.type === 'render')
+          const width = renderComp?.data?.size?.width || 100
+          return obj.position.x + width
+        }))
+        
         selectedObjects.forEach(obj => {
-          updates[obj.id] = { position: { x: referenceValue, y: obj.position.y } }
+          const renderComp = obj.components.find(c => c.type === 'render')
+          const width = renderComp?.data?.size?.width || 100
+          updates[obj.id] = { position: { x: referenceValue - width, y: obj.position.y } }
         })
         break
       case 'top':
@@ -564,21 +573,45 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         })
         break
       case 'bottom':
-        referenceValue = Math.max(...selectedObjects.map(obj => obj.position.y))
+        // 下端の最大値を求める（サイズを考慮）
+        referenceValue = Math.max(...selectedObjects.map(obj => {
+          const renderComp = obj.components.find(c => c.type === 'render')
+          const height = renderComp?.data?.size?.height || 60
+          return obj.position.y + height
+        }))
+        
         selectedObjects.forEach(obj => {
-          updates[obj.id] = { position: { x: obj.position.x, y: referenceValue } }
+          const renderComp = obj.components.find(c => c.type === 'render')
+          const height = renderComp?.data?.size?.height || 60
+          updates[obj.id] = { position: { x: obj.position.x, y: referenceValue - height } }
         })
         break
       case 'center-horizontal':
-        const avgX = selectedObjects.reduce((sum, obj) => sum + obj.position.x, 0) / selectedObjects.length
+        // 中心の平均値を求める（サイズを考慮）
+        const avgCenterX = selectedObjects.reduce((sum, obj) => {
+          const renderComp = obj.components.find(c => c.type === 'render')
+          const width = renderComp?.data?.size?.width || 100
+          return sum + obj.position.x + width / 2
+        }, 0) / selectedObjects.length
+
         selectedObjects.forEach(obj => {
-          updates[obj.id] = { position: { x: avgX, y: obj.position.y } }
+          const renderComp = obj.components.find(c => c.type === 'render')
+          const width = renderComp?.data?.size?.width || 100
+          updates[obj.id] = { position: { x: avgCenterX - width / 2, y: obj.position.y } }
         })
         break
       case 'center-vertical':
-        const avgY = selectedObjects.reduce((sum, obj) => sum + obj.position.y, 0) / selectedObjects.length
+        // 中心の平均値を求める（サイズを考慮）
+        const avgCenterY = selectedObjects.reduce((sum, obj) => {
+          const renderComp = obj.components.find(c => c.type === 'render')
+          const height = renderComp?.data?.size?.height || 60
+          return sum + obj.position.y + height / 2
+        }, 0) / selectedObjects.length
+
         selectedObjects.forEach(obj => {
-          updates[obj.id] = { position: { x: obj.position.x, y: avgY } }
+          const renderComp = obj.components.find(c => c.type === 'render')
+          const height = renderComp?.data?.size?.height || 60
+          updates[obj.id] = { position: { x: obj.position.x, y: avgCenterY - height / 2 } }
         })
         break
     }
@@ -594,6 +627,39 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
     pushToHistory(newProject, true) // 整列は即座に保存
     set({ project: newProject })
+  },
+
+  moveSelected: (deltaX, deltaY) => {
+    const state = get()
+    const selectedObjects = state.project.objects.filter(obj =>
+      state.selectedObjectIds.includes(obj.id)
+    )
+
+    if (selectedObjects.length === 0) return
+
+    const updates: { [id: string]: Partial<EquipmentObject> } = {}
+    
+    selectedObjects.forEach(obj => {
+      updates[obj.id] = {
+        position: {
+          x: obj.position.x + deltaX,
+          y: obj.position.y + deltaY
+        }
+      }
+    })
+
+    const newProject = {
+      ...state.project,
+      objects: state.project.objects.map(obj =>
+        updates[obj.id] ? { ...obj, ...updates[obj.id] } : obj
+      ),
+      updatedAt: new Date()
+    }
+    
+    // 移動は履歴に残す
+    pushToHistory(newProject)
+    set({ project: newProject })
+    setTimeout(() => get().autoSaveProject(), 100)
   },
 
   distributeSelected: (direction) => {

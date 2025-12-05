@@ -151,12 +151,17 @@ export function validateConnection(
   }
 
   // 許可されたポートタイプの検証
+  // MEMO: ポート作成時の制約（allowedPortTypes）は古い設定に基づいている可能性があるため、
+  // useSettingsStoreから取得した最新の互換性情報（typesCompatible）を優先する。
+  // そのため、ここでは個別のポート制約チェックを行わない。
+  
   if (DEBUG) {
-    console.log('Source allowed types:', sourcePort.data.constraints.allowedPortTypes)
-    console.log('Target allowed types:', targetPort.data.constraints.allowedPortTypes)
+    console.log('Source allowed types (ignored):', sourcePort.data.constraints.allowedPortTypes)
+    console.log('Target allowed types (ignored):', targetPort.data.constraints.allowedPortTypes)
   }
 
-  // 同じタイプ同士は常に接続可能
+  /*
+  // 古いロジック：allowedPortTypesに基づくチェック（設定変更に追従できないため無効化）
   if (sourceType === targetType) {
     if (DEBUG) console.log('Same port types - connection allowed')
   } else {
@@ -177,6 +182,7 @@ export function validateConnection(
       }
     }
   }
+  */
 
   // 許可された方向の検証は、基本的な方向チェックで十分
   // ここでは追加の制約チェックは行わない

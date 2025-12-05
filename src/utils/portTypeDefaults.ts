@@ -126,7 +126,7 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       description: 'HDMIコネクタ',
       color: '#dc2626',
       category: 'video',
-      compatibleWith: [PortType.HDMI],
+      compatibleWith: [PortType.HDMI, PortType.DISPLAYPORT, PortType.DVI],
       defaultDirection: PortDirection.BIDIRECTIONAL,
       maxConnections: 1
     },
@@ -137,7 +137,7 @@ export function createDefaultPortTypes(): PortTypeDefinition[] {
       description: 'DisplayPortコネクタ',
       color: '#dc2626',
       category: 'video',
-      compatibleWith: [PortType.DISPLAYPORT],
+      compatibleWith: [PortType.DISPLAYPORT, PortType.HDMI, PortType.DVI],
       defaultDirection: PortDirection.BIDIRECTIONAL,
       maxConnections: 1
     },
