@@ -51,6 +51,61 @@ export default function EquipmentPortEditor({
     }
   }
 
+  // ポートの複製
+  const handleDuplicatePort = (portId: string) => {
+    const portToDuplicate = portComponents.find(p => p.id === portId)
+    if (!portToDuplicate) return
+
+    // 元のポートの設定を取得
+    const originalSide = portToDuplicate.data.position?.side || Side.LEFT
+    const originalOffset = portToDuplicate.data.position?.offset || 50
+    const originalPortType = portToDuplicate.data.portType
+    const originalDirection = portToDuplicate.data.direction
+    const originalLabel = portToDuplicate.data.label || ''
+
+    // 位置を少しずらす（同じ側の場合は5%オフセット、100%を超える場合は反対側に配置）
+    let newOffset = originalOffset + 5
+    let newSide = originalSide
+    if (newOffset > 100) {
+      newOffset = 5
+      // 反対側に配置
+      switch (originalSide) {
+        case Side.LEFT:
+          newSide = Side.RIGHT
+          break
+        case Side.RIGHT:
+          newSide = Side.LEFT
+          break
+        case Side.TOP:
+          newSide = Side.BOTTOM
+          break
+        case Side.BOTTOM:
+          newSide = Side.TOP
+          break
+      }
+    }
+
+    // 新しいポートを作成
+    const duplicatedPort = createConnectionPortComponent(
+      newSide,
+      newOffset,
+      originalPortType,
+      originalDirection,
+      `${originalLabel} (複製)`
+    )
+
+    // 元のポートの位置を見つけて、その直後に挿入
+    const portIndex = equipmentObject.components.findIndex(comp => comp.id === portId)
+    const updatedComponents = [
+      ...equipmentObject.components.slice(0, portIndex + 1),
+      duplicatedPort,
+      ...equipmentObject.components.slice(portIndex + 1)
+    ]
+
+    onPortsChange(updatedComponents)
+    setSelectedPortId(duplicatedPort.id)
+  }
+
   // ポートの更新
   const handleUpdatePort = (portId: string, updates: Partial<ConnectionPortComponent['data']>) => {
     const updatedComponents = equipmentObject.components.map(comp => {
@@ -400,6 +455,16 @@ export default function EquipmentPortEditor({
                             className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded text-black bg-gray-50"
                             onClick={(e) => e.stopPropagation()}
                           />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDuplicatePort(port.id)
+                            }}
+                            className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 flex-shrink-0"
+                            title="ポートを複製"
+                          >
+                            複製
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
