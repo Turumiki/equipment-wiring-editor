@@ -421,8 +421,8 @@ const EquipmentNode = ({ data, selected }: NodeProps<EquipmentNodeData>) => {
       onResizeEnd={handleResizeEnd}
       minWidth={50}
       minHeight={30}
-      maxWidth={400}
-      maxHeight={300}
+      maxWidth={1000}
+      maxHeight={2000}
     >
       <div
         className="relative"

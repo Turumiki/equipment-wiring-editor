@@ -675,5 +675,625 @@
     },
     "tags": ["映像", "Blackmagic", "コンバーター", "SDI", "分配器", "Mini Converter"],
     "version": "1.0.0"
+  },
+  {
+    "id": "bmd-videohub-40x40-12g",
+    "name": "Smart Videohub 12G 40x40",
+    "category": "映像",
+    "description": "Blackmagic Design Smart Videohub 12G 40x40",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 2.0,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 1"
+      },
+      {
+        "side": "left",
+        "offset": 4.461538461538462,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 2"
+      },
+      {
+        "side": "left",
+        "offset": 6.923076923076923,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 3"
+      },
+      {
+        "side": "left",
+        "offset": 9.384615384615385,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 4"
+      },
+      {
+        "side": "left",
+        "offset": 11.846153846153847,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 5"
+      },
+      {
+        "side": "left",
+        "offset": 14.307692307692308,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 6"
+      },
+      {
+        "side": "left",
+        "offset": 16.76923076923077,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 7"
+      },
+      {
+        "side": "left",
+        "offset": 19.230769230769234,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 8"
+      },
+      {
+        "side": "left",
+        "offset": 21.692307692307693,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 9"
+      },
+      {
+        "side": "left",
+        "offset": 24.153846153846153,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 10"
+      },
+      {
+        "side": "left",
+        "offset": 26.615384615384617,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 11"
+      },
+      {
+        "side": "left",
+        "offset": 29.07692307692308,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 12"
+      },
+      {
+        "side": "left",
+        "offset": 31.53846153846154,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 13"
+      },
+      {
+        "side": "left",
+        "offset": 34.0,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 14"
+      },
+      {
+        "side": "left",
+        "offset": 36.46153846153847,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 15"
+      },
+      {
+        "side": "left",
+        "offset": 38.92307692307693,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 16"
+      },
+      {
+        "side": "left",
+        "offset": 41.38461538461539,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 17"
+      },
+      {
+        "side": "left",
+        "offset": 43.84615384615385,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 18"
+      },
+      {
+        "side": "left",
+        "offset": 46.30769230769231,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 19"
+      },
+      {
+        "side": "left",
+        "offset": 48.769230769230774,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 20"
+      },
+      {
+        "side": "left",
+        "offset": 51.23076923076923,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 21"
+      },
+      {
+        "side": "left",
+        "offset": 53.69230769230769,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 22"
+      },
+      {
+        "side": "left",
+        "offset": 56.15384615384616,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 23"
+      },
+      {
+        "side": "left",
+        "offset": 58.61538461538462,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 24"
+      },
+      {
+        "side": "left",
+        "offset": 61.07692307692308,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 25"
+      },
+      {
+        "side": "left",
+        "offset": 63.53846153846154,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 26"
+      },
+      {
+        "side": "left",
+        "offset": 66.0,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 27"
+      },
+      {
+        "side": "left",
+        "offset": 68.46153846153847,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 28"
+      },
+      {
+        "side": "left",
+        "offset": 70.92307692307693,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 29"
+      },
+      {
+        "side": "left",
+        "offset": 73.38461538461539,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 30"
+      },
+      {
+        "side": "left",
+        "offset": 75.84615384615385,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 31"
+      },
+      {
+        "side": "left",
+        "offset": 78.3076923076923,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 32"
+      },
+      {
+        "side": "left",
+        "offset": 80.76923076923077,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 33"
+      },
+      {
+        "side": "left",
+        "offset": 83.23076923076924,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 34"
+      },
+      {
+        "side": "left",
+        "offset": 85.6923076923077,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 35"
+      },
+      {
+        "side": "left",
+        "offset": 88.15384615384616,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 36"
+      },
+      {
+        "side": "left",
+        "offset": 90.61538461538461,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 37"
+      },
+      {
+        "side": "left",
+        "offset": 93.07692307692308,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 38"
+      },
+      {
+        "side": "left",
+        "offset": 95.53846153846155,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 39"
+      },
+      {
+        "side": "left",
+        "offset": 98.0,
+        "type": "sdi",
+        "direction": "input",
+        "label": "In 40"
+      },
+      {
+        "side": "right",
+        "offset": 2.0,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 1"
+      },
+      {
+        "side": "right",
+        "offset": 4.461538461538462,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 2"
+      },
+      {
+        "side": "right",
+        "offset": 6.923076923076923,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 3"
+      },
+      {
+        "side": "right",
+        "offset": 9.384615384615385,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 4"
+      },
+      {
+        "side": "right",
+        "offset": 11.846153846153847,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 5"
+      },
+      {
+        "side": "right",
+        "offset": 14.307692307692308,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 6"
+      },
+      {
+        "side": "right",
+        "offset": 16.76923076923077,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 7"
+      },
+      {
+        "side": "right",
+        "offset": 19.230769230769234,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 8"
+      },
+      {
+        "side": "right",
+        "offset": 21.692307692307693,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 9"
+      },
+      {
+        "side": "right",
+        "offset": 24.153846153846153,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 10"
+      },
+      {
+        "side": "right",
+        "offset": 26.615384615384617,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 11"
+      },
+      {
+        "side": "right",
+        "offset": 29.07692307692308,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 12"
+      },
+      {
+        "side": "right",
+        "offset": 31.53846153846154,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 13"
+      },
+      {
+        "side": "right",
+        "offset": 34.0,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 14"
+      },
+      {
+        "side": "right",
+        "offset": 36.46153846153847,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 15"
+      },
+      {
+        "side": "right",
+        "offset": 38.92307692307693,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 16"
+      },
+      {
+        "side": "right",
+        "offset": 41.38461538461539,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 17"
+      },
+      {
+        "side": "right",
+        "offset": 43.84615384615385,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 18"
+      },
+      {
+        "side": "right",
+        "offset": 46.30769230769231,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 19"
+      },
+      {
+        "side": "right",
+        "offset": 48.769230769230774,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 20"
+      },
+      {
+        "side": "right",
+        "offset": 51.23076923076923,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 21"
+      },
+      {
+        "side": "right",
+        "offset": 53.69230769230769,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 22"
+      },
+      {
+        "side": "right",
+        "offset": 56.15384615384616,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 23"
+      },
+      {
+        "side": "right",
+        "offset": 58.61538461538462,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 24"
+      },
+      {
+        "side": "right",
+        "offset": 61.07692307692308,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 25"
+      },
+      {
+        "side": "right",
+        "offset": 63.53846153846154,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 26"
+      },
+      {
+        "side": "right",
+        "offset": 66.0,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 27"
+      },
+      {
+        "side": "right",
+        "offset": 68.46153846153847,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 28"
+      },
+      {
+        "side": "right",
+        "offset": 70.92307692307693,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 29"
+      },
+      {
+        "side": "right",
+        "offset": 73.38461538461539,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 30"
+      },
+      {
+        "side": "right",
+        "offset": 75.84615384615385,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 31"
+      },
+      {
+        "side": "right",
+        "offset": 78.3076923076923,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 32"
+      },
+      {
+        "side": "right",
+        "offset": 80.76923076923077,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 33"
+      },
+      {
+        "side": "right",
+        "offset": 83.23076923076924,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 34"
+      },
+      {
+        "side": "right",
+        "offset": 85.6923076923077,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 35"
+      },
+      {
+        "side": "right",
+        "offset": 88.15384615384616,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 36"
+      },
+      {
+        "side": "right",
+        "offset": 90.61538461538461,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 37"
+      },
+      {
+        "side": "right",
+        "offset": 93.07692307692308,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 38"
+      },
+      {
+        "side": "right",
+        "offset": 95.53846153846155,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 39"
+      },
+      {
+        "side": "right",
+        "offset": 98.0,
+        "type": "sdi",
+        "direction": "output",
+        "label": "Out 40"
+      },
+      {
+        "side": "top",
+        "offset": 20,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Ethernet"
+      },
+      {
+        "side": "top",
+        "offset": 40,
+        "type": "usb-c",
+        "direction": "bidirectional",
+        "label": "USB-C"
+      },
+      {
+        "side": "top",
+        "offset": 60,
+        "type": "bnc",
+        "direction": "input",
+        "label": "Ref In"
+      },
+      {
+        "side": "top",
+        "offset": 80,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "RS-422"
+      },
+      {
+        "side": "bottom",
+        "offset": 30,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "Power 1"
+      },
+      {
+        "side": "bottom",
+        "offset": 70,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "Power 2"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 300,
+      "height": 1200
+    },
+    "tags": ["映像", "Blackmagic", "Videohub", "スイッチャー", "12G-SDI", "ルーター"],
+    "version": "1.0.0"
   }
 ]

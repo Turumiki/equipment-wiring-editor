@@ -1085,7 +1085,7 @@ export default function InspectorPanel() {
                         <input
                           type="number"
                           min="50"
-                          max="400"
+                          max="1000"
                           value={renderComponent.data.size.width}
                           onChange={(e) => {
                             const newWidth = Number(e.target.value)
@@ -1112,7 +1112,7 @@ export default function InspectorPanel() {
                         <input
                           type="number"
                           min="30"
-                          max="300"
+                          max="2000"
                           value={renderComponent.data.size.height}
                           onChange={(e) => {
                             const newHeight = Number(e.target.value)

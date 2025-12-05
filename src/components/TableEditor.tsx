@@ -233,7 +233,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
                           handleUpdateEquipmentName(row.sourceObjectId, e.target.value)
                         }
                       }}
-                      className="w-full text-xs border border-gray-300 rounded px-2 py-1 text-black"
+                      className="w-full text-xs border border-gray-300 rounded px-2 py-1 text-black bg-white"
                     />
                   </td>
                   <td className="px-4 py-2 text-black">{row.sourcePort}</td>
@@ -246,7 +246,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
                           handleUpdateEquipmentName(row.targetObjectId, e.target.value)
                         }
                       }}
-                      className="w-full text-xs border border-gray-300 rounded px-2 py-1 text-black"
+                      className="w-full text-xs border border-gray-300 rounded px-2 py-1 text-black bg-white"
                     />
                   </td>
                   <td className="px-4 py-2 text-black">{row.targetPort}</td>
@@ -254,7 +254,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
                     <select
                       value={row.wireType}
                       onChange={(e) => handleUpdateWireType(row.id, e.target.value as WireType)}
-                      className="text-xs border border-gray-300 rounded px-2 py-1 text-black"
+                      className="text-xs border border-gray-300 rounded px-2 py-1 text-black bg-white"
                     >
                       {settings.wireTypes.map(wt => (
                         <option key={wt.id} value={wt.id}>
@@ -268,7 +268,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
                       type="text"
                       value={row.label || ''}
                       onChange={(e) => handleUpdateWireLabel(row.id, e.target.value)}
-                      className="w-full text-xs border border-gray-300 rounded px-2 py-1 text-black"
+                      className="w-full text-xs border border-gray-300 rounded px-2 py-1 text-black bg-white"
                       placeholder="ラベル"
                     />
                   </td>
@@ -305,7 +305,7 @@ export default function TableEditor({ onClose }: TableEditorProps) {
                       type="text"
                       value={row.name}
                       onChange={(e) => handleUpdateEquipmentName(row.id, e.target.value)}
-                      className="w-full text-sm border border-gray-300 rounded px-2 py-1 font-medium text-black"
+                      className="w-full text-sm border border-gray-300 rounded px-2 py-1 font-medium text-black bg-white"
                     />
                   </td>
                   <td className="px-4 py-2 text-black">{row.type}</td>
