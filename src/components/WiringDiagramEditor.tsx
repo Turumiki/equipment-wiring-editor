@@ -990,6 +990,58 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     [connectionStartData, project.objects, addEquipmentObject, addWire, settings.wireTypes, getShapeForTemplate]
   )
 
+  // 既存ポート選択時の処理
+  const handleExistingPortSelect = useCallback(
+    (targetObjectId: string, targetPortId: string) => {
+      if (!connectionStartData) return
+
+      const sourceObject = project.objects.find(obj => obj.id === connectionStartData.sourceObjectId)
+      const targetObject = project.objects.find(obj => obj.id === targetObjectId)
+      
+      if (!sourceObject || !targetObject) return
+
+      const sourcePortComponents = getConnectionPortComponents(sourceObject)
+      const sourcePort = sourcePortComponents.find(port => port.id === connectionStartData.sourcePortId)
+      
+      const targetPortComponents = getConnectionPortComponents(targetObject)
+      const targetPort = targetPortComponents.find(port => port.id === targetPortId)
+
+      if (sourcePort && targetPort) {
+        const wireType = getWireTypeForConnection(sourcePort.data.portType, targetPort.data.portType)
+        const wireTypeSettings = settings.wireTypes.find(wt =>
+          wt.name === wireType || wt.id === wireType
+        )
+
+        const wireLabel = wireTypeSettings ? 
+          ((wireTypeSettings as any).shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
+          wireType
+
+        const newWire = {
+          id: `wire-${Date.now()}`,
+          sourceObjectId: connectionStartData.sourceObjectId,
+          sourcePortId: connectionStartData.sourcePortId,
+          targetObjectId: targetObjectId,
+          targetPortId: targetPortId,
+          wireType: wireType,
+          style: {
+            color: wireTypeSettings?.color || '#059669',
+            strokeWidth: wireTypeSettings?.strokeWidth || 2,
+            strokeDashArray: wireTypeSettings?.strokeDashArray
+          },
+          label: wireLabel,
+          metadata: {}
+        }
+
+        addWire(newWire)
+      }
+
+      // 接続開始情報をクリア
+      setConnectionStartData(null)
+      setShowTemplateSelectionDialog(false)
+    },
+    [connectionStartData, project.objects, addWire, settings.wireTypes]
+  )
+
   // ノード・エッジ選択の処理
   const handleSelectionChange = useCallback((params: { nodes: Node[], edges: Edge[] }) => {
     setSelectedObjects(params.nodes.map(node => node.id))
@@ -1453,11 +1505,14 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
         <TemplateSelectionDialog
           sourcePortType={connectionStartData.sourcePortType}
           sourcePortDirection={connectionStartData.sourcePortDirection}
+          sourceObjectId={connectionStartData.sourceObjectId}
           dropPosition={connectionStartData.dropPosition}
-          onSelect={(template) => {
+          flowPosition={flowPositionRef.current || { x: 0, y: 0 }}
+          onSelectTemplate={(template) => {
             // 座標変換はReactFlowCanvas内で行うため、ここではundefinedを渡す
             handleTemplateSelect(template)
           }}
+          onSelectExistingPort={handleExistingPortSelect}
           onClose={() => {
             setShowTemplateSelectionDialog(false)
             setConnectionStartData(null)
