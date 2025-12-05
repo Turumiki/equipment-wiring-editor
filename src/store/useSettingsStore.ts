@@ -148,6 +148,30 @@ const createDefaultSettings = (): ConnectionSettings => ({
 
 // 常にデフォルト設定を使用（ローカルストレージ無効）
 const loadSettingsFromStorage = () => {
+  // 開発モードでローカルストレージから読み込むように変更
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('tee-app-settings')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        // 既存の保存データとデフォルト値をマージ
+        const defaultSettings = createDefaultSettings()
+        return {
+          settings: { ...defaultSettings, ...parsed.settings },
+          equipmentTemplates: parsed.equipmentTemplates || createDefaultEquipmentTemplates(),
+          templatesLoaded: parsed.templatesLoaded || false,
+          showPortLabels: parsed.showPortLabels || 'connectedHover',
+          showWireLabels: parsed.showWireLabels !== undefined ? parsed.showWireLabels : true,
+          canvasBackgroundColor: parsed.canvasBackgroundColor || '#f3f4f6',
+          gridColor: parsed.gridColor || '#d1d5db',
+          gridEnabled: parsed.gridEnabled !== undefined ? parsed.gridEnabled : true
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load settings from storage:', e)
+    }
+  }
+
   return {
     settings: createDefaultSettings(),
     equipmentTemplates: createDefaultEquipmentTemplates(),
@@ -160,10 +184,26 @@ const loadSettingsFromStorage = () => {
   }
 }
 
-// ローカルストレージ保存を無効化（開発用）
+// ローカルストレージ保存を有効化
 const saveSettingsToStorage = (state: Partial<SettingsState>) => {
-  // 保存処理を無効化
-  // console.log('設定保存をスキップしました（開発モード）')
+  if (typeof window !== 'undefined') {
+    try {
+      // 保存するプロパティを選択（アクション関数は除外）
+      const stateToSave = {
+        settings: state.settings,
+        equipmentTemplates: state.equipmentTemplates,
+        templatesLoaded: state.templatesLoaded,
+        showPortLabels: state.showPortLabels,
+        showWireLabels: state.showWireLabels,
+        canvasBackgroundColor: state.canvasBackgroundColor,
+        gridColor: state.gridColor,
+        gridEnabled: state.gridEnabled
+      }
+      localStorage.setItem('tee-app-settings', JSON.stringify(stateToSave))
+    } catch (e) {
+      console.error('Failed to save settings to storage:', e)
+    }
+  }
 }
 
 const initialState = loadSettingsFromStorage()
@@ -171,11 +211,11 @@ const initialState = loadSettingsFromStorage()
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   ...initialState,
 
-  // クライアントサイドでの初期化（ローカルストレージ無効）
+  // クライアントサイドでの初期化（ローカルストレージ有効）
   hydrate: () => {
-    // 常にデフォルト設定を使用
-    const defaultState = loadSettingsFromStorage()
-    set(defaultState)
+    // ローカルストレージから設定を読み込み
+    const storedState = loadSettingsFromStorage()
+    set(storedState)
 
     // JSONファイルからテンプレートを非同期で読み込み
     get().loadTemplatesFromFiles()
@@ -363,23 +403,46 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     return settings.compatibilityMatrix[sourceId]?.includes(targetId) || false
   },
 
-  setShowPortLabels: (mode) => set({ showPortLabels: mode }),
-  setShowWireLabels: (show) => set({ showWireLabels: show }),
-  setCanvasBackgroundColor: (color) => set({ canvasBackgroundColor: color }),
-  setGridColor: (color) => set({ gridColor: color }),
-  setGridEnabled: (enabled) => set({ gridEnabled: enabled }),
+  setShowPortLabels: (mode) => set((state) => {
+    const newState = { showPortLabels: mode }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
+  setShowWireLabels: (show) => set((state) => {
+    const newState = { showWireLabels: show }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
+  setCanvasBackgroundColor: (color) => set((state) => {
+    const newState = { canvasBackgroundColor: color }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
+  setGridColor: (color) => set((state) => {
+    const newState = { gridColor: color }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
+  setGridEnabled: (enabled) => set((state) => {
+    const newState = { gridEnabled: enabled }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
   resetToDefaults: () => {
-    set({
+    const defaultState = {
       settings: createDefaultSettings(),
       equipmentTemplates: createDefaultEquipmentTemplates(),
       templatesLoaded: false,
-      showPortLabels: 'connectedHover',
+      showPortLabels: 'connectedHover' as const,
       showWireLabels: true,
       canvasBackgroundColor: '#f3f4f6',
       gridColor: '#d1d5db',
       gridEnabled: true
-    })
+    }
+    set(defaultState)
+    saveSettingsToStorage({ ...get(), ...defaultState })
+    
     // リセット後にJSONファイルから再読み込み
     get().loadTemplatesFromFiles()
   }
