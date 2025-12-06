@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useHistoryStore } from '@/store/useHistoryStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
+import { calculateFitness } from '@/utils/autoLayout'
 
 interface MenuBarProps {
   // メニュー状態管理
@@ -165,6 +166,37 @@ export default function MenuBar({
   onShowAbout
 }: MenuBarProps) {
   const { project, canUndo, canRedo, undo, redo, canPaste } = useProjectStore()
+  
+  // 評価スコアを計算（位置情報も依存配列に含める）
+  const layoutScore = useMemo(() => {
+    if (project.objects.length === 0) return null
+    
+    // 現在の位置から評価スコアを計算
+    const positions: Record<string, { x: number; y: number }> = {}
+    project.objects.forEach(obj => {
+      positions[obj.id] = { ...obj.position }
+    })
+    
+    try {
+      const score = calculateFitness(positions, project.objects, project.wires, {
+        algorithm: 'smart',
+        spacing: 100,
+        padding: 50,
+        minimizeCrossings: true,
+        avoidNodeOverlap: true
+      })
+      return score
+    } catch (error) {
+      console.error('Failed to calculate layout score:', error)
+      return null
+    }
+  }, [
+    project.objects.length,
+    project.wires.length,
+    // 位置情報を文字列化して依存配列に含める
+    JSON.stringify(project.objects.map(obj => ({ id: obj.id, x: obj.position.x, y: obj.position.y })))
+  ])
+  
   const [internalOpenMenu, setInternalOpenMenu] = useState<string | null>(null)
   const openMenu = externalOpenMenu !== undefined ? externalOpenMenu : internalOpenMenu
   // setOpenMenuをuseRefで保持して安定した参照を確保
@@ -319,6 +351,13 @@ export default function MenuBar({
       <div className="flex-1 text-center text-xs text-gray-800 font-medium">
         {project.name || '無題のプロジェクト'}
       </div>
+      
+      {/* 評価スコア表示 */}
+      {layoutScore !== null && (
+        <div className="px-2 text-xs text-gray-600 font-medium">
+          評価スコア: <span className="text-gray-900">{layoutScore.toFixed(1)}</span>
+        </div>
+      )}
     </div>
   )
 }

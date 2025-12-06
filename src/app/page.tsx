@@ -10,6 +10,7 @@ import AutoLayoutDialog from '@/components/AutoLayoutDialog'
 import HelpDialog from '@/components/HelpDialog'
 import ShortcutsDialog from '@/components/ShortcutsDialog'
 import AboutDialog from '@/components/AboutDialog'
+import ScoreDetailsPanel from '@/components/ScoreDetailsDialog'
 import { useProjectStore } from '@/store/useProjectStore'
 import { Project } from '@/types'
 
@@ -221,10 +222,9 @@ export default function Home() {
       <AutoLayoutDialog
         isOpen={showAutoLayout}
         onClose={() => setShowAutoLayout(false)}
-        onApply={(options) => {
+        onApply={async (options, onProgress) => {
           // 自動レイアウト適用処理
-          editorRef.current?.applyAutoLayout(options)
-          setShowAutoLayout(false)
+          await editorRef.current?.applyAutoLayout(options, onProgress)
         }}
       />
 
@@ -242,6 +242,9 @@ export default function Home() {
         isOpen={showAbout}
         onClose={() => setShowAbout(false)}
       />
+
+      {/* 評価スコア詳細パネル（常時表示） */}
+      <ScoreDetailsPanel project={project} />
     </main>
   )
 }

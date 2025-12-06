@@ -237,8 +237,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       // 接続検証の実装（今後実装）
       console.log('Validate connections not implemented yet')
     },
-    applyAutoLayout: (options: LayoutOptions) => {
-      handleAutoLayout(options)
+    applyAutoLayout: async (options: LayoutOptions, onProgress?: (progress: any) => void, cancelToken?: any) => {
+      await handleAutoLayout(options, onProgress, cancelToken)
     }
   }), [handleAutoLayout, setSelectedObjects, setSelectedWires, project.objects, project.wires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, copySelected, pasteSelected, duplicateSelected, alignSelected, distributeSelected])
 
