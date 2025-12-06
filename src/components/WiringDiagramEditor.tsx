@@ -1,31 +1,22 @@
 'use client'
 
-import React, { useCallback, useState, useEffect, useImperativeHandle, memo, useMemo, useRef } from 'react'
-import ReactFlow, {
+import React, { useCallback, useState, useEffect, useImperativeHandle, useRef } from 'react'
+import {
   Node,
   Edge,
-  addEdge,
   Connection,
   useNodesState,
   useEdgesState,
-  Controls,
-  MiniMap,
-  Background,
-  BackgroundVariant,
-  Panel,
   NodeChange,
   EdgeChange,
-  ConnectionLineType,
-  useReactFlow,
   ReactFlowProvider
 } from 'reactflow'
-import 'reactflow/dist/style.css'
 
 import { useProjectStore } from '@/store/useProjectStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { WireType, EquipmentObject, ShapeType, ComponentType } from '@/types'
-import CustomConnectionLine from '@/components/edges/CustomConnectionLine'
-import { nodeTypes, edgeTypes } from '@/components/flowTypes'
+import ReactFlowCanvas from '@/components/ReactFlowCanvas'
+import { useNodeDrag } from '@/hooks/useNodeDrag'
 
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
@@ -77,347 +68,6 @@ interface WiringDiagramEditorRef {
   applyAutoLayout: (options: any) => void
 }
 
-// ReactFlowキャンバスコンポーネント
-// エディタ系ツールでは参照関係が複雑になるため、memoを削除して直接レンダリング
-function ReactFlowCanvas({
-  nodes,
-  edges,
-  handleNodesChange,
-  handleEdgesChange,
-  onConnect,
-  onConnectStart,
-  onConnectEnd,
-  handleReconnect,
-  handleSelectionChange,
-  isValidConnection,
-  handleNodeContextMenu,
-  handleEdgeContextMenu,
-  setContextMenu,
-  onCloseMenus,
-  addEquipmentObject,
-  getShapeForTemplate,
-  dragStartPositions,
-  setDragStartPositions,
-  lockedDirection,
-  setLockedDirection,
-  connectionStartData,
-  flowPositionRef,
-}: any) {
-  const { screenToFlowPosition, getViewport } = useReactFlow()
-
-  // onConnectEndをラップして座標変換を行う
-  const handleConnectEnd = useCallback((event: MouseEvent | TouchEvent) => {
-    if (connectionStartData) {
-      // マウス位置を取得
-      const clientX = 'clientX' in event ? event.clientX : event.touches?.[0]?.clientX || 0
-      const clientY = 'clientY' in event ? event.clientY : event.touches?.[0]?.clientY || 0
-
-      // ReactFlowの座標系に変換
-      const flowPosition = screenToFlowPosition({
-        x: clientX,
-        y: clientY,
-      })
-
-      // 座標変換済みの位置をrefに保存（親コンポーネントで使用）
-      flowPositionRef.current = flowPosition
-    }
-    
-    // 元のonConnectEndを呼び出し
-    onConnectEnd?.(event)
-  }, [connectionStartData, screenToFlowPosition, onConnectEnd])
-
-  // Fast Refresh対策として、外部ファイルからインポートした場合でもuseMemoでラップすることで
-  // 再レンダリング時のオブジェクト再生成を防ぐ
-  const memoizedNodeTypes = useMemo(() => ({
-    equipment: nodeTypes.equipment
-  }), [])
-  const memoizedEdgeTypes = useMemo(() => ({
-    wire: edgeTypes.wire
-  }), [])
-
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault()
-
-    const data = event.dataTransfer.getData('application/reactflow')
-
-    if (data) {
-      try {
-        const dropData = JSON.parse(data)
-
-        if (dropData.type === 'template') {
-          // ReactFlowの座標系に変換
-          const mousePosition = screenToFlowPosition({
-            x: event.clientX,
-            y: event.clientY,
-          })
-
-          // テンプレートから機材を作成
-          const template = dropData.template
-          let equipmentObject
-
-          if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
-            equipmentObject = createEquipmentFromTemplate(template)
-          } else if (template.defaultComponents && template.defaultComponents.length > 0) {
-            equipmentObject = createEquipmentFromTemplate(template)
-          } else {
-            const shape = getShapeForTemplate(template.id)
-            equipmentObject = createBasicEquipmentObject(
-              template.name,
-              mousePosition,
-              shape,
-              template.id
-            )
-          }
-
-          // 機材のサイズを取得
-          const renderComponent = equipmentObject.components.find(comp => comp.type === ComponentType.RENDER)
-          const equipmentSize = renderComponent?.data?.size || { width: 100, height: 60 }
-
-          // 機材の中心がマウス位置に来るように調整
-          const centeredPosition = {
-            x: mousePosition.x - equipmentSize.width / 2,
-            y: mousePosition.y - equipmentSize.height / 2
-          }
-
-          equipmentObject.position = centeredPosition
-          equipmentObject.templateId = template.id
-          addEquipmentObject(equipmentObject)
-        }
-      } catch (error) {
-        console.error('Failed to parse drop data:', error)
-      }
-    }
-  }
-
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault()
-    event.dataTransfer.dropEffect = 'move'
-  }
-
-  return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={handleNodesChange}
-      onEdgesChange={handleEdgesChange}
-      onConnect={onConnect}
-      onConnectStart={onConnectStart}
-      onConnectEnd={handleConnectEnd}
-      onReconnect={handleReconnect}
-      onSelectionChange={handleSelectionChange}
-      isValidConnection={isValidConnection}
-      nodeTypes={memoizedNodeTypes}
-      edgeTypes={memoizedEdgeTypes}
-      connectionLineComponent={CustomConnectionLine}
-      connectionRadius={20}
-      snapToGrid={false}
-      snapGrid={[15, 15]}
-      fitView
-      className="bg-white"
-      multiSelectionKeyCode="Shift"
-      deleteKeyCode="Delete"
-      onNodeContextMenu={handleNodeContextMenu}
-      onEdgeContextMenu={handleEdgeContextMenu}
-      onPaneClick={() => {
-        setContextMenu(null)
-        onCloseMenus?.()
-      }}
-      onNodeDrag={(event, node) => {
-        onCloseMenus?.()
-        
-        // 選択されているノードを取得
-        const selectedNodes = nodes.filter((n: Node) => n.selected)
-        const isMultiSelect = selectedNodes.length > 1
-        
-        // Shiftキーが押されている場合、方向を固定
-        if (event.shiftKey) {
-          const startPos = dragStartPositions.get(node.id)
-          if (startPos) {
-            const dx = Math.abs(node.position.x - startPos.x)
-            const dy = Math.abs(node.position.y - startPos.y)
-            
-            // まだ方向が固定されていない場合、最初の移動方向を決定
-            const currentLockedDir = lockedDirection.get(node.id)
-            if (!currentLockedDir) {
-              const direction = dx > dy ? 'x' : 'y'
-              
-              if (isMultiSelect) {
-                // 複数選択時は、すべての選択ノードに対して同じ方向を固定
-                setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-                  const newMap = new Map(prev)
-                  selectedNodes.forEach((n: Node) => {
-                    newMap.set(n.id, direction)
-                  })
-                  return newMap
-                })
-              } else {
-                // 単一選択時は、そのノードのみ固定
-                setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-                  const newMap = new Map(prev)
-                  newMap.set(node.id, direction)
-                  return newMap
-                })
-              }
-            }
-          }
-        } else {
-          // Shiftキーが離された場合、方向固定を解除
-          if (isMultiSelect) {
-            // 複数選択時は、すべての選択ノードの方向固定を解除
-            setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-              const newMap = new Map(prev)
-              selectedNodes.forEach((n: Node) => {
-                newMap.delete(n.id)
-              })
-              return newMap
-            })
-          } else {
-            // 単一選択時は、そのノードのみ解除
-            setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-              const newMap = new Map(prev)
-              newMap.delete(node.id)
-              return newMap
-            })
-          }
-        }
-      }}
-      onNodeDragStart={(event, node) => {
-        onCloseMenus?.()
-        
-        // 選択されているノードを取得
-        const selectedNodes = nodes.filter((n: Node) => n.selected)
-        const isMultiSelect = selectedNodes.length > 1
-        
-        if (isMultiSelect) {
-          // 複数選択時は、すべての選択ノードの開始位置を記録
-          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
-            const newMap = new Map(prev)
-            selectedNodes.forEach((n: Node) => {
-              newMap.set(n.id, { x: n.position.x, y: n.position.y })
-            })
-            return newMap
-          })
-          
-          // 方向固定をリセット
-          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-            const newMap = new Map(prev)
-            selectedNodes.forEach((n: Node) => {
-              newMap.delete(n.id)
-            })
-            return newMap
-          })
-        } else {
-          // 単一選択時は、そのノードのみ記録
-          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
-            const newMap = new Map(prev)
-            newMap.set(node.id, { x: node.position.x, y: node.position.y })
-            return newMap
-          })
-          
-          // 方向固定をリセット
-          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-            const newMap = new Map(prev)
-            newMap.delete(node.id)
-            return newMap
-          })
-        }
-      }}
-      onNodeDragStop={(event, node) => {
-        // 選択されているノードを取得
-        const selectedNodes = nodes.filter((n: Node) => n.selected)
-        const isMultiSelect = selectedNodes.length > 1
-        
-        // ドラッグされたノードの最終位置を履歴に保存
-        if (isMultiSelect) {
-          // 複数選択時は、すべての選択ノードの位置を一度に更新して履歴に保存
-          const { updateMultipleEquipmentObjects } = useProjectStore.getState()
-          const updates: { [id: string]: { position: { x: number; y: number } } } = {}
-          
-          selectedNodes.forEach((n: Node) => {
-            const startPos = dragStartPositions.get(n.id)
-            if (startPos && (startPos.x !== n.position.x || startPos.y !== n.position.y)) {
-              // 位置が変更されていた場合のみ更新
-              updates[n.id] = { position: n.position }
-            }
-          })
-          
-          if (Object.keys(updates).length > 0) {
-            // すべてのノードの位置を一度に更新（履歴は一度だけ保存）
-            updateMultipleEquipmentObjects(updates, false)
-          }
-        } else {
-          // 単一選択時は、位置が変更されていた場合のみ履歴に保存
-          const startPos = dragStartPositions.get(node.id)
-          if (startPos && (startPos.x !== node.position.x || startPos.y !== node.position.y)) {
-            const { updateEquipmentObject } = useProjectStore.getState()
-            updateEquipmentObject(node.id, { position: node.position }, false) // 履歴に保存
-          }
-        }
-        
-        if (isMultiSelect) {
-          // 複数選択時は、すべての選択ノードの状態をクリア
-          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
-            const newMap = new Map(prev)
-            selectedNodes.forEach((n: Node) => {
-              newMap.delete(n.id)
-            })
-            return newMap
-          })
-          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-            const newMap = new Map(prev)
-            selectedNodes.forEach((n: Node) => {
-              newMap.delete(n.id)
-            })
-            return newMap
-          })
-        } else {
-          // 単一選択時は、そのノードのみクリア
-          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
-            const newMap = new Map(prev)
-            newMap.delete(node.id)
-            return newMap
-          })
-          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-            const newMap = new Map(prev)
-            newMap.delete(node.id)
-            return newMap
-          })
-        }
-      }}
-      onSelectionDragStart={() => {
-        onCloseMenus?.()
-        
-        // 複数選択時のドラッグ開始位置を記録
-        const selectedNodes = nodes.filter((node: Node) => node.selected)
-        if (selectedNodes.length > 1) {
-          setDragStartPositions((prev: Map<string, { x: number; y: number }>) => {
-            const newMap = new Map(prev)
-            selectedNodes.forEach((node: Node) => {
-              newMap.set(node.id, { x: node.position.x, y: node.position.y })
-            })
-            return newMap
-          })
-          
-          // 方向固定をリセット
-          setLockedDirection((prev: Map<string, 'x' | 'y' | null>) => {
-            const newMap = new Map(prev)
-            selectedNodes.forEach((node: Node) => {
-              newMap.delete(node.id)
-            })
-            return newMap
-          })
-        }
-      }}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-
-    >
-      <Controls />
-      <MiniMap />
-      <Background variant={BackgroundVariant.Lines} gap={20} size={0.5} color="#e5e7eb" />
-    </ReactFlow>
-  )
-}
 
 const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagramEditorProps>(({
   showTemplateLibrary = false,
@@ -432,9 +82,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState<EquipmentObject | null>(null)
   
-  // ドラッグ中の方向固定用の状態
-  const [dragStartPositions, setDragStartPositions] = useState<Map<string, { x: number; y: number }>>(new Map())
-  const [lockedDirection, setLockedDirection] = useState<Map<string, 'x' | 'y' | null>>(new Map())
+  // ノードドラッグ操作の管理（useNodeDragフックを使用）
+  const { dragStartPositions, lockedDirection } = useNodeDrag(nodes, onCloseMenus)
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -592,50 +241,53 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   }, [project.objects, project.wires, selectedObjectIds, selectedWireIds, setNodes, setEdges])
 
   // ノード変更の処理
-  const handleNodesChange = useCallback((changes: NodeChange[]) => {
-    // Shiftキーで方向固定の処理
-    const processedChanges = changes.map(change => {
-      if (change.type === 'position' && change.position) {
-        const startPos = dragStartPositions.get(change.id)
-        const lockedDir = lockedDirection.get(change.id)
-        
-        if (startPos && lockedDir) {
-          // 方向が固定されている場合、固定された方向のみ移動を許可
-          if (lockedDir === 'x') {
-            return {
-              ...change,
-              position: {
-                x: change.position.x,
-                y: startPos.y
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      // Shiftキーで方向固定の処理
+      const processedChanges = changes.map((change) => {
+        if (change.type === 'position' && change.position) {
+          const startPos = dragStartPositions.get(change.id)
+          const lockedDir = lockedDirection.get(change.id)
+
+          if (startPos && lockedDir) {
+            // 方向が固定されている場合、固定された方向のみ移動を許可
+            if (lockedDir === 'x') {
+              return {
+                ...change,
+                position: {
+                  x: change.position.x,
+                  y: startPos.y
+                }
               }
-            }
-          } else if (lockedDir === 'y') {
-            return {
-              ...change,
-              position: {
-                x: startPos.x,
-                y: change.position.y
+            } else if (lockedDir === 'y') {
+              return {
+                ...change,
+                position: {
+                  x: startPos.x,
+                  y: change.position.y
+                }
               }
             }
           }
         }
-      }
-      return change
-    })
+        return change
+      })
 
-    onNodesChange(processedChanges)
+      onNodesChange(processedChanges)
 
-    processedChanges.forEach(change => {
-      if (change.type === 'position' && change.position) {
-        // 位置変更をプロジェクトに反映
-        updateEquipmentObject(change.id, { position: change.position }, true) // ドラッグ中は履歴保存をスキップ
-      } else if (change.type === 'remove') {
-        // ノード削除をプロジェクトに反映
-        const { removeEquipmentObject } = useProjectStore.getState()
-        removeEquipmentObject(change.id)
-      }
-    })
-  }, [onNodesChange, updateEquipmentObject, dragStartPositions, lockedDirection])
+      processedChanges.forEach((change) => {
+        if (change.type === 'position' && change.position) {
+          // 位置変更をプロジェクトに反映
+          updateEquipmentObject(change.id, { position: change.position }, true) // ドラッグ中は履歴保存をスキップ
+        } else if (change.type === 'remove') {
+          // ノード削除をプロジェクトに反映
+          const { removeEquipmentObject } = useProjectStore.getState()
+          removeEquipmentObject(change.id)
+        }
+      })
+    },
+    [onNodesChange, updateEquipmentObject, dragStartPositions, lockedDirection]
+  )
 
   // エッジ変更の処理
   const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
@@ -1458,10 +1110,6 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
               onCloseMenus={onCloseMenus}
               addEquipmentObject={addEquipmentObject}
               getShapeForTemplate={getShapeForTemplate}
-              dragStartPositions={dragStartPositions}
-              setDragStartPositions={setDragStartPositions}
-              lockedDirection={lockedDirection}
-              setLockedDirection={setLockedDirection}
               connectionStartData={connectionStartData}
               flowPositionRef={flowPositionRef}
             />
