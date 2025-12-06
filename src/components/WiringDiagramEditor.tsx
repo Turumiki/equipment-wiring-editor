@@ -14,18 +14,21 @@ import {
 
 import { useProjectStore } from '@/store/useProjectStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
-import { WireType, EquipmentObject, ShapeType, ComponentType } from '@/types'
+import { EquipmentObject, ShapeType } from '@/types'
 import ReactFlowCanvas from '@/components/ReactFlowCanvas'
 import { useNodeDrag } from '@/hooks/useNodeDrag'
+import { useConnectionHandlers } from '@/hooks/useConnectionHandlers'
+import { useContextMenu } from '@/hooks/useContextMenu'
+import { usePortEdit } from '@/hooks/usePortEdit'
+import { useNodeEdgeChanges } from '@/hooks/useNodeEdgeChanges'
+import { useConnectionValidation } from '@/hooks/useConnectionValidation'
 
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
 import InspectorPanel from '@/components/InspectorPanel'
 import ResizablePanel from '@/components/ResizablePanel'
 import ResizableWidthPanel from '@/components/ResizableWidthPanel'
-import { getRenderComponent, getConnectionPortComponents, createEquipmentFromTemplate, createBasicEquipmentObject } from '@/utils/componentSystem'
-import { getWireTypeForPortType, getWireTypeForConnection } from '@/utils/portTypeUtils'
-import { validateConnection } from '@/utils/connectionValidation'
+import { getRenderComponent } from '@/utils/componentSystem'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import ContextMenu from '@/components/ContextMenu'
 
@@ -33,7 +36,7 @@ import SaveTemplateDialog from '@/components/SaveTemplateDialog'
 import PortEditDialog from '@/components/PortEditDialog'
 import TemplateSelectionDialog from '@/components/TemplateSelectionDialog'
 import { autoLayout, LayoutOptions } from '@/utils/autoLayout'
-import { PortType, PortDirection, EquipmentTemplate } from '@/types'
+import { PortType, PortDirection } from '@/types'
 
 interface WiringDiagramEditorProps {
   showTemplateLibrary?: boolean
@@ -82,42 +85,80 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState<EquipmentObject | null>(null)
   
-  // ノードドラッグ操作の管理（useNodeDragフックを使用）
-  const { dragStartPositions, lockedDirection } = useNodeDrag(nodes, onCloseMenus)
-  const [contextMenu, setContextMenu] = useState<{
-    x: number
-    y: number
-    type: 'canvas' | 'node' | 'edge'
-    targetId?: string
-  } | null>(null)
-  const [showPortEditDialog, setShowPortEditDialog] = useState(false)
-  const [editingPortData, setEditingPortData] = useState<{
-    portId: string
-    equipmentId: string
-  } | null>(null)
-  const [showTemplateSelectionDialog, setShowTemplateSelectionDialog] = useState(false)
-  const [connectionStartData, setConnectionStartData] = useState<{
-    sourceObjectId: string
-    sourcePortId: string
-    sourcePortType: PortType
-    sourcePortDirection: PortDirection
-    dropPosition: { x: number; y: number }
-  } | null>(null)
+  const {
+    project,
+    setSelectedObjects,
+    setSelectedWires,
+    selectedObjectIds,
+    selectedWireIds,
+    removeEquipmentObject,
+    removeWire,
+    updateEquipmentObject,
+    copySelected,
+    pasteSelected,
+    duplicateSelected,
+    alignSelected,
+    distributeSelected,
+    addEquipmentObject
+  } = useProjectStore()
+  const { hydrate } = useSettingsStore()
 
-  const { project, addWire, updateWire, updateEquipmentObject, updateMultipleEquipmentObjects, setSelectedObjects, setSelectedWires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, duplicateSelected, copySelected, pasteSelected, alignSelected, distributeSelected, addEquipmentObject } = useProjectStore()
-  const { hydrate, settings } = useSettingsStore()
+  // ノードドラッグ操作の管理
+  const { dragStartPositions, lockedDirection } = useNodeDrag(nodes, onCloseMenus)
+
+  // テンプレートに応じた図形を取得
+  const getShapeForTemplate = (templateId: string): ShapeType => {
+    return ShapeType.RECTANGLE
+  }
+
+  // 接続関連のハンドラー
+  const {
+    connectionStartData,
+    showTemplateSelectionDialog,
+    onConnectStart,
+    onConnectEnd,
+    onConnect,
+    handleTemplateSelect,
+    handleExistingPortSelect,
+    setConnectionStartData,
+    setShowTemplateSelectionDialog
+  } = useConnectionHandlers(getShapeForTemplate)
+
+  // コンテキストメニュー
+  const {
+    contextMenu,
+    setContextMenu,
+    handleContextMenu,
+    handleNodeContextMenu,
+    handleEdgeContextMenu,
+    getContextMenuItems
+  } = useContextMenu(selectedObjectIds, selectedWireIds, project, setShowSaveTemplateDialog)
+
+  // ポート編集
+  const {
+    editingPortData,
+    showPortEditDialog,
+    setShowPortEditDialog,
+    setEditingPortData,
+    handlePortEdit,
+    handlePortSave,
+    getEditingPortInfo
+  } = usePortEdit()
+
+  // ノード/エッジ変更処理
+  const { handleNodesChange: handleNodesChangeInternal, handleEdgesChange: handleEdgesChangeInternal } = useNodeEdgeChanges(
+    dragStartPositions,
+    lockedDirection
+  )
+
+  // 接続バリデーション
+  const { isValidConnection, handleReconnect } = useConnectionValidation()
 
   // クライアントサイドでの設定初期化
   useEffect(() => {
     hydrate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // hydrateはZustandストアから取得した関数で安定しているため、依存配列は空でOK
-
-  // テンプレートに応じた図形を取得
-  const getShapeForTemplate = (templateId: string): ShapeType => {
-    // 全て四角形で統一
-    return ShapeType.RECTANGLE
-  }
+  }, [])
 
   // キーボードショートカットを有効化
   useKeyboardShortcuts()
@@ -128,6 +169,7 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     selectAll: () => {
       // 全選択の実装
       setSelectedObjects(project.objects.map(obj => obj.id))
+      setSelectedWires(project.wires.map(wire => wire.id))
     },
     deselectAll: () => {
       // 選択解除の実装
@@ -243,720 +285,31 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   // ノード変更の処理
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      // Shiftキーで方向固定の処理
-      const processedChanges = changes.map((change) => {
-        if (change.type === 'position' && change.position) {
-          const startPos = dragStartPositions.get(change.id)
-          const lockedDir = lockedDirection.get(change.id)
-
-          if (startPos && lockedDir) {
-            // 方向が固定されている場合、固定された方向のみ移動を許可
-            if (lockedDir === 'x') {
-              return {
-                ...change,
-                position: {
-                  x: change.position.x,
-                  y: startPos.y
-                }
-              }
-            } else if (lockedDir === 'y') {
-              return {
-                ...change,
-                position: {
-                  x: startPos.x,
-                  y: change.position.y
-                }
-              }
-            }
-          }
-        }
-        return change
-      })
-
-      onNodesChange(processedChanges)
-
-      processedChanges.forEach((change) => {
-        if (change.type === 'position' && change.position) {
-          // 位置変更をプロジェクトに反映
-          updateEquipmentObject(change.id, { position: change.position }, true) // ドラッグ中は履歴保存をスキップ
-        } else if (change.type === 'remove') {
-          // ノード削除をプロジェクトに反映
-          const { removeEquipmentObject } = useProjectStore.getState()
-          removeEquipmentObject(change.id)
-        }
-      })
+      handleNodesChangeInternal(changes, onNodesChange)
     },
-    [onNodesChange, updateEquipmentObject, dragStartPositions, lockedDirection]
+    [handleNodesChangeInternal, onNodesChange]
   )
 
   // エッジ変更の処理
-  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
-    onEdgesChange(changes)
-
-    // エッジ削除をプロジェクトに反映
-    changes.forEach(change => {
-      if (change.type === 'remove') {
-        const { removeWire } = useProjectStore.getState()
-        removeWire(change.id)
-      }
-    })
-  }, [onEdgesChange])
-
-  // 接続開始時の処理
-  const onConnectStart = useCallback(
-    (event: React.MouseEvent | React.TouchEvent, params: { nodeId: string | null; handleId: string | null; handleType: string | null }) => {
-      console.log('=== onConnectStart called ===', params)
-      
-      if (!params.nodeId || !params.handleId) return
-
-      const sourceObject = project.objects.find(obj => obj.id === params.nodeId)
-      if (!sourceObject) {
-        console.log('Source object not found:', params.nodeId)
-        return
-      }
-
-      const sourcePortComponents = getConnectionPortComponents(sourceObject)
-      const sourcePort = sourcePortComponents.find(port => port.id === params.handleId)
-      if (!sourcePort) {
-        console.log('Source port not found:', params.handleId)
-        return
-      }
-
-      console.log('Connection started from:', {
-        object: sourceObject.name,
-        port: sourcePort.data.label,
-        type: sourcePort.data.portType
-      })
-
-      // 接続開始情報を記録（onConnectEndで使用）
-      setConnectionStartData({
-        sourceObjectId: params.nodeId,
-        sourcePortId: params.handleId,
-        sourcePortType: sourcePort.data.portType,
-        sourcePortDirection: sourcePort.data.direction,
-        dropPosition: { x: 0, y: 0 } // 後で更新
-      })
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      handleEdgesChangeInternal(changes, onEdgesChange)
     },
-    [project.objects]
+    [handleEdgesChangeInternal, onEdgesChange]
   )
 
   // 座標変換用のref（ReactFlowCanvasからアクセス可能にする）
   const flowPositionRef = useRef<{ x: number; y: number } | null>(null)
-  
-  // 接続開始データをrefで保持（コールバック内で最新の値を参照するため）
-  const connectionStartDataRef = useRef<typeof connectionStartData>(null)
-  useEffect(() => {
-    connectionStartDataRef.current = connectionStartData
-  }, [connectionStartData])
-  
-  // 接続が確立されたかどうかを追跡
-  const connectionEstablishedRef = useRef(false)
-
-  // 接続終了時の処理
-  const onConnectEnd = useCallback(
-    (event: MouseEvent | TouchEvent) => {
-      console.log('=== onConnectEnd called ===', {
-        connectionEstablished: connectionEstablishedRef.current,
-        connectionStartData: connectionStartDataRef.current
-      })
-
-      // 接続が確立された場合は何もしない
-      if (connectionEstablishedRef.current) {
-        console.log('Connection established, skipping dialog')
-        connectionEstablishedRef.current = false
-        return
-      }
-
-      // 接続が確立されなかった場合（キャンバス上でドロップ）のみ処理
-      const currentConnectionData = connectionStartDataRef.current
-      if (!currentConnectionData) {
-        console.log('No connection start data')
-        return
-      }
-
-      // マウス位置を取得
-      const clientX = 'clientX' in event ? event.clientX : event.touches?.[0]?.clientX || 0
-      const clientY = 'clientY' in event ? event.clientY : event.touches?.[0]?.clientY || 0
-
-      console.log('Showing template selection dialog at:', { clientX, clientY })
-
-      // 接続開始情報を更新してダイアログを表示
-      setConnectionStartData({
-        ...currentConnectionData,
-        dropPosition: { x: clientX, y: clientY }
-      })
-      setShowTemplateSelectionDialog(true)
-    },
-    []
-  )
-
-  const onConnect = useCallback(
-    (params: Connection) => {
-      console.log('=== onConnect called ===')
-      // 接続が確立されたことを記録
-      connectionEstablishedRef.current = true
-      
-      // 接続が確立された場合は、接続開始情報をクリア
-      setConnectionStartData(null)
-      setShowTemplateSelectionDialog(false)
-
-      // デバッグログは開発時のみ有効
-      const DEBUG = process.env.NODE_ENV === 'development' && false // falseに設定してログを無効化
-
-      if (DEBUG) {
-        console.log('=== ReactFlow onConnect called ===')
-        console.log('Connection params:', params)
-      }
-
-      if (params.source && params.target && params.sourceHandle && params.targetHandle) {
-        // 接続バリデーション
-        const sourceObject = project.objects.find(obj => obj.id === params.source)
-        const targetObject = project.objects.find(obj => obj.id === params.target)
-
-        if (DEBUG) console.log('Found objects:', { sourceObject: sourceObject?.name, targetObject: targetObject?.name })
-
-        if (!sourceObject || !targetObject) {
-          if (DEBUG) console.log('Objects not found!')
-          alert('接続対象のオブジェクトが見つかりません')
-          return
-        }
-
-        // onConnect時のみデバッグログを有効にしてバリデーション実行
-        const validationResult = (() => {
-          // 一時的にDEBUGを有効化
-          const originalConsoleLog = console.log
-          let shouldLog = DEBUG
-
-          if (shouldLog) {
-            console.log('=== onConnect VALIDATION ===')
-          }
-
-          return validateConnection(
-            sourceObject,
-            params.sourceHandle,
-            targetObject,
-            params.targetHandle
-          )
-        })()
-
-        if (DEBUG) console.log('Validation result:', validationResult)
-
-        if (!validationResult.isValid) {
-          if (DEBUG) console.log('Validation failed:', validationResult.errorMessage)
-          alert(validationResult.errorMessage || '接続できません')
-          return
-        }
-
-        if (DEBUG) console.log('Creating wire...')
-
-        // ポート情報を取得してラベルを生成
-        const sourcePortComponents = getConnectionPortComponents(sourceObject)
-        const targetPortComponents = getConnectionPortComponents(targetObject)
-        const sourcePort = sourcePortComponents.find(port => port.id === params.sourceHandle)
-        const targetPort = targetPortComponents.find(port => port.id === params.targetHandle)
-
-        // ポートタイプに基づいてラベルを生成
-        const getPortTypeLabel = (portType: string) => {
-          // 設定ストアからポートタイプ定義を取得
-          const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
-          if (portTypeDefinition) {
-            // 短縮形を最優先、なければフォールバックの短縮形を使用
-            if ((portTypeDefinition as any).shortName) {
-              return (portTypeDefinition as any).shortName
-            }
-          }
-
-          // フォールバック：標準的なポートタイプの短縮形
-          switch (portType) {
-            case 'xlr-male':
-            case 'xlr-female':
-              return 'XLR'
-            case 'usb-a':
-            case 'usb-b':
-            case 'usb-c':
-              return 'USB'
-            case 'ethernet':
-              return 'LAN'
-            case 'dante':
-              return 'DANTE'
-            case 'hdmi':
-              return 'HDMI'
-            case 'trs-quarter':
-            case 'ts-quarter':
-              return 'TRS'
-            case 'trs-mini':
-              return '3.5mm'
-            default:
-              return portType.toUpperCase()
-          }
-        }
-
-        // 両方のポートタイプを考慮してワイヤータイプを決定（TRS to XLRケーブルなどに対応）
-        const wireType = (sourcePort && targetPort) 
-          ? getWireTypeForConnection(sourcePort.data.portType, targetPort.data.portType)
-          : (sourcePort ? getWireTypeForPortType(sourcePort.data.portType) : WireType.XLR_CABLE)
-
-        // 設定ストアからワイヤータイプに応じたスタイルを取得
-        // settingsは既にuseSettingsStore()から取得済み
-        const wireTypeSettings = settings.wireTypes.find(wt =>
-          wt.name === wireType || wt.id === wireType
-        )
-
-        // ワイヤータイプからラベルを生成
-        const wireLabel = wireTypeSettings ? 
-          ((wireTypeSettings as any).shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
-          wireType
-
-        const newWire = {
-          id: `wire-${Date.now()}`,
-          sourceObjectId: params.source,
-          sourcePortId: params.sourceHandle,
-          targetObjectId: params.target,
-          targetPortId: params.targetHandle,
-          wireType: wireType,
-          style: {
-            color: wireTypeSettings?.color || '#059669',
-            strokeWidth: wireTypeSettings?.strokeWidth || 2,
-            strokeDashArray: wireTypeSettings?.strokeDashArray
-          },
-          label: wireLabel,
-          metadata: {}
-        }
-
-        addWire(newWire)
-        if (DEBUG) console.log('Wire created successfully!')
-      } else {
-        if (DEBUG) console.log('Missing connection parameters:', params)
-      }
-    },
-    [addWire, project.objects]
-  )
-
-  // テンプレート選択時の処理
-  const handleTemplateSelect = useCallback(
-    (template: EquipmentTemplate, flowPosition?: { x: number; y: number }) => {
-      if (!connectionStartData) return
-
-      const sourceObject = project.objects.find(obj => obj.id === connectionStartData.sourceObjectId)
-      if (!sourceObject) return
-
-      // 座標が渡されていない場合は、dropPositionを使用（後で変換される）
-      const mousePosition = flowPosition || { x: connectionStartData.dropPosition.x, y: connectionStartData.dropPosition.y }
-
-      // テンプレートから機材を作成
-      let newEquipmentObject
-      if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
-        newEquipmentObject = createEquipmentFromTemplate(template)
-      } else if (template.defaultComponents && template.defaultComponents.length > 0) {
-        newEquipmentObject = createEquipmentFromTemplate(template)
-      } else {
-        const shape = getShapeForTemplate(template.id)
-        newEquipmentObject = createBasicEquipmentObject(
-          template.name,
-          mousePosition,
-          shape,
-          template.id
-        )
-      }
-
-      // 機材のサイズを取得
-      const renderComponent = newEquipmentObject.components.find(comp => comp.type === ComponentType.RENDER)
-      const equipmentSize = renderComponent?.data?.size || { width: 100, height: 60 }
-
-      // 機材の中心がマウス位置に来るように調整
-      const centeredPosition = {
-        x: mousePosition.x - equipmentSize.width / 2,
-        y: mousePosition.y - equipmentSize.height / 2
-      }
-
-      newEquipmentObject.position = centeredPosition
-      newEquipmentObject.templateId = template.id
-
-      // 機材を追加
-      addEquipmentObject(newEquipmentObject)
-
-      // 互換性のあるポートを見つけて接続
-      const targetPortComponents = getConnectionPortComponents(newEquipmentObject)
-      const compatiblePort = targetPortComponents.find(port => {
-        const portType = port.data.portType
-        const portDirection = port.data.direction
-
-        // ポートタイプの互換性チェック
-        const { settings } = useSettingsStore.getState()
-        const sourcePortTypeDef = settings.portTypes.find(pt => pt.id === connectionStartData.sourcePortType || pt.name === connectionStartData.sourcePortType)
-        const compatiblePortTypes = sourcePortTypeDef?.compatibleWith || [connectionStartData.sourcePortType]
-        const isTypeCompatible = compatiblePortTypes.includes(portType) || portType === connectionStartData.sourcePortType
-
-        // 方向の互換性チェック
-        let isDirectionCompatible = false
-        if (connectionStartData.sourcePortDirection === PortDirection.BIDIRECTIONAL || portDirection === PortDirection.BIDIRECTIONAL) {
-          isDirectionCompatible = true
-        } else if (connectionStartData.sourcePortDirection === PortDirection.OUTPUT && portDirection === PortDirection.INPUT) {
-          isDirectionCompatible = true
-        } else if (connectionStartData.sourcePortDirection === PortDirection.INPUT && portDirection === PortDirection.OUTPUT) {
-          isDirectionCompatible = true
-        }
-
-        return isTypeCompatible && isDirectionCompatible
-      })
-
-      if (compatiblePort) {
-        // 接続を作成
-        const sourcePortComponents = getConnectionPortComponents(sourceObject)
-        const sourcePort = sourcePortComponents.find(port => port.id === connectionStartData.sourcePortId)
-        
-        if (sourcePort) {
-          const wireType = getWireTypeForConnection(sourcePort.data.portType, compatiblePort.data.portType)
-          const wireTypeSettings = settings.wireTypes.find(wt =>
-            wt.name === wireType || wt.id === wireType
-          )
-
-          const wireLabel = wireTypeSettings ? 
-            ((wireTypeSettings as any).shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
-            wireType
-
-          // 方向に基づいてsource/targetを決定
-          // ドラッグ開始元がINPUTの場合、逆向きに接続する
-          // Source(出力) -> Target(入力) の関係を守るため
-          let wireSourceObjectId = connectionStartData.sourceObjectId
-          let wireSourcePortId = connectionStartData.sourcePortId
-          let wireTargetObjectId = newEquipmentObject.id
-          let wireTargetPortId = compatiblePort.id
-
-          if (connectionStartData.sourcePortDirection === PortDirection.INPUT) {
-            wireSourceObjectId = newEquipmentObject.id
-            wireSourcePortId = compatiblePort.id
-            wireTargetObjectId = connectionStartData.sourceObjectId
-            wireTargetPortId = connectionStartData.sourcePortId
-          }
-
-          const newWire = {
-            id: `wire-${Date.now()}`,
-            sourceObjectId: wireSourceObjectId,
-            sourcePortId: wireSourcePortId,
-            targetObjectId: wireTargetObjectId,
-            targetPortId: wireTargetPortId,
-            wireType: wireType,
-            style: {
-              color: wireTypeSettings?.color || '#059669',
-              strokeWidth: wireTypeSettings?.strokeWidth || 2,
-              strokeDashArray: wireTypeSettings?.strokeDashArray
-            },
-            label: wireLabel,
-            metadata: {}
-          }
-
-          addWire(newWire)
-        }
-      }
-
-      // 接続開始情報をクリア
-      setConnectionStartData(null)
-      setShowTemplateSelectionDialog(false)
-    },
-    [connectionStartData, project.objects, addEquipmentObject, addWire, settings.wireTypes, getShapeForTemplate]
-  )
-
-  // 既存ポート選択時の処理
-  const handleExistingPortSelect = useCallback(
-    (targetObjectId: string, targetPortId: string) => {
-      console.log('handleExistingPortSelect called', { targetObjectId, targetPortId, connectionStartData })
-      if (!connectionStartData) {
-        console.error('connectionStartData is missing')
-        return
-      }
-
-      const sourceObject = project.objects.find(obj => obj.id === connectionStartData.sourceObjectId)
-      const targetObject = project.objects.find(obj => obj.id === targetObjectId)
-      
-      if (!sourceObject || !targetObject) {
-        console.error('Source or Target object not found', { sourceObject, targetObject })
-        return
-      }
-
-      const sourcePortComponents = getConnectionPortComponents(sourceObject)
-      const sourcePort = sourcePortComponents.find(port => port.id === connectionStartData.sourcePortId)
-      
-      const targetPortComponents = getConnectionPortComponents(targetObject)
-      const targetPort = targetPortComponents.find(port => port.id === targetPortId)
-
-      if (sourcePort && targetPort) {
-        const wireType = getWireTypeForConnection(sourcePort.data.portType, targetPort.data.portType)
-        const wireTypeSettings = settings.wireTypes.find(wt =>
-          wt.name === wireType || wt.id === wireType
-        )
-
-        const wireLabel = wireTypeSettings ? 
-          ((wireTypeSettings as any).shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
-          wireType
-
-        // 方向に基づいてsource/targetを決定
-        // ドラッグ開始元がINPUTの場合、逆向きに接続する
-        // Source(出力) -> Target(入力) の関係を守るため
-        let wireSourceObjectId = connectionStartData.sourceObjectId
-        let wireSourcePortId = connectionStartData.sourcePortId
-        let wireTargetObjectId = targetObjectId
-        let wireTargetPortId = targetPortId
-
-        if (connectionStartData.sourcePortDirection === PortDirection.INPUT) {
-          wireSourceObjectId = targetObjectId
-          wireSourcePortId = targetPortId
-          wireTargetObjectId = connectionStartData.sourceObjectId
-          wireTargetPortId = connectionStartData.sourcePortId
-        }
-
-        const newWire = {
-          id: `wire-${Date.now()}`,
-          sourceObjectId: wireSourceObjectId,
-          sourcePortId: wireSourcePortId,
-          targetObjectId: wireTargetObjectId,
-          targetPortId: wireTargetPortId,
-          wireType: wireType,
-          style: {
-            color: wireTypeSettings?.color || '#059669',
-            strokeWidth: wireTypeSettings?.strokeWidth || 2,
-            strokeDashArray: wireTypeSettings?.strokeDashArray
-          },
-          label: wireLabel,
-          metadata: {}
-        }
-
-        console.log('Adding new wire:', newWire)
-        addWire(newWire)
-      } else {
-        console.error('Source or Target port not found', { sourcePort, targetPort })
-      }
-
-      // 接続開始情報をクリア
-      setConnectionStartData(null)
-      setShowTemplateSelectionDialog(false)
-    },
-    [connectionStartData, project.objects, addWire, settings.wireTypes]
-  )
 
   // ノード・エッジ選択の処理
   const handleSelectionChange = useCallback((params: { nodes: Node[], edges: Edge[] }) => {
-    setSelectedObjects(params.nodes.map(node => node.id))
-    setSelectedWires(params.edges.map(edge => edge.id))
+    // 選択範囲で選択されたノードとエッジのみを選択状態にする
+    const selectedNodeIds = params.nodes.map(node => node.id)
+    const selectedEdgeIds = params.edges.map(edge => edge.id)
+    
+    setSelectedObjects(selectedNodeIds)
+    setSelectedWires(selectedEdgeIds)
   }, [setSelectedObjects, setSelectedWires])
-
-  // 右クリックメニューの処理
-  const handleContextMenu = useCallback((event: React.MouseEvent) => {
-    event.preventDefault()
-    setContextMenu({
-      x: event.clientX,
-      y: event.clientY,
-      type: 'canvas'
-    })
-  }, [])
-
-  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setContextMenu({
-      x: event.clientX,
-      y: event.clientY,
-      type: 'node',
-      targetId: node.id
-    })
-  }, [])
-
-  const handleEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setContextMenu({
-      x: event.clientX,
-      y: event.clientY,
-      type: 'edge',
-      targetId: edge.id
-    })
-  }, [])
-
-  // ポート編集の処理
-  const handlePortEdit = useCallback((portId: string, equipmentId: string) => {
-    setEditingPortData({ portId, equipmentId })
-    setShowPortEditDialog(true)
-  }, [])
-
-  // ポート編集保存
-  const handlePortSave = useCallback((label: string, portType: PortType, direction: PortDirection) => {
-    if (!editingPortData) return
-
-    const equipment = project.objects.find(obj => obj.id === editingPortData.equipmentId)
-    if (!equipment) return
-
-    const updatedComponents = equipment.components.map(comp => {
-      if (comp.id === editingPortData.portId) {
-        return {
-          ...comp,
-          data: {
-            ...comp.data,
-            label,
-            portType,
-            direction
-          }
-        }
-      }
-      return comp
-    })
-
-    updateEquipmentObject(editingPortData.equipmentId, { components: updatedComponents })
-    setShowPortEditDialog(false)
-    setEditingPortData(null)
-  }, [editingPortData, project.objects, updateEquipmentObject])
-
-  // 編集中のポート情報を取得
-  const getEditingPortInfo = useCallback(() => {
-    if (!editingPortData) return null
-
-    const equipment = project.objects.find(obj => obj.id === editingPortData.equipmentId)
-    if (!equipment) return null
-
-    const port = equipment.components.find(comp => comp.id === editingPortData.portId)
-    if (!port) return null
-
-    return {
-      label: port.data.label || '',
-      portType: port.data.portType,
-      direction: port.data.direction
-    }
-  }, [editingPortData, project.objects])
-
-  // コンテキストメニューアイテムの生成
-  const getContextMenuItems = useCallback(() => {
-    if (!contextMenu) return []
-
-    switch (contextMenu.type) {
-      case 'canvas':
-        const hasSelection = selectedObjectIds.length > 0 || selectedWireIds.length > 0
-        const hasBothTypes = selectedObjectIds.length > 0 && selectedWireIds.length > 0
-        const { canPaste: canPasteFromStore } = useProjectStore.getState()
-        
-        return [
-          {
-            label: '貼り付け',
-            onClick: () => {
-              pasteSelected()
-            },
-            disabled: !canPasteFromStore()
-          },
-          ...(hasSelection ? [
-            { separator: true } as const,
-            ...(hasBothTypes ? [
-              {
-                label: '機材のみ選択',
-                onClick: () => {
-                  setSelectedWires([])
-                }
-              },
-              {
-                label: 'エッジのみ選択',
-                onClick: () => {
-                  setSelectedObjects([])
-                }
-              }
-            ] : [])
-          ] : [])
-        ]
-
-      case 'node':
-        const isSelected = selectedObjectIds.includes(contextMenu.targetId!)
-        return [
-          {
-            label: 'コピー',
-            onClick: () => {
-              if (!isSelected) {
-                setSelectedObjects([contextMenu.targetId!])
-              }
-              duplicateSelected()
-            }
-          },
-          {
-            label: '複製',
-            onClick: () => {
-              if (!isSelected) {
-                setSelectedObjects([contextMenu.targetId!])
-              }
-              duplicateSelected()
-            }
-          },
-          { separator: true } as const,
-          ...(selectedObjectIds.length > 1 ? [
-            {
-              label: '左揃え',
-              onClick: () => alignSelected('left')
-            },
-            {
-              label: '右揃え',
-              onClick: () => alignSelected('right')
-            },
-            {
-              label: '上揃え',
-              onClick: () => alignSelected('top')
-            },
-            {
-              label: '下揃え',
-              onClick: () => alignSelected('bottom')
-            },
-            ...(selectedObjectIds.length > 2 ? [
-              { separator: true } as const,
-              {
-                label: '水平分散',
-                onClick: () => distributeSelected('horizontal')
-              },
-              {
-                label: '垂直分散',
-                onClick: () => distributeSelected('vertical')
-              }
-            ] : []),
-            { separator: true } as const
-          ] : []),
-          {
-            label: 'テンプレートとして保存',
-            onClick: () => {
-              const targetId = contextMenu.targetId!
-              const targetObject = project.objects.find(obj => obj.id === targetId)
-              if (targetObject) {
-                setShowSaveTemplateDialog(targetObject)
-              }
-            }
-          },
-          { separator: true } as const,
-          {
-            label: '削除',
-            onClick: () => {
-              if (isSelected) {
-                selectedObjectIds.forEach(id => removeEquipmentObject(id))
-              } else {
-                removeEquipmentObject(contextMenu.targetId!)
-              }
-            }
-          }
-        ]
-
-      case 'edge':
-        return [
-          {
-            label: '再接続モード',
-            onClick: () => {
-              // エッジを選択状態にして再接続を促す
-              setSelectedWires([contextMenu.targetId!])
-              alert('エッジの端点（青い丸）をドラッグして別のポートに接続してください')
-            }
-          },
-          { separator: true } as const,
-          {
-            label: '削除',
-            onClick: () => {
-              removeWire(contextMenu.targetId!)
-            }
-          }
-        ]
-
-      default:
-        return []
-    }
-  }, [contextMenu, selectedObjectIds, selectedWireIds, setSelectedObjects, setSelectedWires, duplicateSelected, removeEquipmentObject, removeWire])
 
   // 自動レイアウトの適用
   const handleAutoLayout = useCallback((options: LayoutOptions) => {
@@ -968,119 +321,6 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     })
   }, [project.objects, project.wires, updateEquipmentObject])
 
-  // エッジの再接続処理
-  const handleReconnect = useCallback((oldEdge: Edge, connection: Connection) => {
-    const DEBUG = process.env.NODE_ENV === 'development' && false
-
-    if (DEBUG) {
-      console.log('=== Edge Reconnect ===')
-      console.log('Old edge:', oldEdge)
-      console.log('New connection:', connection)
-    }
-
-    if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) {
-      if (DEBUG) console.log('Missing connection parameters')
-      return false
-    }
-
-    // 接続バリデーション
-    const sourceObject = project.objects.find(obj => obj.id === connection.source)
-    const targetObject = project.objects.find(obj => obj.id === connection.target)
-
-    if (!sourceObject || !targetObject) {
-      if (DEBUG) console.log('Objects not found for reconnection')
-      alert('接続対象のオブジェクトが見つかりません')
-      return false
-    }
-
-    const validationResult = validateConnection(
-      sourceObject,
-      connection.sourceHandle,
-      targetObject,
-      connection.targetHandle
-    )
-
-    if (!validationResult.isValid) {
-      if (DEBUG) console.log('Reconnection validation failed:', validationResult.errorMessage)
-      alert(validationResult.errorMessage || '再接続できません')
-      return false
-    }
-
-    // ワイヤーを更新
-    updateWire(oldEdge.id, {
-      sourceObjectId: connection.source,
-      sourcePortId: connection.sourceHandle,
-      targetObjectId: connection.target,
-      targetPortId: connection.targetHandle
-    })
-
-    if (DEBUG) console.log('Edge reconnected successfully!')
-    return true
-  }, [project.objects, updateWire])
-
-  // 接続の事前バリデーション
-  const isValidConnection = useCallback((connection: Connection) => {
-    const DEBUG = false // ドラッグ中のログを無効化
-
-    if (DEBUG) {
-      console.log('=== ReactFlow isValidConnection called ===')
-      console.log('Connection:', connection)
-    }
-
-    if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) {
-      if (DEBUG) console.log('Missing connection data')
-      return false
-    }
-
-    // 同じオブジェクト内での接続は禁止
-    if (connection.source === connection.target) {
-      if (DEBUG) console.log('Same object connection not allowed')
-      return false
-    }
-
-    const sourceObject = project.objects.find(obj => obj.id === connection.source)
-    const targetObject = project.objects.find(obj => obj.id === connection.target)
-
-    if (!sourceObject || !targetObject) {
-      if (DEBUG) console.log('Objects not found for validation')
-      return false
-    }
-
-    // 双方向ポート同士の接続は常に許可（ReactFlowが自動的にsource/targetを決定）
-    const sourcePortComponents = getConnectionPortComponents(sourceObject)
-    const targetPortComponents = getConnectionPortComponents(targetObject)
-
-    const sourcePort = sourcePortComponents.find(port => port.id === connection.sourceHandle)
-    const targetPort = targetPortComponents.find(port => port.id === connection.targetHandle)
-
-    if (sourcePort?.data.direction === 'bidirectional' && targetPort?.data.direction === 'bidirectional') {
-      // 双方向ポート同士は基本的な互換性チェックのみ
-      const sourceType = sourcePort.data.portType
-      const targetType = targetPort.data.portType
-
-      // 同じタイプまたは互換性のあるタイプ
-      const isCompatible = sourceType === targetType ||
-        // Ethernet/Dante互換性
-        (sourceType === 'ethernet' && targetType === 'dante') ||
-        (sourceType === 'dante' && targetType === 'ethernet') ||
-        // USB互換性
-        (['usb-a', 'usb-b', 'usb-c'].includes(sourceType) && ['usb-a', 'usb-b', 'usb-c'].includes(targetType))
-
-      if (DEBUG) console.log('Bidirectional ports compatibility:', isCompatible)
-      return isCompatible
-    }
-
-    // その他の接続は通常のバリデーション
-    const validationResult = validateConnection(
-      sourceObject,
-      connection.sourceHandle,
-      targetObject,
-      connection.targetHandle
-    )
-
-    if (DEBUG) console.log('Pre-validation result:', validationResult.isValid)
-    return validationResult.isValid
-  }, [project.objects])
 
   return (
     <div className="h-full w-full flex flex-col lg:flex-row overflow-hidden">

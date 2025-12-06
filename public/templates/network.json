@@ -51,5 +51,135 @@
     },
     "tags": ["ネットワーク", "Ethernet", "ハブ"],
     "version": "1.0.0"
+  },
+  {
+    "id": "yamaha-rtx1210",
+    "name": "YAMAHA RTX1210",
+    "category": "ネットワーク",
+    "description": "YAMAHA RTX1210 ギガアクセスVPNルーター",
+    "ports": [
+      {
+        "side": "left",
+        "offset": 5.88,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN1-1"
+      },
+      {
+        "side": "left",
+        "offset": 17.65,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN1-2"
+      },
+      {
+        "side": "left",
+        "offset": 29.41,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN1-3"
+      },
+      {
+        "side": "left",
+        "offset": 41.18,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN1-4"
+      },
+      {
+        "side": "left",
+        "offset": 52.94,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN1-5"
+      },
+      {
+        "side": "left",
+        "offset": 64.71,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN1-6"
+      },
+      {
+        "side": "left",
+        "offset": 76.47,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN1-7"
+      },
+      {
+        "side": "left",
+        "offset": 88.24,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN1-8"
+      },
+      {
+        "side": "right",
+        "offset": 20,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN2"
+      },
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "LAN3"
+      },
+      {
+        "side": "right",
+        "offset": 20,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "ISDN S/T"
+      },
+      {
+        "side": "right",
+        "offset": 50,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "Console"
+      },
+      {
+        "side": "right",
+        "offset": 80,
+        "type": "ethernet",
+        "direction": "bidirectional",
+        "label": "WAN"
+      },
+      {
+        "side": "top",
+        "offset": 30,
+        "type": "usb-a",
+        "direction": "bidirectional",
+        "label": "USB"
+      },
+      {
+        "side": "top",
+        "offset": 70,
+        "type": "custom",
+        "direction": "bidirectional",
+        "label": "microSD"
+      },
+      {
+        "side": "bottom",
+        "offset": 50,
+        "type": "power-ac",
+        "direction": "input",
+        "label": "Power"
+      }
+    ],
+    "shape": "rectangle",
+    "color": "#ffffff",
+    "strokeColor": "#000000",
+    "strokeWidth": 1,
+    "size": {
+      "width": 200,
+      "height": 120
+    },
+    "tags": ["ネットワーク", "ルーター", "VPN", "YAMAHA", "RTX"],
+    "version": "1.0.0"
   }
 ]

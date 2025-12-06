@@ -217,6 +217,7 @@ export default function ReactFlowCanvas({
       snapGrid={[15, 15]}
       fitView
       className="bg-white"
+      selectionOnDrag={true}
       multiSelectionKeyCode="Shift"
       deleteKeyCode="Delete"
       onNodeContextMenu={handleNodeContextMenu}
