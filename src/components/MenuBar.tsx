@@ -210,16 +210,16 @@ export default function MenuBar({
   const fileMenuItems = [
     { label: '新規プロジェクト', shortcut: 'Ctrl+N', onClick: onNewProject },
     { separator: true },
-    { label: 'プロジェクトを開く', shortcut: 'Ctrl+O', onClick: onOpenProject },
+    { label: 'プロジェクトを開く', onClick: onOpenProject },
     { separator: true },
     { label: '保存', shortcut: 'Ctrl+S', onClick: onSaveProject },
-    { label: '名前を付けて保存', shortcut: 'Ctrl+Shift+S', onClick: onSaveAsProject },
+    { label: '名前を付けて保存', onClick: onSaveAsProject },
     { separator: true },
     { label: 'エクスポート', onClick: onExportProject },
     { label: 'プロジェクトをインポート', onClick: onImportProject },
     { label: 'CSVをインポート', onClick: onImportCSV },
     { separator: true },
-    { label: '終了', shortcut: 'Alt+F4', onClick: () => window.close() }
+    { label: '終了', onClick: () => window.close() }
   ]
 
   const editMenuItems = [
@@ -227,27 +227,27 @@ export default function MenuBar({
     { label: 'やり直し', shortcut: 'Ctrl+Y', disabled: !canRedo, onClick: redo },
     { separator: true },
     { label: 'すべて選択', shortcut: 'Ctrl+A', onClick: onSelectAll },
-    { label: '選択を解除', shortcut: 'Ctrl+D', onClick: onDeselectAll },
+    { label: '選択を解除', onClick: onDeselectAll },
     { separator: true },
     { label: 'コピー', shortcut: 'Ctrl+C', onClick: onCopy, disabled: false },
     { label: '貼り付け', shortcut: 'Ctrl+V', onClick: onPaste, disabled: !canPaste },
-    { label: '複製', shortcut: 'Ctrl+Shift+D', onClick: onDuplicate },
+    { label: '複製', shortcut: 'Ctrl+D', onClick: onDuplicate },
     { label: '削除', shortcut: 'Delete', onClick: onDelete }
   ]
 
   const viewMenuItems = [
-    { label: 'ズームイン', shortcut: 'Ctrl++', onClick: onZoomIn },
-    { label: 'ズームアウト', shortcut: 'Ctrl+-', onClick: onZoomOut },
-    { label: '実際のサイズ', shortcut: 'Ctrl+0', onClick: onZoomToActual },
-    { label: '全体を表示', shortcut: 'Ctrl+Shift+0', onClick: onZoomToFit },
+    { label: 'ズームイン', onClick: onZoomIn },
+    { label: 'ズームアウト', onClick: onZoomOut },
+    { label: '実際のサイズ', onClick: onZoomToActual },
+    { label: '全体を表示', onClick: onZoomToFit },
     { separator: true },
-    { label: 'テンプレートライブラリ', shortcut: 'F2', onClick: onShowTemplateLibrary },
-    { label: 'テーブルエディタ', shortcut: 'F3', onClick: onShowTableEditor },
-    { label: 'インスペクター', shortcut: 'F4', onClick: onShowInspector }
+    { label: 'テンプレートライブラリ', onClick: onShowTemplateLibrary },
+    { label: 'テーブルエディタ', onClick: onShowTableEditor },
+    { label: 'インスペクター', onClick: onShowInspector }
   ]
 
   const toolsMenuItems = [
-    { label: '自動レイアウト', shortcut: 'Ctrl+L', onClick: onShowAutoLayout },
+    { label: '自動レイアウト', onClick: onShowAutoLayout },
     { separator: true },
     { label: '左揃え', onClick: onAlignLeft },
     { label: '中央揃え', onClick: onAlignCenter },
@@ -266,7 +266,7 @@ export default function MenuBar({
   ]
 
   const helpMenuItems = [
-    { label: 'ヘルプ', shortcut: 'F1', onClick: onShowHelp },
+    { label: 'ヘルプ', onClick: onShowHelp },
     { label: 'キーボードショートカット', onClick: onShowShortcuts },
     { separator: true },
     { label: 'バージョン情報', onClick: onShowAbout }
