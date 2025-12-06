@@ -66,6 +66,7 @@ export function useContextMenu(
       case 'canvas':
         const hasSelection = selectedObjectIds.length > 0 || selectedWireIds.length > 0
         const hasBothTypes = selectedObjectIds.length > 0 && selectedWireIds.length > 0
+        const hasMultipleObjects = selectedObjectIds.length > 1
         const { canPaste: canPasteFromStore } = useProjectStore.getState()
         
         return [
@@ -90,7 +91,38 @@ export function useContextMenu(
                 onClick: () => {
                   setSelectedObjects([])
                 }
-              }
+              },
+              { separator: true } as const
+            ] : []),
+            ...(hasMultipleObjects ? [
+              {
+                label: '左揃え',
+                onClick: () => alignSelected('left')
+              },
+              {
+                label: '右揃え',
+                onClick: () => alignSelected('right')
+              },
+              {
+                label: '上揃え',
+                onClick: () => alignSelected('top')
+              },
+              {
+                label: '下揃え',
+                onClick: () => alignSelected('bottom')
+              },
+              ...(selectedObjectIds.length > 2 ? [
+                { separator: true } as const,
+                {
+                  label: '水平分散',
+                  onClick: () => distributeSelected('horizontal')
+                },
+                {
+                  label: '垂直分散',
+                  onClick: () => distributeSelected('vertical')
+                }
+              ] : []),
+              { separator: true } as const
             ] : [])
           ] : [])
         ]
