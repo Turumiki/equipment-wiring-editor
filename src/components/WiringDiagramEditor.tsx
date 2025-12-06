@@ -22,6 +22,7 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import { usePortEdit } from '@/hooks/usePortEdit'
 import { useNodeEdgeChanges } from '@/hooks/useNodeEdgeChanges'
 import { useConnectionValidation } from '@/hooks/useConnectionValidation'
+import { useAutoLayout } from '@/hooks/useAutoLayout'
 
 import TemplateLibrary from '@/components/TemplateLibrary'
 import TableEditor from '@/components/TableEditor'
@@ -35,7 +36,7 @@ import ContextMenu from '@/components/ContextMenu'
 import SaveTemplateDialog from '@/components/SaveTemplateDialog'
 import PortEditDialog from '@/components/PortEditDialog'
 import TemplateSelectionDialog from '@/components/TemplateSelectionDialog'
-import { autoLayout, LayoutOptions } from '@/utils/autoLayout'
+import { LayoutOptions } from '@/utils/autoLayout'
 import { PortType, PortDirection } from '@/types'
 
 interface WiringDiagramEditorProps {
@@ -68,7 +69,7 @@ interface WiringDiagramEditorRef {
   distributeHorizontal: () => void
   distributeVertical: () => void
   validateConnections: () => void
-  applyAutoLayout: (options: any) => void
+  applyAutoLayout: (options: LayoutOptions) => void
 }
 
 
@@ -163,6 +164,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   // キーボードショートカットを有効化
   useKeyboardShortcuts()
 
+  // 自動レイアウト
+  const { handleAutoLayout } = useAutoLayout()
 
   // refの実装
   useImperativeHandle(ref, () => ({
@@ -234,11 +237,10 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
       // 接続検証の実装（今後実装）
       console.log('Validate connections not implemented yet')
     },
-    applyAutoLayout: (options: any) => {
-      // 自動レイアウトの実装（今後実装）
-      console.log('Apply auto layout not implemented yet', options)
+    applyAutoLayout: (options: LayoutOptions) => {
+      handleAutoLayout(options)
     }
-  }))
+  }), [handleAutoLayout, setSelectedObjects, setSelectedWires, project.objects, project.wires, selectedObjectIds, selectedWireIds, removeEquipmentObject, removeWire, copySelected, pasteSelected, duplicateSelected, alignSelected, distributeSelected])
 
   // プロジェクトデータからReactFlowノード/エッジを生成
   useEffect(() => {
@@ -310,17 +312,6 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     setSelectedObjects(selectedNodeIds)
     setSelectedWires(selectedEdgeIds)
   }, [setSelectedObjects, setSelectedWires])
-
-  // 自動レイアウトの適用
-  const handleAutoLayout = useCallback((options: LayoutOptions) => {
-    const layoutResult = autoLayout(project.objects, project.wires, options)
-
-    // 各オブジェクトの位置を更新
-    Object.entries(layoutResult.positions).forEach(([objectId, position]) => {
-      updateEquipmentObject(objectId, { position })
-    })
-  }, [project.objects, project.wires, updateEquipmentObject])
-
 
   return (
     <div className="h-full w-full flex flex-col lg:flex-row overflow-hidden">
