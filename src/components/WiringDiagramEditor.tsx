@@ -963,12 +963,27 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
             ((wireTypeSettings as any).shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
             wireType
 
+          // 方向に基づいてsource/targetを決定
+          // ドラッグ開始元がINPUTの場合、逆向きに接続する
+          // Source(出力) -> Target(入力) の関係を守るため
+          let wireSourceObjectId = connectionStartData.sourceObjectId
+          let wireSourcePortId = connectionStartData.sourcePortId
+          let wireTargetObjectId = newEquipmentObject.id
+          let wireTargetPortId = compatiblePort.id
+
+          if (connectionStartData.sourcePortDirection === PortDirection.INPUT) {
+            wireSourceObjectId = newEquipmentObject.id
+            wireSourcePortId = compatiblePort.id
+            wireTargetObjectId = connectionStartData.sourceObjectId
+            wireTargetPortId = connectionStartData.sourcePortId
+          }
+
           const newWire = {
             id: `wire-${Date.now()}`,
-            sourceObjectId: connectionStartData.sourceObjectId,
-            sourcePortId: connectionStartData.sourcePortId,
-            targetObjectId: newEquipmentObject.id,
-            targetPortId: compatiblePort.id,
+            sourceObjectId: wireSourceObjectId,
+            sourcePortId: wireSourcePortId,
+            targetObjectId: wireTargetObjectId,
+            targetPortId: wireTargetPortId,
             wireType: wireType,
             style: {
               color: wireTypeSettings?.color || '#059669',
@@ -993,12 +1008,19 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
   // 既存ポート選択時の処理
   const handleExistingPortSelect = useCallback(
     (targetObjectId: string, targetPortId: string) => {
-      if (!connectionStartData) return
+      console.log('handleExistingPortSelect called', { targetObjectId, targetPortId, connectionStartData })
+      if (!connectionStartData) {
+        console.error('connectionStartData is missing')
+        return
+      }
 
       const sourceObject = project.objects.find(obj => obj.id === connectionStartData.sourceObjectId)
       const targetObject = project.objects.find(obj => obj.id === targetObjectId)
       
-      if (!sourceObject || !targetObject) return
+      if (!sourceObject || !targetObject) {
+        console.error('Source or Target object not found', { sourceObject, targetObject })
+        return
+      }
 
       const sourcePortComponents = getConnectionPortComponents(sourceObject)
       const sourcePort = sourcePortComponents.find(port => port.id === connectionStartData.sourcePortId)
@@ -1016,12 +1038,27 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
           ((wireTypeSettings as any).shortName || wireTypeSettings.displayName || wireTypeSettings.name) : 
           wireType
 
+        // 方向に基づいてsource/targetを決定
+        // ドラッグ開始元がINPUTの場合、逆向きに接続する
+        // Source(出力) -> Target(入力) の関係を守るため
+        let wireSourceObjectId = connectionStartData.sourceObjectId
+        let wireSourcePortId = connectionStartData.sourcePortId
+        let wireTargetObjectId = targetObjectId
+        let wireTargetPortId = targetPortId
+
+        if (connectionStartData.sourcePortDirection === PortDirection.INPUT) {
+          wireSourceObjectId = targetObjectId
+          wireSourcePortId = targetPortId
+          wireTargetObjectId = connectionStartData.sourceObjectId
+          wireTargetPortId = connectionStartData.sourcePortId
+        }
+
         const newWire = {
           id: `wire-${Date.now()}`,
-          sourceObjectId: connectionStartData.sourceObjectId,
-          sourcePortId: connectionStartData.sourcePortId,
-          targetObjectId: targetObjectId,
-          targetPortId: targetPortId,
+          sourceObjectId: wireSourceObjectId,
+          sourcePortId: wireSourcePortId,
+          targetObjectId: wireTargetObjectId,
+          targetPortId: wireTargetPortId,
           wireType: wireType,
           style: {
             color: wireTypeSettings?.color || '#059669',
@@ -1032,7 +1069,10 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
           metadata: {}
         }
 
+        console.log('Adding new wire:', newWire)
         addWire(newWire)
+      } else {
+        console.error('Source or Target port not found', { sourcePort, targetPort })
       }
 
       // 接続開始情報をクリア

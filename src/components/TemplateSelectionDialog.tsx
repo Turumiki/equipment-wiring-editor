@@ -328,7 +328,6 @@ export default function TemplateSelectionDialog({
                     key={template.id}
                     onClick={() => {
                       onSelectTemplate(template)
-                      onClose()
                     }}
                     className="text-left p-3 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
                   >
@@ -373,7 +372,6 @@ export default function TemplateSelectionDialog({
                       key={`${item.equipment.id}-${item.port.id}`}
                       onClick={() => {
                         onSelectExistingPort(item.equipment.id, item.port.id)
-                        onClose()
                       }}
                       className="text-left p-3 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
                     >
