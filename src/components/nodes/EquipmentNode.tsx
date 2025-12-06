@@ -285,13 +285,18 @@ const EquipmentNode = ({ data, selected }: NodeProps<EquipmentNodeData>) => {
         return {
           backgroundColor: '#000000',
           borderColor: '#000000',
-          borderWidth: '2px',
-          opacity: 1
+          borderWidth: '0.5px',
+          opacity: 1,
+          width: '3px',
+          height: '3px',
+          minWidth: '3px',
+          minHeight: '3px'
         }
       }
 
       const getPortClasses = () => {
-        return 'w-3 h-3 border-2 bg-black border-black'
+        // 3pxに近いサイズ (w-0.75 or w-[3px])
+        return 'w-[3px] h-[3px] border-[0.5px] border-black bg-black'
       }
 
       const handleClasses = getPortClasses()
