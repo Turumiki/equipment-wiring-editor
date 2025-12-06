@@ -25,6 +25,7 @@ export interface LayoutProgress {
   progress: number // 0-100
   message?: string
   positions?: Record<string, { x: number; y: number }> // リアルタイム表示用の位置情報（遺伝的アルゴリズムなど）
+  fitnessHistory?: Array<{ generation: number; bestFitness: number; averageFitness: number }> // 世代ごとのスコア履歴（グラフ用）
 }
 
 export interface LayoutCancelToken {
@@ -219,10 +220,15 @@ export function hierarchicalLayout(
     levels[normalizedLevel].push(obj.id)
   })
 
-  // 各レベルを配置
+  // 各レベルを配置（交差を減らすためにノード順序を最適化）
+  // 一旦、Sugiyamaメソッドを無効化して、元の方法に戻す
   Object.entries(levels).forEach(([levelStr, nodeIds]) => {
     const level = parseInt(levelStr)
-    nodeIds.forEach((nodeId, index) => {
+    
+    // 交差を減らすために、同じレベル内のノード順序を最適化
+    const optimizedOrder = optimizeNodeOrderForCrossings(nodeIds, objects, wires, level, levels)
+    
+    optimizedOrder.forEach((nodeId: string, index: number) => {
       const obj = objects.find(o => o.id === nodeId)
       if (!obj) return
 
@@ -231,20 +237,157 @@ export function hierarchicalLayout(
       const height = renderComponent?.data.size.height || 60
 
       if (direction === 'horizontal') {
+        // 接続長を短く保つため、レベル間の距離を減らす
         positions[nodeId] = {
-          x: padding + level * (width + spacing * 2),
-          y: padding + index * (height + spacing)
+          x: padding + level * (width + spacing * 0.5), // spacing * 2 -> spacing * 0.5
+          y: padding + index * (height + spacing * 0.3) // spacing -> spacing * 0.3
         }
       } else {
         positions[nodeId] = {
-          x: padding + index * (width + spacing),
-          y: padding + level * (height + spacing * 2)
+          x: padding + index * (width + spacing * 0.3), // spacing -> spacing * 0.3
+          y: padding + level * (height + spacing * 0.5) // spacing * 2 -> spacing * 0.5
         }
       }
     })
   })
 
   return { positions }
+}
+
+// 交差を減らすために、同じレベル内のノード順序を最適化
+function optimizeNodeOrderForCrossings(
+  nodeIds: string[],
+  objects: EquipmentObject[],
+  wires: Wire[],
+  level: number,
+  levels: Record<number, string[]>
+): string[] {
+  if (nodeIds.length <= 1) return nodeIds
+  
+  // 各ノードの接続先/接続元のレベルを考慮して順序を決定
+  // 交差を減らすために、接続先が同じレベルのノードを近くに配置
+  const nodeConnections: Record<string, { targets: string[]; sources: string[] }> = {}
+  
+  nodeIds.forEach(nodeId => {
+    nodeConnections[nodeId] = { targets: [], sources: [] }
+  })
+  
+  wires.forEach(wire => {
+    const sourceLevel = Object.entries(levels).find(([_, ids]) => ids.includes(wire.sourceObjectId))?.[0]
+    const targetLevel = Object.entries(levels).find(([_, ids]) => ids.includes(wire.targetObjectId))?.[0]
+    
+    if (sourceLevel === String(level) && nodeConnections[wire.sourceObjectId]) {
+      nodeConnections[wire.sourceObjectId].targets.push(wire.targetObjectId)
+    }
+    if (targetLevel === String(level) && nodeConnections[wire.targetObjectId]) {
+      nodeConnections[wire.targetObjectId].sources.push(wire.sourceObjectId)
+    }
+  })
+  
+  // 接続先のY座標の平均を計算（仮想的な位置）
+  const nodeScores: Array<{ id: string; score: number }> = []
+  nodeIds.forEach(nodeId => {
+    const conn = nodeConnections[nodeId]
+    // 接続先が次のレベルにある場合、そのノードのインデックスを考慮
+    let score = 0
+    conn.targets.forEach(targetId => {
+      const targetLevel = Object.entries(levels).find(([_, ids]) => ids.includes(targetId))?.[0]
+      if (targetLevel) {
+        const targetIndex = levels[parseInt(targetLevel)]?.indexOf(targetId) ?? 0
+        score += targetIndex
+      }
+    })
+    // 接続元が前のレベルにある場合も考慮
+    conn.sources.forEach(sourceId => {
+      const sourceLevel = Object.entries(levels).find(([_, ids]) => ids.includes(sourceId))?.[0]
+      if (sourceLevel) {
+        const sourceIndex = levels[parseInt(sourceLevel)]?.indexOf(sourceId) ?? 0
+        score += sourceIndex * 0.5
+      }
+    })
+    nodeScores.push({ id: nodeId, score })
+  })
+  
+  // スコアでソート（接続先の位置に近い順）
+  nodeScores.sort((a, b) => a.score - b.score)
+  return nodeScores.map(n => n.id)
+}
+
+// Sugiyamaメソッドによる順序最適化（重心法）
+function applySugiyamaOrdering(
+  levels: Record<number, string[]>,
+  objects: EquipmentObject[],
+  wires: Wire[]
+): Record<number, string[]> {
+  const sortedLevels = Object.keys(levels).map(Number).sort((a, b) => a - b)
+  const maxIterations = 20
+  
+  let currentLevels = { ...levels }
+  
+  // 接続マップを作成（高速化のため）
+  const connections: Record<string, { incoming: string[]; outgoing: string[] }> = {}
+  objects.forEach(obj => {
+    connections[obj.id] = { incoming: [], outgoing: [] }
+  })
+  
+  wires.forEach(wire => {
+    if (connections[wire.sourceObjectId]) {
+      connections[wire.sourceObjectId].outgoing.push(wire.targetObjectId)
+    }
+    if (connections[wire.targetObjectId]) {
+      connections[wire.targetObjectId].incoming.push(wire.sourceObjectId)
+    }
+  })
+  
+  for (let i = 0; i < maxIterations; i++) {
+    // Downward sweep (0 -> max level)
+    for (let j = 1; j < sortedLevels.length; j++) {
+      const level = sortedLevels[j]
+      const prevLevel = sortedLevels[j - 1]
+      const prevNodes = currentLevels[prevLevel]
+      const currentNodes = currentLevels[level]
+      
+      // 前のレベルの順序に基づいて、現在のレベルのノードをソート
+      const barycenters: Record<string, number> = {}
+      
+      currentNodes.forEach(nodeId => {
+        const incomingNodes = connections[nodeId].incoming.filter(id => prevNodes.includes(id))
+        if (incomingNodes.length > 0) {
+          const sum = incomingNodes.reduce((acc, id) => acc + prevNodes.indexOf(id), 0)
+          barycenters[nodeId] = sum / incomingNodes.length
+        } else {
+          barycenters[nodeId] = currentNodes.indexOf(nodeId) // 現状維持
+        }
+      })
+      
+      currentLevels[level] = [...currentNodes].sort((a, b) => barycenters[a] - barycenters[b])
+    }
+    
+    // Upward sweep (max level -> 0)
+    for (let j = sortedLevels.length - 2; j >= 0; j--) {
+      const level = sortedLevels[j]
+      const nextLevel = sortedLevels[j + 1]
+      const nextNodes = currentLevels[nextLevel]
+      const currentNodes = currentLevels[level]
+      
+      // 次のレベルの順序に基づいて、現在のレベルのノードをソート
+      const barycenters: Record<string, number> = {}
+      
+      currentNodes.forEach(nodeId => {
+        const outgoingNodes = connections[nodeId].outgoing.filter(id => nextNodes.includes(id))
+        if (outgoingNodes.length > 0) {
+          const sum = outgoingNodes.reduce((acc, id) => acc + nextNodes.indexOf(id), 0)
+          barycenters[nodeId] = sum / outgoingNodes.length
+        } else {
+          barycenters[nodeId] = currentNodes.indexOf(nodeId) // 現状維持
+        }
+      })
+      
+      currentLevels[level] = [...currentNodes].sort((a, b) => barycenters[a] - barycenters[b])
+    }
+  }
+  
+  return currentLevels
 }
 
 // 力学レイアウト（非同期版）
@@ -444,66 +587,60 @@ export async function smartLayoutAsync(
   const { spacing, padding } = options
   const positions: Record<string, { x: number; y: number }> = {}
 
-  // 1. 初期配置：階層レイアウトまたは水平グリッドレイアウト
+  // 1. 初期配置：元の位置をそのまま使用（接続長を短く保つ）
   reportProgress({ stage: '初期配置', progress: 20, message: '初期配置を計算中...' })
   await new Promise(resolve => setTimeout(resolve, 30))
   
-  if (wires.length > 0) {
-    // 接続がある場合は階層レイアウト
-    const hierarchicalResult = hierarchicalLayout(objects, wires, { ...options, direction: 'horizontal' })
-    Object.assign(positions, hierarchicalResult.positions)
-  } else {
-    // 接続がない場合は水平グリッドレイアウト（Y方向を最小限に）
-    const gridResult = horizontalGridLayout(objects, { spacing, padding })
-    Object.assign(positions, gridResult.positions)
-  }
-
-  // 2. ポート位置を考慮した配置最適化
-  reportProgress({ stage: 'ポート最適化', progress: 40, message: 'ポート位置を考慮した配置を最適化中...' })
-  await optimizePortBasedLayoutAsync(positions, objects, wires, options, (progress) => {
-    reportProgress({ stage: 'ポート最適化', progress: 40 + Math.floor(progress * 0.1), message: `ポート最適化中... ${Math.floor(progress)}%` })
+  // 元の位置をそのまま使用（接続長を短く保つため）
+  objects.forEach(obj => {
+    positions[obj.id] = { ...obj.position }
   })
-
-  // 3. 接続の長さを最小化（グローバル最適化）
-  reportProgress({ stage: '接続長最適化', progress: 50, message: '接続の長さを最小化中...' })
-  await minimizeConnectionLengthsAsync(positions, objects, wires, options, (progress) => {
-    reportProgress({ stage: '接続長最適化', progress: 50 + Math.floor(progress * 0.1), message: `接続長最適化中... ${Math.floor(progress)}%` })
-  })
-
-  // 4. 配線の交差を最小化
-  if (options.minimizeCrossings) {
-    reportProgress({ stage: '交差最小化', progress: 70, message: '配線の交差を最小化中...' })
-    await new Promise(resolve => setTimeout(resolve, 50))
-    minimizeWireCrossings(positions, objects, wires, {})
-  }
-
-  // 5. 接続の方向性を考慮した配置調整
-  reportProgress({ stage: '方向性最適化', progress: 80, message: '接続の方向性を考慮した配置を調整中...' })
-  await new Promise(resolve => setTimeout(resolve, 30))
-  optimizeConnectionDirection(positions, objects, wires, options)
-
-  // 6. 機材同士の重複を回避
-  reportProgress({ stage: '重複回避', progress: 85, message: '機材の重複を回避中...' })
-  await new Promise(resolve => setTimeout(resolve, 30))
-  resolveNodeOverlaps(positions, objects, options)
-
-  // 7. 配線と機材の重複を回避
+  
+  // 重複のみ解消（接続長を増やさないように）
   if (options.avoidNodeOverlap) {
-    reportProgress({ stage: '配線最適化', progress: 90, message: '配線と機材の重複を回避中...' })
-    await new Promise(resolve => setTimeout(resolve, 50))
-    optimizeWireRouting(positions, objects, wires, options)
+    resolveNodeOverlaps(positions, objects, options)
   }
 
-  // 8. 最終的な力学的調整（全体のバランス、Y方向の整列を強化）
-  reportProgress({ stage: '力学的調整', progress: 85, message: '全体のバランスを調整中...' })
-  await applyGlobalForceLayoutWithHorizontalAlignmentAsync(positions, objects, wires, options, (progress) => {
-    reportProgress({ stage: '力学的調整', progress: 85 + Math.floor(progress * 0.1), message: `力学的調整中... ${Math.floor(progress)}%` })
-  })
+  // 2. 重複を解消（初期配置の後、早めに実行）
+  // 注意: 現在の実装は接続長を増やしてしまうため、一時的に無効化
+  // if (options.avoidNodeOverlap) {
+  //   reportProgress({ stage: '重複解消', progress: 30, message: 'ノードの重なりを解消中...' })
+  //   await new Promise(resolve => setTimeout(resolve, 20))
+  //   resolveNodeOverlaps(positions, objects, options)
+  // }
 
-  // 9. 視覚的な階層の改善（重心調整）
-  reportProgress({ stage: '視覚階層改善', progress: 98, message: '視覚的な階層を改善中...' })
-  await new Promise(resolve => setTimeout(resolve, 30))
-  improveVisualHierarchy(positions, objects, wires, options)
+  // 3. 接続の長さを最小化（控えめに、1回のみ）
+  // 注意: 現在の実装は接続長を増やしてしまうため、一時的に無効化
+  // reportProgress({ stage: '接続長最小化', progress: 40, message: '接続の長さを調整中...' })
+  // await minimizeConnectionLengthsAsync(positions, objects, wires, options, (progress) => {
+  //   reportProgress({ stage: '接続長最小化', progress: 40 + Math.floor(progress * 0.15), message: `接続長を調整中... ${Math.floor(progress)}%` })
+  // })
+
+  // 4. 重複を再度解消（接続長最小化の後）
+  // 注意: 現在の実装は接続長を増やしてしまうため、一時的に無効化
+  // if (options.avoidNodeOverlap) {
+  //   reportProgress({ stage: '重複解消', progress: 85, message: 'ノードの重なりを再解消中...' })
+  //   await new Promise(resolve => setTimeout(resolve, 20))
+  //   resolveNodeOverlaps(positions, objects, options)
+  // }
+
+  // 5. 視覚階層改善（微調整のみ）
+  // 注意: 現在の実装は接続長を増やしてしまうため、一時的に無効化
+  // reportProgress({ stage: '視覚階層改善', progress: 95, message: '視覚的な階層を改善中...' })
+  // await new Promise(resolve => setTimeout(resolve, 20))
+  // improveVisualHierarchy(positions, objects, wires, options)
+
+  // 6. 配線交差を最小化（接続長を増やさないように）
+  if (options.minimizeCrossings) {
+    reportProgress({ stage: '交差最小化', progress: 90, message: '配線の交差を最小化中...' })
+    await new Promise(resolve => setTimeout(resolve, 20))
+    minimizeWireCrossings(positions, objects, wires)
+  }
+
+  // 7. 最終的な重複解消
+  if (options.avoidNodeOverlap) {
+    resolveNodeOverlaps(positions, objects, options)
+  }
 
   return { positions }
 }
@@ -534,10 +671,11 @@ export function smartLayout(
   // 3. 接続の長さを最小化（グローバル最適化）
   minimizeConnectionLengths(positions, objects, wires, options)
 
-  // 4. 配線の交差を最小化
-  if (options.minimizeCrossings) {
-    minimizeWireCrossings(positions, objects, wires, {})
-  }
+  // 4. 配線の交差を最小化（接続長を増やさない版）
+  // 注意: 現在の実装は接続長を増やしてしまうため、無効化
+  // if (options.minimizeCrossings) {
+  //   minimizeWireCrossings(positions, objects, wires, {})
+  // }
 
   // 5. 接続の方向性を考慮した配置調整
   optimizeConnectionDirection(positions, objects, wires, options)
@@ -804,6 +942,17 @@ export function signalFlowLayout(
 interface Individual {
   positions: Record<string, { x: number; y: number }>
   fitness: number
+  originalFitness?: number // 元の適応度（スケーリング前）
+  diversity?: number // 多様性スコア（ニッチング用）
+}
+
+// 遺伝的アルゴリズムの統計情報
+interface GAStats {
+  bestFitness: number
+  averageFitness: number
+  worstFitness: number
+  diversity: number // 集団の多様性
+  stagnationCount: number // 最良適応度が変化しない世代数
 }
 
 // 遺伝的アルゴリズムレイアウト（非同期版）
@@ -840,7 +989,7 @@ export async function geneticLayoutAsync(
   // 境界を計算（初期集団生成の前に計算）
   const bounds = calculateGeneticBounds(objects, spacing, padding)
   
-  // 既存のレイアウトから初期集団を生成（多様性を確保）
+  // 既存のレイアウトから初期集団を生成（少数のみ、多様性を確保するため）
   const initialLayouts = [
     gridLayout(objects, options),
     hierarchicalLayout(objects, wires, { ...options, direction: 'horizontal' }),
@@ -852,48 +1001,38 @@ export async function geneticLayoutAsync(
     throw new Error('レイアウト処理がキャンセルされました')
   }
 
-  // 各初期レイアウトから個体を生成（ランダムな変動を加えて多様性を確保）
-  initialLayouts.forEach((layout, index) => {
-    // キャンセルチェック（各レイアウト処理の後）
+  // 既存レイアウトから個体を生成（大幅な変動を加えて多様性を確保）
+  // 全体の20%程度を初期解ベースにする（良質な解空間から探索を始めるため）
+  const initialLayoutCount = Math.min(10, Math.floor(populationSize * 0.2))
+  for (let idx = 0; idx < initialLayoutCount; idx++) {
+    // キャンセルチェック
     if (cancelToken?.signal.aborted) {
       throw new Error('レイアウト処理がキャンセルされました')
     }
+    
+    const layout = initialLayouts[idx % initialLayouts.length]
     const positions: Record<string, { x: number; y: number }> = {}
+    
+    // 変動の大きさを個体ごとに変える（多様性確保）
+    // 前半は変動を小さく、後半は大きく
+    const variationScale = 0.2 + (idx / initialLayoutCount) * 1.5 
+
     objects.forEach(obj => {
       const originalPos = layout.positions[obj.id]
       if (originalPos) {
-        // 元の位置にランダムな変動を加える（±20%の範囲）
-        const variationX = (bounds.maxX - bounds.minX) * 0.2
-        const variationY = (bounds.maxY - bounds.minY) * 0.2
+        // 元の位置にランダムな変動を加える
+        const variationX = (bounds.maxX - bounds.minX) * variationScale
+        const variationY = (bounds.maxY - bounds.minY) * variationScale
         positions[obj.id] = {
-          x: Math.max(padding, Math.min(bounds.maxX, originalPos.x + (Math.random() - 0.5) * variationX)),
-          y: Math.max(padding, Math.min(bounds.maxY, originalPos.y + (Math.random() - 0.5) * variationY))
+          x: Math.max(padding, Math.min(bounds.maxX * 2, originalPos.x + (Math.random() - 0.5) * variationX)),
+          y: Math.max(padding, Math.min(bounds.maxY * 2, originalPos.y + (Math.random() - 0.5) * variationY))
         }
       } else {
+        // 完全にランダム
         positions[obj.id] = {
-          x: padding + Math.random() * (bounds.maxX - bounds.minX),
-          y: padding + Math.random() * (bounds.maxY - bounds.minY)
+          x: padding + Math.random() * (bounds.maxX - bounds.minX) * 3,
+          y: padding + Math.random() * (bounds.maxY - bounds.minY) * 3
         }
-      }
-    })
-    // 重複を解消してから個体を追加
-    resolveNodeOverlaps(positions, objects, options)
-    population.push({ positions, fitness: 0 })
-  })
-
-  // 残りをランダムに生成（より広い範囲で多様性を確保）
-  for (let i = initialLayouts.length; i < populationSize; i++) {
-    // キャンセルチェック（定期的に）
-    if (i % 10 === 0 && cancelToken?.signal.aborted) {
-      throw new Error('レイアウト処理がキャンセルされました')
-    }
-    
-    const positions: Record<string, { x: number; y: number }> = {}
-    objects.forEach(obj => {
-      // より広い範囲でランダム生成
-      positions[obj.id] = {
-        x: padding + Math.random() * (bounds.maxX - bounds.minX) * 1.5,
-        y: padding + Math.random() * (bounds.maxY - bounds.minY) * 1.5
       }
     })
     // 重複を解消してから個体を追加
@@ -901,8 +1040,103 @@ export async function geneticLayoutAsync(
     population.push({ positions, fitness: 0 })
   }
 
+  // 残りを完全にランダムに生成（より広い範囲で多様性を確保）
+  const randomRangeMultiplier = 3.0 // 境界の3倍の範囲でランダム配置
+  for (let i = initialLayoutCount; i < populationSize; i++) {
+    // キャンセルチェック（定期的に）
+    if (i % 10 === 0 && cancelToken?.signal.aborted) {
+      throw new Error('レイアウト処理がキャンセルされました')
+    }
+    
+    const positions: Record<string, { x: number; y: number }> = {}
+    const layoutType = Math.random()
+    
+    if (layoutType < 0.3) {
+      // 30%: 完全にランダムな位置に配置
+      objects.forEach(obj => {
+        positions[obj.id] = {
+          x: padding + Math.random() * (bounds.maxX - bounds.minX) * randomRangeMultiplier,
+          y: padding + Math.random() * (bounds.maxY - bounds.minY) * randomRangeMultiplier
+        }
+      })
+    } else if (layoutType < 0.6) {
+      // 30%: クラスター配置（複数のランダムなクラスターに分ける）
+      const clusterCount = 2 + Math.floor(Math.random() * Math.min(5, objects.length / 2))
+      const clusters: Array<{ x: number; y: number }> = []
+      for (let c = 0; c < clusterCount; c++) {
+        clusters.push({
+          x: padding + Math.random() * (bounds.maxX - bounds.minX) * randomRangeMultiplier,
+          y: padding + Math.random() * (bounds.maxY - bounds.minY) * randomRangeMultiplier
+        })
+      }
+      objects.forEach(obj => {
+        const cluster = clusters[Math.floor(Math.random() * clusters.length)]
+        const render = getRenderComponent(obj)
+        const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+        const clusterRadius = spacing * (1 + Math.random() * 2) // クラスター半径
+        const angle = Math.random() * Math.PI * 2
+        const distance = Math.random() * clusterRadius
+        positions[obj.id] = {
+          x: cluster.x + Math.cos(angle) * distance - size.width / 2,
+          y: cluster.y + Math.sin(angle) * distance - size.height / 2
+        }
+      })
+    } else if (layoutType < 0.85) {
+      // 25%: スパイラル配置
+      const centerX = padding + (bounds.maxX - bounds.minX) * randomRangeMultiplier / 2
+      const centerY = padding + (bounds.maxY - bounds.minY) * randomRangeMultiplier / 2
+      objects.forEach((obj, idx) => {
+        const angle = (idx / objects.length) * Math.PI * 4 // 2回転
+        const radius = spacing * (2 + Math.random() * 3) * Math.sqrt(idx + 1)
+        const render = getRenderComponent(obj)
+        const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+        positions[obj.id] = {
+          x: centerX + Math.cos(angle) * radius - size.width / 2,
+          y: centerY + Math.sin(angle) * radius - size.height / 2
+        }
+      })
+    } else {
+      // 15%: グリッド風だがランダムにずらした配置
+      const cols = Math.ceil(Math.sqrt(objects.length))
+      const cellWidth = (bounds.maxX - bounds.minX) * randomRangeMultiplier / cols
+      const cellHeight = (bounds.maxY - bounds.minY) * randomRangeMultiplier / Math.ceil(objects.length / cols)
+      objects.forEach((obj, idx) => {
+        const col = idx % cols
+        const row = Math.floor(idx / cols)
+        const render = getRenderComponent(obj)
+        const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+        // グリッド位置にランダムなオフセットを加える
+        positions[obj.id] = {
+          x: padding + col * cellWidth + (Math.random() - 0.5) * cellWidth * 0.8 - size.width / 2,
+          y: padding + row * cellHeight + (Math.random() - 0.5) * cellHeight * 0.8 - size.height / 2
+        }
+      })
+    }
+    
+    // 重複を解消してから個体を追加
+    resolveNodeOverlaps(positions, objects, options)
+    population.push({ positions, fitness: 0 })
+  }
+
   // 各世代で進化
   let bestIndividual: Individual | null = null
+  let stats: GAStats = {
+    bestFitness: -Infinity,
+    averageFitness: 0,
+    worstFitness: Infinity,
+    diversity: 0,
+    stagnationCount: 0
+  }
+  // 収束判定のパラメータを緩和（より長く実行する）
+  const stagnationThreshold = Math.max(40, Math.floor(generations * 0.4)) // 40世代または全世代の40%の停滞が必要
+  const minGenerations = Math.floor(generations * 0.6) // 最低実行世代数（60%に増加）
+  const fitnessImprovementThreshold = 0.1 // 適応度の改善とみなす最小変化量（0.01から0.1に緩和）
+  let previousAverageFitness = -Infinity
+  let averageStagnationCount = 0
+  
+  // グラフ用のスコア履歴
+  const fitnessHistory: Array<{ generation: number; bestFitness: number; averageFitness: number }> = []
+
   for (let generation = 0; generation < generations; generation++) {
     // キャンセルチェック
     if (cancelToken?.signal.aborted) {
@@ -915,24 +1149,69 @@ export async function geneticLayoutAsync(
       if (index % 10 === 0 && cancelToken?.signal.aborted) {
         throw new Error('レイアウト処理がキャンセルされました')
       }
-      individual.fitness = calculateFitness(individual.positions, objects, wires, options)
+      const originalFitness = calculateFitness(individual.positions, objects, wires, options)
+      individual.fitness = originalFitness
+      individual.originalFitness = originalFitness // 元の適応度を保持
     })
 
-    // 適応度でソート（高い順）
-    population.sort((a, b) => b.fitness - a.fitness)
+    // 適応度スケーリングを適用（選択圧の調整）
+    const scaledPopulation = applyFitnessScaling(population, generation, generations)
 
-    // 最良個体を記録
-    if (!bestIndividual || population[0].fitness > bestIndividual.fitness) {
-      bestIndividual = { ...population[0] }
+    // 適応度でソート（高い順）
+    scaledPopulation.sort((a, b) => b.fitness - a.fitness)
+
+    // 統計情報を更新（元の適応度を使用）
+    const originalFitnesses = scaledPopulation.map(ind => ind.originalFitness ?? ind.fitness)
+    const previousBestFitness = stats.bestFitness
+    stats.bestFitness = originalFitnesses[0] || 0
+    stats.averageFitness = originalFitnesses.reduce((a, b) => a + b, 0) / originalFitnesses.length
+    stats.worstFitness = Math.min(...originalFitnesses)
+    stats.diversity = calculatePopulationDiversity(scaledPopulation, objects)
+
+    // 停滞カウントを更新（より厳しい条件で判定）
+    const bestFitnessChange = stats.bestFitness - previousBestFitness
+    const averageFitnessChange = stats.averageFitness - previousAverageFitness
+    
+    // 最良適応度と平均適応度の両方が改善していない場合のみ停滞とみなす
+    if (bestFitnessChange < fitnessImprovementThreshold && averageFitnessChange < fitnessImprovementThreshold * 0.5) {
+      stats.stagnationCount++
+    } else {
+      stats.stagnationCount = 0
+    }
+    
+    // 平均適応度の停滞も追跡
+    if (averageFitnessChange < fitnessImprovementThreshold * 0.3) {
+      averageStagnationCount++
+    } else {
+      averageStagnationCount = 0
+    }
+    
+    previousAverageFitness = stats.averageFitness
+
+    // 最良個体を記録（元の適応度を使用）
+    const bestOriginalFitness = originalFitnesses[0] || 0
+    if (!bestIndividual || bestOriginalFitness > (bestIndividual.originalFitness ?? bestIndividual.fitness ?? -Infinity)) {
+      bestIndividual = { 
+        ...scaledPopulation[0],
+        originalFitness: bestOriginalFitness // 元の適応度を保持
+      }
     }
 
+    // スコア履歴に追加
+    fitnessHistory.push({
+      generation: generation + 1,
+      bestFitness: stats.bestFitness,
+      averageFitness: stats.averageFitness
+    })
+    
     // 進捗を報告（最優秀個体の配置も含める）
     const progress = 5 + Math.floor((generation / generations) * 90)
     reportProgress({
       stage: '遺伝的アルゴリズム',
       progress,
-      message: `世代 ${generation + 1}/${generations} (適応度: ${bestIndividual.fitness.toFixed(2)})`,
-      positions: { ...bestIndividual.positions } // 最優秀個体の配置をリアルタイム表示
+      message: `世代 ${generation + 1}/${generations} (適応度: ${(bestIndividual.originalFitness ?? bestIndividual.fitness ?? 0).toFixed(2)}, 多様性: ${stats.diversity.toFixed(2)})`,
+      positions: { ...bestIndividual.positions }, // 最優秀個体の配置をリアルタイム表示
+      fitnessHistory: [...fitnessHistory] // グラフ用のスコア履歴
     })
     
     // キャンセルチェック（進捗報告後）
@@ -947,14 +1226,46 @@ export async function geneticLayoutAsync(
       throw new Error('レイアウト処理がキャンセルされました')
     }
 
+    // 早期終了判定（収束判定）- より厳しい条件で判定
+    // 最良適応度と平均適応度の両方が長期間停滞し、かつ多様性も低い場合のみ早期終了
+    const isConverged = generation >= minGenerations && 
+                        stats.stagnationCount >= stagnationThreshold &&
+                        averageStagnationCount >= Math.floor(stagnationThreshold * 0.8) &&
+                        stats.diversity < 50 // 多様性が非常に低い場合のみ
+    
+    if (isConverged) {
+      reportProgress({
+        stage: '遺伝的アルゴリズム',
+        progress: 95,
+        message: `収束を検出しました（世代 ${generation + 1}）`,
+        positions: { ...bestIndividual.positions },
+        fitnessHistory: [...fitnessHistory] // グラフ用のスコア履歴
+      })
+      break
+    }
+
     // 最後の世代でなければ進化
     if (generation < generations - 1) {
+      // 適応的パラメータ調整
+      const adaptiveMutationRate = calculateAdaptiveMutationRate(mutationRate, generation, generations, stats)
+      const adaptiveCrossoverRate = calculateAdaptiveCrossoverRate(crossoverRate, generation, generations, stats)
+
       const newPopulation: Individual[] = []
 
-      // エリート選択：上位5%をそのまま残す（10%から減らしてランダム性を増やす）
-      const eliteCount = Math.floor(populationSize * 0.05)
+      // エリート選択：上位15%を保持（より多くのエリートを保持）
+      const eliteCount = Math.floor(populationSize * 0.15)
       for (let i = 0; i < eliteCount; i++) {
-        newPopulation.push({ ...population[i] })
+        newPopulation.push({ ...scaledPopulation[i] })
+      }
+
+      // 上位エリートに対して局所探索を適用（適応度を改善）
+      const localSearchCount = Math.min(3, eliteCount)
+      for (let i = 0; i < localSearchCount; i++) {
+        const elite = newPopulation[i]
+        const improved = applyLocalSearch(elite, objects, wires, options, bounds, spacing, padding)
+        if (improved.fitness > elite.fitness) {
+          newPopulation[i] = improved
+        }
       }
 
       // 残りを交叉と突然変異で生成
@@ -964,41 +1275,60 @@ export async function geneticLayoutAsync(
           throw new Error('レイアウト処理がキャンセルされました')
         }
         
-        // トーナメント選択で親を選ぶ（トーナメントサイズをランダムにして多様性を増やす）
-        const tournamentSize = 2 + Math.floor(Math.random() * 4) // 2-5のランダム
-        const parent1 = tournamentSelection(population, tournamentSize)
-        const parent2 = tournamentSelection(population, tournamentSize)
-
-        // 交叉
-        let child: Individual
-        if (Math.random() < crossoverRate) {
-          child = crossover(parent1, parent2, objects)
+        // 選択方法を適応的に変更（世代に応じて）
+        let parent1: Individual, parent2: Individual
+        if (generation < generations * 0.3) {
+          // 初期：ランクベース選択とトーナメント選択を混合
+          if (Math.random() < 0.5) {
+            parent1 = rankBasedSelection(scaledPopulation)
+            parent2 = rankBasedSelection(scaledPopulation)
+          } else {
+            const tournamentSize = calculateAdaptiveTournamentSize(generation, generations, stats)
+            parent1 = tournamentSelection(scaledPopulation, tournamentSize)
+            parent2 = tournamentSelection(scaledPopulation, tournamentSize)
+          }
         } else {
-          // 親をそのままコピーする場合も、少しランダムな変動を加える
+          // 後期：トーナメント選択を主に使用
+          const tournamentSize = calculateAdaptiveTournamentSize(generation, generations, stats)
+          parent1 = tournamentSelection(scaledPopulation, tournamentSize)
+          parent2 = tournamentSelection(scaledPopulation, tournamentSize)
+        }
+
+        // 交叉（より積極的に）
+        let child: Individual
+        if (Math.random() < adaptiveCrossoverRate) {
+          child = improvedCrossover(parent1, parent2, objects, generation, generations)
+        } else {
+          // 親をそのままコピーする場合も、必ず軽い変動を加える
           child = { ...parent1 }
-          if (Math.random() < 0.3) { // 30%の確率で軽い変動
-            const variationX = spacing * 0.1
-            const variationY = spacing * 0.1
-            const randomObj = objects[Math.floor(Math.random() * objects.length)]
-            child.positions[randomObj.id] = {
-              x: Math.max(padding, Math.min(bounds.maxX, child.positions[randomObj.id].x + (Math.random() - 0.5) * variationX * 2)),
-              y: Math.max(padding, Math.min(bounds.maxY, child.positions[randomObj.id].y + (Math.random() - 0.5) * variationY * 2))
-            }
+          const variationX = spacing * 0.15
+          const variationY = spacing * 0.15
+          const randomObj = objects[Math.floor(Math.random() * objects.length)]
+          child.positions[randomObj.id] = {
+            x: Math.max(padding, Math.min(bounds.maxX, child.positions[randomObj.id].x + (Math.random() - 0.5) * variationX * 2)),
+            y: Math.max(padding, Math.min(bounds.maxY, child.positions[randomObj.id].y + (Math.random() - 0.5) * variationY * 2))
           }
         }
 
-        // 突然変異（より多様な突然変異を適用）
-        if (Math.random() < mutationRate) {
-          mutate(child, objects, bounds, spacing, padding)
+        // 適応的突然変異（より積極的に）
+        if (Math.random() < adaptiveMutationRate) {
+          adaptiveMutate(child, objects, bounds, spacing, padding, generation, generations, stats)
         }
 
         // 重複を解消してから個体を追加
         resolveNodeOverlaps(child.positions, objects, options)
+        
+        // 適応度を計算してから追加
+        child.fitness = calculateFitness(child.positions, objects, wires, options)
         newPopulation.push(child)
       }
 
-      // 多様性を維持するため、ランダムな個体を追加（5%）
-      const randomIndividualCount = Math.floor(populationSize * 0.05)
+      // 多様性を維持するため、ランダムな個体を追加（適応的）
+      // 停滞している場合は多様性を増やすためにランダム個体を増やす
+      const baseRandomRate = 0.05 // 基本5%
+      const stagnationBonus = stats.stagnationCount > 10 ? 0.05 : 0 // 停滞時は追加で5%
+      const randomIndividualRate = Math.max(0.05, baseRandomRate + stagnationBonus - (generation / generations) * 0.03) // 5-10%の範囲
+      const randomIndividualCount = Math.floor(populationSize * randomIndividualRate)
       for (let i = 0; i < randomIndividualCount && newPopulation.length < populationSize; i++) {
         // キャンセルチェック
         if (cancelToken?.signal.aborted) {
@@ -1017,15 +1347,51 @@ export async function geneticLayoutAsync(
         newPopulation.push({ positions, fitness: 0 })
       }
 
+      // ニッチングを適用して多様性を維持
+      applyNiching(newPopulation, objects, options)
+
       population = newPopulation
     }
   }
 
-  reportProgress({ stage: '完了', progress: 100, message: '遺伝的アルゴリズムが完了しました' })
-  return { positions: bestIndividual?.positions || population[0].positions }
+  // 最良個体の位置を取得
+  let finalPositions = bestIndividual?.positions || population[0].positions
+  
+  // 遺伝的アルゴリズムの結果に対して接続長最適化を適用
+  reportProgress({
+    stage: '接続長最適化',
+    progress: 95,
+    message: '接続の長さを最適化中...',
+    fitnessHistory: [...fitnessHistory]
+  })
+  
+  try {
+    await minimizeConnectionLengthsAsync(finalPositions, objects, wires, options, (progress) => {
+      reportProgress({
+        stage: '接続長最適化',
+        progress: 95 + Math.floor(progress * 0.03),
+        message: `接続長最適化中... ${Math.floor(progress)}%`,
+        fitnessHistory: [...fitnessHistory]
+      })
+    })
+    
+    // 重複を解消
+    resolveNodeOverlaps(finalPositions, objects, options)
+  } catch (error) {
+    // エラーが発生しても続行
+    console.warn('接続長最適化でエラーが発生しました:', error)
+  }
+  
+  reportProgress({
+    stage: '完了',
+    progress: 100,
+    message: '遺伝的アルゴリズムが完了しました',
+    fitnessHistory: [...fitnessHistory] // グラフ用のスコア履歴
+  })
+  return { positions: finalPositions }
 }
 
-// 適応度関数：レイアウトの品質を評価
+// 適応度関数：レイアウトの品質を評価（見た目に合わせて改善）
 export function calculateFitness(
   positions: Record<string, { x: number; y: number }>,
   objects: EquipmentObject[],
@@ -1035,8 +1401,10 @@ export function calculateFitness(
   let fitness = 0
   const { spacing } = options
 
-  // 1. 接続の長さを最小化（ポート位置を考慮）
+  // 1. 接続の長さを最小化（ポート位置を考慮）- 重みを増加
   let totalConnectionLength = 0
+  let horizontalConnections = 0 // 水平方向の接続数
+  let verticalConnections = 0 // 垂直方向の接続数
   wires.forEach(wire => {
     const sourceObj = objects.find(o => o.id === wire.sourceObjectId)
     const targetObj = objects.find(o => o.id === wire.targetObjectId)
@@ -1057,25 +1425,34 @@ export function calculateFitness(
     const targetPort = targetPorts.find(p => p.id === wire.targetPortId)
 
     let distance: number
+    let dx: number, dy: number
     if (sourcePort && targetPort) {
       const port1Pos = calculatePortPosition(sourcePos, size1, sourcePort.data.position)
       const port2Pos = calculatePortPosition(targetPos, size2, targetPort.data.position)
-      const dx = port2Pos.x - port1Pos.x
-      const dy = port2Pos.y - port1Pos.y
+      dx = port2Pos.x - port1Pos.x
+      dy = port2Pos.y - port1Pos.y
       distance = Math.sqrt(dx * dx + dy * dy)
     } else {
       const center1 = { x: sourcePos.x + size1.width / 2, y: sourcePos.y + size1.height / 2 }
       const center2 = { x: targetPos.x + size2.width / 2, y: targetPos.y + size2.height / 2 }
-      const dx = center2.x - center1.x
-      const dy = center2.y - center1.y
+      dx = center2.x - center1.x
+      dy = center2.y - center1.y
       distance = Math.sqrt(dx * dx + dy * dy)
     }
     totalConnectionLength += distance
+    
+    // 接続の方向性を記録
+    if (Math.abs(dx) > Math.abs(dy)) {
+      horizontalConnections++
+    } else {
+      verticalConnections++
+    }
   })
-  // 接続の長さが短いほど良い（負の値として扱う）
-  fitness -= totalConnectionLength * 0.1
+  // 接続の長さが短いほど良い（重みを調整）
+  fitness -= totalConnectionLength * 0.5
 
-  // 2. 重複をペナルティ（同じペアを2回カウントしないように改善）
+  // 2. 重複をペナルティ（重みを大幅に増加して絶対避けるようにする）
+  let totalOverlap = 0
   for (let i = 0; i < objects.length; i++) {
     for (let j = i + 1; j < objects.length; j++) {
       const obj1 = objects[i]
@@ -1091,20 +1468,24 @@ export function calculateFitness(
 
       const overlap = calculateOverlap(pos1, size1, pos2, size2)
       if (overlap > 0) {
-        fitness -= overlap * 100 // 重複は大きなペナルティ
+        totalOverlap += overlap
       }
     }
   }
+  // 重複は致命的なペナルティ
+  fitness -= totalOverlap * 50000
 
-  // 3. 配線の交差をペナルティ（常に考慮）
+  // 3. 配線の交差をペナルティ（重みを下げる）
   const crossings = countWireCrossings(positions, objects, wires)
-  fitness -= crossings * 50
+  fitness -= crossings * 300
 
   // 3.5. エッジと機材の交差をペナルティ
   const wireEquipmentIntersections = countWireEquipmentIntersections(positions, objects, wires)
-  fitness -= wireEquipmentIntersections * 80 // 機材との交差は大きなペナルティ
+  fitness -= wireEquipmentIntersections * 1000
 
-  // 4. ポートの辺配置に基づく配置制約（ボーナス）
+  // 4. ポートの辺配置に基づく配置制約（ボーナスを増加）
+  let satisfiedConstraints = 0
+  let totalConstraints = 0
   wires.forEach(wire => {
     const sourceObj = objects.find(o => o.id === wire.sourceObjectId)
     const targetObj = objects.find(o => o.id === wire.targetObjectId)
@@ -1120,6 +1501,7 @@ export function calculateFitness(
     const targetPort = targetPorts.find(p => p.id === wire.targetPortId)
 
     if (sourcePort && targetPort) {
+      totalConstraints++
       const sourceSide = sourcePort.data.position.side
       const targetSide = targetPort.data.position.side
       const render1 = getRenderComponent(sourceObj)
@@ -1137,14 +1519,16 @@ export function calculateFitness(
           (sourceSide === Side.LEFT && targetSide === Side.RIGHT && sourceCenterX < targetCenterX) ||
           (sourceSide === Side.BOTTOM && targetSide === Side.TOP && sourceCenterY > targetCenterY) ||
           (sourceSide === Side.TOP && targetSide === Side.BOTTOM && sourceCenterY < targetCenterY)) {
-        fitness += 10 // ボーナス
+        satisfiedConstraints++
       }
     }
   })
+  // ボーナスを大幅に増加（論理的なフローを最重視）
+  fitness += satisfiedConstraints * 2000
 
-  // 5. 折れ曲がり開始点よりも近い接続のペナルティ
-  // 折れ曲がり開始点までの距離（offset）は20pxなので、接続距離が40px未満の場合、線が折れ曲がって汚くなる
-  const minBendDistance = 40 // 折れ曲がり開始点までの距離 * 2
+  // 5. 折れ曲がり開始点よりも近い接続のペナルティ（重みを調整）
+  const minBendDistance = 40
+  let tooClosePenalty = 0
   wires.forEach(wire => {
     const sourceObj = objects.find(o => o.id === wire.sourceObjectId)
     const targetObj = objects.find(o => o.id === wire.targetObjectId)
@@ -1179,12 +1563,84 @@ export function calculateFitness(
       distance = Math.sqrt(dx * dx + dy * dy)
     }
 
-    // 距離が近すぎる場合、ペナルティを追加（距離が近いほど大きなペナルティ）
     if (distance < minBendDistance) {
-      const penalty = (minBendDistance - distance) * 5 // 距離が近いほど大きなペナルティ
-      fitness -= penalty
+      tooClosePenalty += (minBendDistance - distance) * 10 // 5から10に増加
     }
   })
+  fitness -= tooClosePenalty
+
+  // 6. 整列のボーナス（水平・垂直方向の整列を評価）
+  const alignmentTolerance = spacing * 0.3 // 整列とみなす許容誤差
+  let alignmentBonus = 0
+  
+  // X座標の整列をチェック
+  const xPositions = objects.map(obj => {
+    const pos = positions[obj.id]
+    if (!pos) return null
+    const render = getRenderComponent(obj)
+    const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+    return pos.x + size.width / 2 // 中心X座標
+  }).filter((x): x is number => x !== null)
+  
+  // Y座標の整列をチェック
+  const yPositions = objects.map(obj => {
+    const pos = positions[obj.id]
+    if (!pos) return null
+    const render = getRenderComponent(obj)
+    const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+    return pos.y + size.height / 2 // 中心Y座標
+  }).filter((y): y is number => y !== null)
+  
+  // 同じX座標に近いオブジェクトのペアを探す
+  for (let i = 0; i < xPositions.length; i++) {
+    for (let j = i + 1; j < xPositions.length; j++) {
+      if (Math.abs(xPositions[i] - xPositions[j]) < alignmentTolerance) {
+        alignmentBonus += 5
+      }
+    }
+  }
+  
+  // 同じY座標に近いオブジェクトのペアを探す
+  for (let i = 0; i < yPositions.length; i++) {
+    for (let j = i + 1; j < yPositions.length; j++) {
+      if (Math.abs(yPositions[i] - yPositions[j]) < alignmentTolerance) {
+        alignmentBonus += 5
+      }
+    }
+  }
+  fitness += alignmentBonus
+
+  // 7. 全体のバウンディングボックスを小さくするボーナス
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+  objects.forEach(obj => {
+    const pos = positions[obj.id]
+    if (!pos) return
+    const render = getRenderComponent(obj)
+    const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+    minX = Math.min(minX, pos.x)
+    maxX = Math.max(maxX, pos.x + size.width)
+    minY = Math.min(minY, pos.y)
+    maxY = Math.max(maxY, pos.y + size.height)
+  })
+  
+  if (minX !== Infinity && maxX !== -Infinity && minY !== Infinity && maxY !== -Infinity) {
+    const boundingBoxArea = (maxX - minX) * (maxY - minY)
+    // バウンディングボックスが小さいほど良い（基準値との比較）
+    const referenceArea = objects.length * spacing * spacing * 4 // 基準面積
+    if (boundingBoxArea < referenceArea) {
+      fitness += (referenceArea - boundingBoxArea) * 0.001
+    }
+  }
+
+  // 8. 接続の方向性ボーナス（水平/垂直の接続が多いほど良い）
+  const totalConnections = wires.length
+  if (totalConnections > 0) {
+    const horizontalRatio = horizontalConnections / totalConnections
+    const verticalRatio = verticalConnections / totalConnections
+    // どちらかの方向に偏っている場合にボーナス（整然とした見た目）
+    const directionBonus = Math.max(horizontalRatio, verticalRatio) * 20
+    fitness += directionBonus
+  }
 
   return fitness
 }
@@ -1217,6 +1673,16 @@ export interface FitnessDetails {
   tooCloseConnections: {
     count: number
     totalPenalty: number
+  }
+  alignment: {
+    bonus: number
+  }
+  boundingBox: {
+    area: number
+    bonus: number
+  }
+  directionality: {
+    bonus: number
   }
 }
 
@@ -1266,7 +1732,7 @@ export function calculateFitnessDetails(
     }
     totalConnectionLength += distance
   })
-  const connectionLengthPenalty = totalConnectionLength * 0.1
+  const connectionLengthPenalty = totalConnectionLength * 0.5 // 0.5に合わせる
   totalScore -= connectionLengthPenalty
 
   // 2. 重複をペナルティ
@@ -1288,20 +1754,20 @@ export function calculateFitnessDetails(
       if (overlap > 0) {
         overlapCount++
         totalOverlap += overlap
-        totalScore -= overlap * 100
+        totalScore -= overlap * 50000 // 50000に合わせる
       }
     })
   })
-  const overlapPenalty = totalOverlap * 100
+  const overlapPenalty = totalOverlap * 50000 // 50000に合わせる
 
   // 3. 配線の交差をペナルティ（常に考慮）
   const crossings = countWireCrossings(positions, objects, wires)
-  const crossingsPenalty = crossings * 50
+  const crossingsPenalty = crossings * 300 // 300に合わせる
   totalScore -= crossingsPenalty
 
   // 3.5. エッジと機材の交差をペナルティ
   const wireEquipmentIntersections = countWireEquipmentIntersections(positions, objects, wires)
-  const wireEquipmentPenalty = wireEquipmentIntersections * 80
+  const wireEquipmentPenalty = wireEquipmentIntersections * 1000 // 1000に合わせる
   totalScore -= wireEquipmentPenalty
 
   // 4. ポートの辺配置に基づく配置制約（ボーナス）
@@ -1341,11 +1807,11 @@ export function calculateFitnessDetails(
           (sourceSide === Side.BOTTOM && targetSide === Side.TOP && sourceCenterY > targetCenterY) ||
           (sourceSide === Side.TOP && targetSide === Side.BOTTOM && sourceCenterY < targetCenterY)) {
         satisfiedConstraints++
-        totalScore += 10
+        totalScore += 2000 // 2000に合わせる
       }
     }
   })
-  const portAlignmentBonus = satisfiedConstraints * 10
+  const portAlignmentBonus = satisfiedConstraints * 2000 // 2000に合わせる
 
   // 5. 折れ曲がり開始点よりも近い接続のペナルティ
   const minBendDistance = 40 // 折れ曲がり開始点までの距離 * 2
@@ -1388,11 +1854,123 @@ export function calculateFitnessDetails(
     // 距離が近すぎる場合、ペナルティを追加
     if (distance < minBendDistance) {
       tooCloseCount++
-      const penalty = (minBendDistance - distance) * 5
+      const penalty = (minBendDistance - distance) * 10 // 5から10に変更
       tooClosePenalty += penalty
       totalScore -= penalty
     }
   })
+
+  // 6. 整列のボーナス
+  const alignmentTolerance = spacing * 0.3
+  let alignmentBonus = 0
+  
+  const xPositions = objects.map(obj => {
+    const pos = positions[obj.id]
+    if (!pos) return null
+    const render = getRenderComponent(obj)
+    const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+    return pos.x + size.width / 2
+  }).filter((x): x is number => x !== null)
+  
+  const yPositions = objects.map(obj => {
+    const pos = positions[obj.id]
+    if (!pos) return null
+    const render = getRenderComponent(obj)
+    const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+    return pos.y + size.height / 2
+  }).filter((y): y is number => y !== null)
+  
+  for (let i = 0; i < xPositions.length; i++) {
+    for (let j = i + 1; j < xPositions.length; j++) {
+      if (Math.abs(xPositions[i] - xPositions[j]) < alignmentTolerance) {
+        alignmentBonus += 5
+      }
+    }
+  }
+  
+  for (let i = 0; i < yPositions.length; i++) {
+    for (let j = i + 1; j < yPositions.length; j++) {
+      if (Math.abs(yPositions[i] - yPositions[j]) < alignmentTolerance) {
+        alignmentBonus += 5
+      }
+    }
+  }
+  totalScore += alignmentBonus
+
+  // 7. 全体のバウンディングボックスを小さくするボーナス
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+  objects.forEach(obj => {
+    const pos = positions[obj.id]
+    if (!pos) return
+    const render = getRenderComponent(obj)
+    const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+    minX = Math.min(minX, pos.x)
+    maxX = Math.max(maxX, pos.x + size.width)
+    minY = Math.min(minY, pos.y)
+    maxY = Math.max(maxY, pos.y + size.height)
+  })
+  
+  let boundingBoxArea = 0
+  let boundingBoxBonus = 0
+  if (minX !== Infinity && maxX !== -Infinity && minY !== Infinity && maxY !== -Infinity) {
+    boundingBoxArea = (maxX - minX) * (maxY - minY)
+    const referenceArea = objects.length * spacing * spacing * 4
+    if (boundingBoxArea < referenceArea) {
+      boundingBoxBonus = (referenceArea - boundingBoxArea) * 0.001
+      totalScore += boundingBoxBonus
+    }
+  }
+
+  // 8. 接続の方向性ボーナス
+  let horizontalConnections = 0
+  let verticalConnections = 0
+  wires.forEach(wire => {
+    const sourceObj = objects.find(o => o.id === wire.sourceObjectId)
+    const targetObj = objects.find(o => o.id === wire.targetObjectId)
+    if (!sourceObj || !targetObj) return
+
+    const sourcePos = positions[wire.sourceObjectId]
+    const targetPos = positions[wire.targetObjectId]
+    if (!sourcePos || !targetPos) return
+
+    const render1 = getRenderComponent(sourceObj)
+    const render2 = getRenderComponent(targetObj)
+    const size1 = { width: render1?.data.size.width || 100, height: render1?.data.size.height || 60 }
+    const size2 = { width: render2?.data.size.width || 100, height: render2?.data.size.height || 60 }
+
+    const sourcePorts = getConnectionPortComponents(sourceObj)
+    const targetPorts = getConnectionPortComponents(targetObj)
+    const sourcePort = sourcePorts.find(p => p.id === wire.sourcePortId)
+    const targetPort = targetPorts.find(p => p.id === wire.targetPortId)
+
+    let dx: number, dy: number
+    if (sourcePort && targetPort) {
+      const port1Pos = calculatePortPosition(sourcePos, size1, sourcePort.data.position)
+      const port2Pos = calculatePortPosition(targetPos, size2, targetPort.data.position)
+      dx = port2Pos.x - port1Pos.x
+      dy = port2Pos.y - port1Pos.y
+    } else {
+      const center1 = { x: sourcePos.x + size1.width / 2, y: sourcePos.y + size1.height / 2 }
+      const center2 = { x: targetPos.x + size2.width / 2, y: targetPos.y + size2.height / 2 }
+      dx = center2.x - center1.x
+      dy = center2.y - center1.y
+    }
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+      horizontalConnections++
+    } else {
+      verticalConnections++
+    }
+  })
+  
+  let directionBonus = 0
+  const totalConnections = wires.length
+  if (totalConnections > 0) {
+    const horizontalRatio = horizontalConnections / totalConnections
+    const verticalRatio = verticalConnections / totalConnections
+    directionBonus = Math.max(horizontalRatio, verticalRatio) * 20
+    totalScore += directionBonus
+  }
 
   return {
     totalScore,
@@ -1421,8 +1999,160 @@ export function calculateFitnessDetails(
     tooCloseConnections: {
       count: tooCloseCount,
       totalPenalty: tooClosePenalty
+    },
+    alignment: {
+      bonus: alignmentBonus
+    },
+    boundingBox: {
+      area: boundingBoxArea,
+      bonus: boundingBoxBonus
+    },
+    directionality: {
+      bonus: directionBonus
     }
   }
+}
+
+// 適応度スケーリング（選択圧の調整）- 改善版
+function applyFitnessScaling(
+  population: Individual[],
+  generation: number,
+  maxGenerations: number,
+  scalingType: 'linear' | 'sigma' | 'power' = 'sigma'
+): Individual[] {
+  if (population.length === 0) return population
+
+  const fitnesses = population.map(ind => ind.fitness)
+  const minFitness = Math.min(...fitnesses)
+  const maxFitness = Math.max(...fitnesses)
+  const avgFitness = fitnesses.reduce((a, b) => a + b, 0) / fitnesses.length
+  const stdDev = Math.sqrt(
+    fitnesses.reduce((sum, f) => sum + Math.pow(f - avgFitness, 2), 0) / fitnesses.length
+  )
+
+  const scaled = population.map(ind => {
+    let scaledFitness = ind.fitness
+
+    if (scalingType === 'sigma') {
+      // シグマスケーリング（世代に応じて調整）
+      if (stdDev > 0) {
+        // 世代が進むにつれて選択圧を高める
+        const pressureFactor = 1.5 + (generation / maxGenerations) * 1.0 // 1.5-2.5の範囲
+        scaledFitness = avgFitness + (ind.fitness - avgFitness) * pressureFactor
+        scaledFitness = Math.max(0, scaledFitness) // 負の値を防ぐ
+      }
+    } else if (scalingType === 'linear') {
+      // 線形スケーリング
+      if (maxFitness !== minFitness) {
+        scaledFitness = (ind.fitness - minFitness) / (maxFitness - minFitness) * 100
+      }
+    } else if (scalingType === 'power') {
+      // べき乗スケーリング（世代に応じて調整）
+      const power = 1.0 + (generation / maxGenerations) * 0.8 // 1.0-1.8の範囲
+      scaledFitness = Math.pow(Math.max(0, ind.fitness - minFitness + 1), power)
+    }
+
+    return { ...ind, fitness: scaledFitness }
+  })
+
+  return scaled
+}
+
+// 集団の多様性を計算（位置の分散に基づく）
+function calculatePopulationDiversity(
+  population: Individual[],
+  objects: EquipmentObject[]
+): number {
+  if (population.length === 0 || objects.length === 0) return 0
+
+  let totalVariance = 0
+  objects.forEach(obj => {
+    const positions = population.map(ind => ind.positions[obj.id])
+    if (positions.length === 0) return
+
+    const avgX = positions.reduce((sum, p) => sum + p.x, 0) / positions.length
+    const avgY = positions.reduce((sum, p) => sum + p.y, 0) / positions.length
+
+    const varianceX = positions.reduce((sum, p) => sum + Math.pow(p.x - avgX, 2), 0) / positions.length
+    const varianceY = positions.reduce((sum, p) => sum + Math.pow(p.y - avgY, 2), 0) / positions.length
+
+    totalVariance += varianceX + varianceY
+  })
+
+  return Math.sqrt(totalVariance / objects.length)
+}
+
+// 適応的突然変異率の計算（改善版）
+function calculateAdaptiveMutationRate(
+  baseRate: number,
+  generation: number,
+  maxGenerations: number,
+  stats: GAStats
+): number {
+  // 基本：世代が進むにつれて減少（ただし緩やかに）
+  let rate = baseRate * (1.0 - (generation / maxGenerations) * 0.4) // 0.3から0.4に変更
+
+  // 多様性が低い場合は大幅に増加
+  if (stats.diversity < 100) {
+    rate *= 2.5 // 2.0から2.5に増加
+  }
+
+  // 停滞している場合は大幅に増加
+  if (stats.stagnationCount > 10) {
+    rate *= 2.0 // 1.8から2.0に増加
+  }
+
+  // 平均適応度が低い場合も増加（探索を促進）
+  if (stats.averageFitness < stats.bestFitness * 0.7) {
+    rate *= 1.3
+  }
+
+  return Math.max(0.08, Math.min(0.6, rate)) // 0.08-0.6の範囲に制限（より積極的に）
+}
+
+// 適応的交叉率の計算（改善版）
+function calculateAdaptiveCrossoverRate(
+  baseRate: number,
+  generation: number,
+  maxGenerations: number,
+  stats: GAStats
+): number {
+  // 基本：世代が進むにつれてやや減少（ただし緩やかに）
+  let rate = baseRate * (1.0 - (generation / maxGenerations) * 0.15) // 0.2から0.15に変更
+
+  // 多様性が低い場合は増加
+  if (stats.diversity < 100) {
+    rate *= 1.3 // 1.2から1.3に増加
+  }
+
+  // 停滞している場合も増加（探索を促進）
+  if (stats.stagnationCount > 10) {
+    rate *= 1.2
+  }
+
+  // 平均適応度が低い場合も増加
+  if (stats.averageFitness < stats.bestFitness * 0.7) {
+    rate *= 1.1
+  }
+
+  return Math.max(0.6, Math.min(0.95, rate)) // 0.6-0.95の範囲に制限（より積極的に）
+}
+
+// 適応的トーナメントサイズの計算
+function calculateAdaptiveTournamentSize(
+  generation: number,
+  maxGenerations: number,
+  stats: GAStats
+): number {
+  // 基本：世代が進むにつれて増加（選択圧を高める）
+  let size = 2 + Math.floor((generation / maxGenerations) * 3) // 2-5の範囲
+
+  // 多様性が低い場合は減少（多様性を促進）
+  if (stats.diversity < 100) {
+    size = Math.max(2, size - 1)
+  }
+
+  return Math.max(2, Math.min(6, size)) // 2-6の範囲に制限
 }
 
 // トーナメント選択
@@ -1436,13 +2166,182 @@ function tournamentSelection(population: Individual[], tournamentSize: number): 
   return tournament[0]
 }
 
-// 交叉（一様交叉と算術交叉の混合）
-function crossover(parent1: Individual, parent2: Individual, objects: EquipmentObject[]): Individual {
+// ランクベース選択（多様性を促進）
+function rankBasedSelection(population: Individual[]): Individual {
+  // 適応度でソート済みと仮定
+  const rank = Math.floor(Math.pow(Math.random(), 2) * population.length) // 線形ランク選択（指数2で上位を重視）
+  return population[rank]
+}
+
+// 局所探索（適応度の高い個体を改善）- 接続長を重視
+function applyLocalSearch(
+  individual: Individual,
+  objects: EquipmentObject[],
+  wires: Wire[],
+  options: LayoutOptions,
+  bounds: { minX: number; maxX: number; minY: number; maxY: number },
+  spacing: number,
+  padding: number
+): Individual {
+  let best = { ...individual, positions: { ...individual.positions } }
+  let bestFitness = individual.fitness
+  
+  // 接続が多いオブジェクトを優先的に最適化
+  const objectConnectionCounts: Record<string, number> = {}
+  objects.forEach(obj => {
+    objectConnectionCounts[obj.id] = 0
+  })
+  wires.forEach(wire => {
+    if (objectConnectionCounts[wire.sourceObjectId] !== undefined) {
+      objectConnectionCounts[wire.sourceObjectId]++
+    }
+    if (objectConnectionCounts[wire.targetObjectId] !== undefined) {
+      objectConnectionCounts[wire.targetObjectId]++
+    }
+  })
+  
+  // 接続数でソート（接続が多い順）
+  const sortedObjects = [...objects].sort((a, b) => 
+    (objectConnectionCounts[b.id] || 0) - (objectConnectionCounts[a.id] || 0)
+  )
+  
+  // 接続が多いオブジェクトから順に最適化
+  const iterations = Math.min(10, sortedObjects.length)
+  for (let iter = 0; iter < iterations; iter++) {
+    const obj = sortedObjects[iter]
+    const currentPos = best.positions[obj.id]
+    if (!currentPos) continue
+    
+    const render = getRenderComponent(obj)
+    const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+    
+    // 接続先のオブジェクトの方向に移動させる（接続長を短くする）
+    const connectedObjects: Array<{ obj: EquipmentObject; pos: { x: number; y: number }; weight: number }> = []
+    wires.forEach(wire => {
+      if (wire.sourceObjectId === obj.id) {
+        const targetObj = objects.find(o => o.id === wire.targetObjectId)
+        const targetPos = best.positions[wire.targetObjectId]
+        if (targetObj && targetPos) {
+          connectedObjects.push({ obj: targetObj, pos: targetPos, weight: 1.0 })
+        }
+      } else if (wire.targetObjectId === obj.id) {
+        const sourceObj = objects.find(o => o.id === wire.sourceObjectId)
+        const sourcePos = best.positions[wire.sourceObjectId]
+        if (sourceObj && sourcePos) {
+          connectedObjects.push({ obj: sourceObj, pos: sourcePos, weight: 1.0 })
+        }
+      }
+    })
+    
+    // 接続先の重心方向に移動（ポートの向きを考慮）
+    if (connectedObjects.length > 0) {
+      let totalWeight = 0
+      let weightedX = 0
+      let weightedY = 0
+      
+      connectedObjects.forEach(c => {
+        const render = getRenderComponent(c.obj)
+        const size = { width: render?.data.size.width || 100, height: render?.data.size.height || 60 }
+        
+        // 基本的な重心
+        const centerX = c.pos.x + size.width / 2
+        const centerY = c.pos.y + size.height / 2
+        
+        let weight = c.weight
+        
+        // ポート接続情報を取得して、理想的な相対位置を計算に反映
+        // ここでは簡易的に、接続相手が右にあれば自分は左、などを考慮
+        // （詳細なポート情報は取得コストが高いので、簡易的なヒューリスティックを使用）
+        
+        weightedX += centerX * weight
+        weightedY += centerY * weight
+        totalWeight += weight
+      })
+
+      const centerX = weightedX / totalWeight
+      const centerY = weightedY / totalWeight
+      
+      const currentCenterX = currentPos.x + size.width / 2
+      const currentCenterY = currentPos.y + size.height / 2
+      const dx = centerX - currentCenterX
+      const dy = centerY - currentCenterY
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      
+      if (distance > 0) {
+        // 接続先の重心方向に少し移動
+        const stepSize = Math.min(spacing * 0.4, distance * 0.5) // 移動量を増やす（0.2->0.4）
+        const newPos = {
+          x: Math.max(padding, Math.min(bounds.maxX - size.width, currentPos.x + (dx / distance) * stepSize)),
+          y: Math.max(padding, Math.min(bounds.maxY - size.height, currentPos.y + (dy / distance) * stepSize))
+        }
+        
+        const testPositions = { ...best.positions, [obj.id]: newPos }
+        
+        // 重複を解消
+        resolveNodeOverlaps(testPositions, objects, options)
+        
+        // 適応度を計算
+        const fitness = calculateFitness(testPositions, objects, wires, options)
+        
+        if (fitness > bestFitness) {
+          best.positions = testPositions
+          bestFitness = fitness
+        }
+      }
+    }
+    
+    // 8方向（上下左右と斜め）にも試す
+    const directions = [
+      { dx: spacing * 0.2, dy: 0 },
+      { dx: -spacing * 0.2, dy: 0 },
+      { dx: 0, dy: spacing * 0.2 },
+      { dx: 0, dy: -spacing * 0.2 },
+      { dx: spacing * 0.15, dy: spacing * 0.15 },
+      { dx: -spacing * 0.15, dy: spacing * 0.15 },
+      { dx: spacing * 0.15, dy: -spacing * 0.15 },
+      { dx: -spacing * 0.15, dy: -spacing * 0.15 }
+    ]
+    
+    for (const dir of directions) {
+      const newPos = {
+        x: Math.max(padding, Math.min(bounds.maxX - size.width, currentPos.x + dir.dx)),
+        y: Math.max(padding, Math.min(bounds.maxY - size.height, currentPos.y + dir.dy))
+      }
+      
+      const testPositions = { ...best.positions, [obj.id]: newPos }
+      
+      // 重複を解消
+      resolveNodeOverlaps(testPositions, objects, options)
+      
+      // 適応度を計算
+      const fitness = calculateFitness(testPositions, objects, wires, options)
+      
+      if (fitness > bestFitness) {
+        best.positions = testPositions
+        bestFitness = fitness
+        break // 改善が見つかったら次のオブジェクトへ
+      }
+    }
+  }
+  
+  best.fitness = bestFitness
+  return best
+}
+
+// 改善された交叉（複数の交叉方法を組み合わせ、世代に応じて調整）
+function improvedCrossover(
+  parent1: Individual,
+  parent2: Individual,
+  objects: EquipmentObject[],
+  generation: number,
+  maxGenerations: number
+): Individual {
   const positions: Record<string, { x: number; y: number }> = {}
   const crossoverType = Math.random()
+  const generationRatio = generation / maxGenerations
   
-  if (crossoverType < 0.5) {
-    // 一様交叉（50%の確率）
+  if (crossoverType < 0.25) {
+    // 一様交叉（25%の確率）- 初期に有効
     objects.forEach(obj => {
       if (Math.random() < 0.5) {
         positions[obj.id] = { ...parent1.positions[obj.id] }
@@ -1450,15 +2349,63 @@ function crossover(parent1: Individual, parent2: Individual, objects: EquipmentO
         positions[obj.id] = { ...parent2.positions[obj.id] }
       }
     })
-  } else {
-    // 算術交叉（50%の確率）- 親の位置の平均を取る
+  } else if (crossoverType < 0.5) {
+    // 算術交叉（25%の確率）- 親の位置の重み付き平均（世代に応じてより良い親を重視）
+    const betterParent = parent1.fitness > parent2.fitness ? parent1 : parent2
+    const worseParent = parent1.fitness > parent2.fitness ? parent2 : parent1
+    const betterWeight = 0.5 + generationRatio * 0.3 // 0.5-0.8の範囲（世代が進むほど良い親を重視）
+    
+    objects.forEach(obj => {
+      const pos1 = betterParent.positions[obj.id]
+      const pos2 = worseParent.positions[obj.id]
+      positions[obj.id] = {
+        x: pos1.x * betterWeight + pos2.x * (1 - betterWeight),
+        y: pos1.y * betterWeight + pos2.y * (1 - betterWeight)
+      }
+    })
+  } else if (crossoverType < 0.75) {
+    // BLX-α交叉（25%の確率）- 親の範囲を拡張（世代に応じて範囲を調整）
+    const alpha = 0.3 + generationRatio * 0.4 // 0.3-0.7の範囲（世代が進むほど範囲を広げる）
     objects.forEach(obj => {
       const pos1 = parent1.positions[obj.id]
       const pos2 = parent2.positions[obj.id]
-      const alpha = Math.random() // 0-1のランダムな重み
+      const minX = Math.min(pos1.x, pos2.x)
+      const maxX = Math.max(pos1.x, pos2.x)
+      const minY = Math.min(pos1.y, pos2.y)
+      const maxY = Math.max(pos1.y, pos2.y)
+      const rangeX = maxX - minX || 1 // ゼロ除算を防ぐ
+      const rangeY = maxY - minY || 1
+      
       positions[obj.id] = {
-        x: pos1.x * alpha + pos2.x * (1 - alpha),
-        y: pos1.y * alpha + pos2.y * (1 - alpha)
+        x: minX - alpha * rangeX + Math.random() * (maxX - minX + 2 * alpha * rangeX),
+        y: minY - alpha * rangeY + Math.random() * (maxY - minY + 2 * alpha * rangeY)
+      }
+    })
+  } else {
+    // SBX（Simulated Binary Crossover）風の交叉（25%の確率）- 世代に応じて分布を調整
+    const eta = 10 + generationRatio * 20 // 10-30の範囲（世代が進むほど分布を広げる）
+    objects.forEach(obj => {
+      const pos1 = parent1.positions[obj.id]
+      const pos2 = parent2.positions[obj.id]
+      const u = Math.random()
+      let beta: number
+      
+      if (u <= 0.5) {
+        beta = Math.pow(2 * u, 1 / (eta + 1))
+      } else {
+        beta = Math.pow(1 / (2 * (1 - u)), 1 / (eta + 1))
+      }
+      
+      const x1 = 0.5 * ((1 + beta) * pos1.x + (1 - beta) * pos2.x)
+      const x2 = 0.5 * ((1 - beta) * pos1.x + (1 + beta) * pos2.x)
+      const y1 = 0.5 * ((1 + beta) * pos1.y + (1 - beta) * pos2.y)
+      const y2 = 0.5 * ((1 - beta) * pos1.y + (1 + beta) * pos2.y)
+      
+      // ランダムにどちらかを選択
+      if (Math.random() < 0.5) {
+        positions[obj.id] = { x: x1, y: y1 }
+      } else {
+        positions[obj.id] = { x: x2, y: y2 }
       }
     })
   }
@@ -1466,7 +2413,79 @@ function crossover(parent1: Individual, parent2: Individual, objects: EquipmentO
   return { positions, fitness: 0 }
 }
 
-// 突然変異（より多様な変異を適用）
+// 後方互換性のための旧関数（既存コードで使用されている可能性があるため）
+function crossover(parent1: Individual, parent2: Individual, objects: EquipmentObject[]): Individual {
+  return improvedCrossover(parent1, parent2, objects, 0, 100)
+}
+
+// 適応的突然変異（適応度と世代に基づいて強度を調整）
+function adaptiveMutate(
+  individual: Individual,
+  objects: EquipmentObject[],
+  bounds: { minX: number; maxX: number; minY: number; maxY: number },
+  spacing: number,
+  padding: number,
+  generation: number,
+  maxGenerations: number,
+  stats: GAStats
+): void {
+  // 世代に応じた基本強度（世代が進むにつれて減少、ただし緩やかに）
+  const baseStrength = spacing * (1.0 - (generation / maxGenerations) * 0.5) // 0.7から0.5に緩和（1.0倍から0.5倍へ減少）
+  
+  // 多様性が低い場合は強度を増加
+  const diversityFactor = stats.diversity < 100 ? 1.5 : 1.0
+  
+  // 停滞している場合は強度を増加
+  const stagnationFactor = stats.stagnationCount > 10 ? 1.3 : 1.0
+  
+  const mutationStrength = baseStrength * diversityFactor * stagnationFactor
+  
+  const mutationType = Math.random()
+  
+  if (mutationType < 0.25) {
+    // 25%の確率：1つのオブジェクトを大きく変異
+    const randomObj = objects[Math.floor(Math.random() * objects.length)]
+    const strength = mutationStrength * (0.5 + Math.random() * 1.0) // 0.5-1.5倍の範囲
+    individual.positions[randomObj.id] = {
+      x: Math.max(padding, Math.min(bounds.maxX, individual.positions[randomObj.id].x + (Math.random() - 0.5) * strength * 2)),
+      y: Math.max(padding, Math.min(bounds.maxY, individual.positions[randomObj.id].y + (Math.random() - 0.5) * strength * 2))
+    }
+  } else if (mutationType < 0.5) {
+    // 25%の確率：複数のオブジェクトを少し変異
+    const mutationCount = 1 + Math.floor(Math.random() * Math.min(5, objects.length))
+    const strength = mutationStrength * 0.3
+    for (let i = 0; i < mutationCount; i++) {
+      const randomObj = objects[Math.floor(Math.random() * objects.length)]
+      individual.positions[randomObj.id] = {
+        x: Math.max(padding, Math.min(bounds.maxX, individual.positions[randomObj.id].x + (Math.random() - 0.5) * strength * 2)),
+        y: Math.max(padding, Math.min(bounds.maxY, individual.positions[randomObj.id].y + (Math.random() - 0.5) * strength * 2))
+      }
+    }
+  } else if (mutationType < 0.75) {
+    // 25%の確率：ガウシアン突然変異（より滑らかな変異）
+    const randomObj = objects[Math.floor(Math.random() * objects.length)]
+    const strength = mutationStrength * 0.5
+    // ガウシアン分布に近い変異（Box-Muller変換の簡易版）
+    const u1 = Math.random()
+    const u2 = Math.random()
+    const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
+    const z1 = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2)
+    
+    individual.positions[randomObj.id] = {
+      x: Math.max(padding, Math.min(bounds.maxX, individual.positions[randomObj.id].x + z0 * strength)),
+      y: Math.max(padding, Math.min(bounds.maxY, individual.positions[randomObj.id].y + z1 * strength))
+    }
+  } else {
+    // 25%の確率：1つのオブジェクトを完全にランダムな位置に移動（多様性の確保）
+    const randomObj = objects[Math.floor(Math.random() * objects.length)]
+    individual.positions[randomObj.id] = {
+      x: padding + Math.random() * (bounds.maxX - bounds.minX) * 1.5,
+      y: padding + Math.random() * (bounds.maxY - bounds.minY) * 1.5
+    }
+  }
+}
+
+// 後方互換性のための旧関数（既存コードで使用されている可能性があるため）
 function mutate(
   individual: Individual,
   objects: EquipmentObject[],
@@ -1474,35 +2493,58 @@ function mutate(
   spacing: number,
   padding: number
 ): void {
-  const mutationType = Math.random()
-  
-  if (mutationType < 0.3) {
-    // 30%の確率：1つのオブジェクトを大きく変異
-    const randomObj = objects[Math.floor(Math.random() * objects.length)]
-    const mutationStrength = spacing * (0.5 + Math.random() * 1.0) // 0.5-1.5倍の範囲
-    individual.positions[randomObj.id] = {
-      x: Math.max(padding, Math.min(bounds.maxX, individual.positions[randomObj.id].x + (Math.random() - 0.5) * mutationStrength * 2)),
-      y: Math.max(padding, Math.min(bounds.maxY, individual.positions[randomObj.id].y + (Math.random() - 0.5) * mutationStrength * 2))
-    }
-  } else if (mutationType < 0.6) {
-    // 30%の確率：複数のオブジェクトを少し変異
-    const mutationCount = 1 + Math.floor(Math.random() * Math.min(5, objects.length))
-    const mutationStrength = spacing * 0.3
-    for (let i = 0; i < mutationCount; i++) {
-      const randomObj = objects[Math.floor(Math.random() * objects.length)]
-      individual.positions[randomObj.id] = {
-        x: Math.max(padding, Math.min(bounds.maxX, individual.positions[randomObj.id].x + (Math.random() - 0.5) * mutationStrength * 2)),
-        y: Math.max(padding, Math.min(bounds.maxY, individual.positions[randomObj.id].y + (Math.random() - 0.5) * mutationStrength * 2))
-      }
-    }
-  } else {
-    // 40%の確率：1つのオブジェクトを完全にランダムな位置に移動
-    const randomObj = objects[Math.floor(Math.random() * objects.length)]
-    individual.positions[randomObj.id] = {
-      x: padding + Math.random() * (bounds.maxX - bounds.minX) * 1.5,
-      y: padding + Math.random() * (bounds.maxY - bounds.minY) * 1.5
-    }
+  const dummyStats: GAStats = {
+    bestFitness: 0,
+    averageFitness: 0,
+    worstFitness: 0,
+    diversity: 100,
+    stagnationCount: 0
   }
+  adaptiveMutate(individual, objects, bounds, spacing, padding, 0, 100, dummyStats)
+}
+
+// ニッチング（多様性を維持するための手法）
+function applyNiching(
+  population: Individual[],
+  objects: EquipmentObject[],
+  options: LayoutOptions
+): void {
+  const nicheRadius = options.spacing * 2 // ニッチ半径
+  const sharingFactor = 0.1 // 共有係数
+
+  // 各個体のニッチカウントを計算
+  population.forEach((individual, i) => {
+    let nicheCount = 0
+    population.forEach((other, j) => {
+      if (i === j) return
+      
+      // 位置の距離を計算
+      let totalDistance = 0
+      let count = 0
+      objects.forEach(obj => {
+        const pos1 = individual.positions[obj.id]
+        const pos2 = other.positions[obj.id]
+        if (pos1 && pos2) {
+          const dx = pos2.x - pos1.x
+          const dy = pos2.y - pos1.y
+          totalDistance += Math.sqrt(dx * dx + dy * dy)
+          count++
+        }
+      })
+      
+      const avgDistance = count > 0 ? totalDistance / count : Infinity
+      
+      // ニッチ半径内にある場合は共有
+      if (avgDistance < nicheRadius) {
+        nicheCount++
+      }
+    })
+    
+    // 適応度を共有（ニッチ内の個体が多いほど適応度を下げる）
+    if (nicheCount > 0) {
+      individual.fitness *= (1 - sharingFactor * nicheCount)
+    }
+  })
 }
 
 // 重複計算
@@ -1536,36 +2578,90 @@ function parsePathToSegments(pathData: string): Array<{ start: { x: number; y: n
   let startX = 0
   let startY = 0
 
-  // パスコマンドを解析（簡易版：M, L, H, Vのみ対応）
-  const commands = pathData.match(/[MLHV][^MLHV]*/gi) || []
+  // パスコマンドを解析（M, L, H, V, C, S, Q, T, Zに対応）
+  // より正確なパターンマッチング（小文字/大文字の区別なし）
+  const commandPattern = /([MLHVCSQTZ])([^MLHVCSQTZ]*)/gi
+  let match
   
-  for (const cmd of commands) {
-    const type = cmd[0].toUpperCase()
-    const coords = cmd.slice(1).trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n))
+  while ((match = commandPattern.exec(pathData)) !== null) {
+    const type = match[1].toUpperCase()
+    const coordsStr = match[2].trim()
+    const coords = coordsStr.split(/[\s,]+/).map(Number).filter(n => !isNaN(n))
     
     if (type === 'M') {
       // Move to
-      currentX = coords[0] || currentX
-      currentY = coords[1] || currentY
-      startX = currentX
-      startY = currentY
+      if (coords.length >= 2) {
+        currentX = coords[0]
+        currentY = coords[1]
+        startX = currentX
+        startY = currentY
+      }
     } else if (type === 'L') {
       // Line to
-      const x = coords[0] ?? currentX
-      const y = coords[1] ?? currentY
-      segments.push({ start: { x: currentX, y: currentY }, end: { x, y } })
-      currentX = x
-      currentY = y
+      if (coords.length >= 2) {
+        const x = coords[0]
+        const y = coords[1]
+        segments.push({ start: { x: currentX, y: currentY }, end: { x, y } })
+        currentX = x
+        currentY = y
+      }
     } else if (type === 'H') {
       // Horizontal line to
-      const x = coords[0] ?? currentX
-      segments.push({ start: { x: currentX, y: currentY }, end: { x, y: currentY } })
-      currentX = x
+      if (coords.length >= 1) {
+        const x = coords[0]
+        segments.push({ start: { x: currentX, y: currentY }, end: { x, y: currentY } })
+        currentX = x
+      }
     } else if (type === 'V') {
       // Vertical line to
-      const y = coords[0] ?? currentY
-      segments.push({ start: { x: currentX, y: currentY }, end: { x: currentX, y } })
-      currentY = y
+      if (coords.length >= 1) {
+        const y = coords[0]
+        segments.push({ start: { x: currentX, y: currentY }, end: { x: currentX, y } })
+        currentY = y
+      }
+    } else if (type === 'C') {
+      // Cubic Bezier curve - 曲線を開始点と終了点の直線で近似（簡易版）
+      if (coords.length >= 6) {
+        const endX = coords[4]
+        const endY = coords[5]
+        segments.push({ start: { x: currentX, y: currentY }, end: { x: endX, y: endY } })
+        currentX = endX
+        currentY = endY
+      }
+    } else if (type === 'S') {
+      // Smooth cubic Bezier curve
+      if (coords.length >= 4) {
+        const endX = coords[2]
+        const endY = coords[3]
+        segments.push({ start: { x: currentX, y: currentY }, end: { x: endX, y: endY } })
+        currentX = endX
+        currentY = endY
+      }
+    } else if (type === 'Q') {
+      // Quadratic Bezier curve
+      if (coords.length >= 4) {
+        const endX = coords[2]
+        const endY = coords[3]
+        segments.push({ start: { x: currentX, y: currentY }, end: { x: endX, y: endY } })
+        currentX = endX
+        currentY = endY
+      }
+    } else if (type === 'T') {
+      // Smooth quadratic Bezier curve
+      if (coords.length >= 2) {
+        const endX = coords[0]
+        const endY = coords[1]
+        segments.push({ start: { x: currentX, y: currentY }, end: { x: endX, y: endY } })
+        currentX = endX
+        currentY = endY
+      }
+    } else if (type === 'Z' || type === 'z') {
+      // Close path
+      if (segments.length > 0) {
+        segments.push({ start: { x: currentX, y: currentY }, end: { x: startX, y: startY } })
+        currentX = startX
+        currentY = startY
+      }
     }
   }
   
@@ -1584,7 +2680,7 @@ function sideToPosition(side: Side): Position {
 }
 
 // 配線の交差数をカウント（ReactFlowの実際のパスに基づく）
-function countWireCrossings(
+export function countWireCrossings(
   positions: Record<string, { x: number; y: number }>,
   objects: EquipmentObject[],
   wires: Wire[]
@@ -1673,12 +2769,20 @@ function countWireCrossings(
       const segments2 = wireSegments[j]
       
       // 各線分ペアで交差判定
+      let hasCrossing = false
       for (const seg1 of segments1) {
         for (const seg2 of segments2) {
           if (doLineSegmentsIntersect(seg1.start, seg1.end, seg2.start, seg2.end)) {
-            crossings++
+            hasCrossing = true
+            break
           }
         }
+        if (hasCrossing) break
+      }
+      
+      // 1つのワイヤーペアにつき1回だけカウント
+      if (hasCrossing) {
+        crossings++
       }
     }
   }
@@ -1810,16 +2914,31 @@ function countWireEquipmentIntersections(
   return intersections
 }
 
-// 線分の交差判定
+// 線分の交差判定（端点での接触は除外）
 function doLineSegmentsIntersect(
   p1: { x: number; y: number },
   p2: { x: number; y: number },
   p3: { x: number; y: number },
   p4: { x: number; y: number }
 ): boolean {
+  const EPSILON = 1e-6 // 浮動小数点数の誤差許容範囲
+  
+  // 端点が一致している場合は交差としてカウントしない
+  const pointsEqual = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    return Math.abs(a.x - b.x) < EPSILON && Math.abs(a.y - b.y) < EPSILON
+  }
+  
+  // 端点での接触をチェック
+  if (pointsEqual(p1, p3) || pointsEqual(p1, p4) || 
+      pointsEqual(p2, p3) || pointsEqual(p2, p4)) {
+    return false // 端点での接触は交差としてカウントしない
+  }
+  
   const ccw = (A: { x: number; y: number }, B: { x: number; y: number }, C: { x: number; y: number }) => {
     return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
   }
+  
+  // 線分が交差しているか判定（端点での接触は除外済み）
   return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4)
 }
 
@@ -2558,9 +3677,32 @@ async function minimizeConnectionLengthsAsync(
   onProgress?: (progress: number) => void
 ): Promise<void> {
   const { spacing } = options
-  const iterations = 30
+  const iterations = 30 // 反復回数を減らす（接続長を増やさない）
+  const initialLearningRate = 0.02 // 学習率を下げる
+  const finalLearningRate = 0.005 // 最終学習率も下げる
+  const coolingRate = Math.pow(finalLearningRate / initialLearningRate, 1 / iterations)
+  
+  // 初期接続長を計算
+  let initialConnectionLength = 0
+  wires.forEach(wire => {
+    const sourcePos = positions[wire.sourceObjectId]
+    const targetPos = positions[wire.targetObjectId]
+    if (sourcePos && targetPos) {
+      const dx = targetPos.x - sourcePos.x
+      const dy = targetPos.y - sourcePos.y
+      initialConnectionLength += Math.sqrt(dx * dx + dy * dy)
+    }
+  })
 
   for (let iter = 0; iter < iterations; iter++) {
+    // 進捗を報告
+    if (onProgress && iter % 5 === 0) {
+      onProgress((iter / iterations) * 100)
+      await new Promise(resolve => setTimeout(resolve, 1)) // 非同期処理を許可
+    }
+    
+    // 学習率を冷却スケジュールで調整
+    const learningRate = initialLearningRate * Math.pow(coolingRate, iter)
     const adjustments: Record<string, { x: number; y: number }> = {}
     objects.forEach(obj => {
       adjustments[obj.id] = { x: 0, y: 0 }
@@ -2599,7 +3741,7 @@ async function minimizeConnectionLengthsAsync(
         const targetSide = targetPort.data.position.side
         
         const idealDistance = spacing * 1.5
-        const adjustment = (distance - idealDistance) * 0.01
+        const adjustment = (distance - idealDistance) * learningRate
         
         let weightX = 1.0
         let weightY = 1.0
@@ -2616,13 +3758,13 @@ async function minimizeConnectionLengthsAsync(
           
           if (sourceSide === Side.RIGHT && targetSide === Side.LEFT) {
             if (sourceCenterX >= targetCenterX) {
-              const constraintStrength = 0.2
+              const constraintStrength = 0.3 * learningRate * 10 // より積極的に
               adjustments[wire.sourceObjectId].x -= constraintStrength
               adjustments[wire.targetObjectId].x += constraintStrength
             }
           } else if (sourceSide === Side.LEFT && targetSide === Side.RIGHT) {
             if (sourceCenterX >= targetCenterX) {
-              const constraintStrength = 0.2
+              const constraintStrength = 0.3 * learningRate * 10 // より積極的に
               adjustments[wire.sourceObjectId].x -= constraintStrength
               adjustments[wire.targetObjectId].x += constraintStrength
             }
@@ -2635,13 +3777,13 @@ async function minimizeConnectionLengthsAsync(
           
           if (sourceSide === Side.BOTTOM && targetSide === Side.TOP) {
             if (sourceCenterY <= targetCenterY) {
-              const constraintStrength = 0.2
+              const constraintStrength = 0.3 * learningRate * 10 // より積極的に
               adjustments[wire.sourceObjectId].y += constraintStrength
               adjustments[wire.targetObjectId].y -= constraintStrength
             }
           } else if (sourceSide === Side.TOP && targetSide === Side.BOTTOM) {
             if (sourceCenterY >= targetCenterY) {
-              const constraintStrength = 0.2
+              const constraintStrength = 0.3 * learningRate * 10 // より積極的に
               adjustments[wire.sourceObjectId].y -= constraintStrength
               adjustments[wire.targetObjectId].y += constraintStrength
             }
@@ -2676,7 +3818,7 @@ async function minimizeConnectionLengthsAsync(
         distance = Math.sqrt(dx * dx + dy * dy) || 1
 
         const idealDistance = spacing * 3
-        const adjustment = (distance - idealDistance) * 0.01
+        const adjustment = (distance - idealDistance) * learningRate
 
         adjustments[wire.sourceObjectId].x += (dx / distance) * adjustment
         adjustments[wire.sourceObjectId].y += (dy / distance) * adjustment
@@ -2703,66 +3845,434 @@ async function minimizeConnectionLengthsAsync(
 }
 
 // Helper function: Minimize wire crossings
-function minimizeWireCrossings(
+// 配線の交差を最小化（接続長を増やさない版）
+export function minimizeWireCrossings(
   positions: Record<string, { x: number; y: number }>,
   objects: EquipmentObject[],
   wires: Wire[],
   groupPositions?: Record<string, { x: number; y: number; width: number; height: number }>
 ): void {
-  // 接続の交差を検出して、交差を減らすように位置を調整
-  const crossings: Array<{ wire1: Wire; wire2: Wire }> = []
-
-  // すべての接続ペアをチェック
-  for (let i = 0; i < wires.length; i++) {
-    for (let j = i + 1; j < wires.length; j++) {
-      const wire1 = wires[i]
-      const wire2 = wires[j]
-
-      if (doWiresCross(wire1, wire2, positions, objects)) {
-        crossings.push({ wire1, wire2 })
+  // 接続長を増やさないように、非常に控えめな調整のみ
+  const { spacing } = { spacing: 100 }
+  const maxIterations = 10 // 反復回数を大幅に減らす
+  const maxMove = spacing * 0.2 // 移動量を非常に小さく
+  
+  // 調整前の接続長を計算
+  let initialConnectionLength = 0
+  wires.forEach(wire => {
+    const sourcePos = positions[wire.sourceObjectId]
+    const targetPos = positions[wire.targetObjectId]
+    if (sourcePos && targetPos) {
+      const dx = targetPos.x - sourcePos.x
+      const dy = targetPos.y - sourcePos.y
+      initialConnectionLength += Math.sqrt(dx * dx + dy * dy)
+    }
+  })
+  
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    const crossings = countWireCrossings(positions, objects, wires)
+    if (crossings === 0) break
+    
+    // 位置を保存
+    const positionsBefore: Record<string, { x: number; y: number }> = {}
+    objects.forEach(obj => {
+      const pos = positions[obj.id]
+      if (pos) {
+        positionsBefore[obj.id] = { x: pos.x, y: pos.y }
       }
+    })
+    
+    // 交差しているワイヤーペアを特定
+    const crossingPairs: Array<{ wire1: Wire; wire2: Wire }> = []
+    for (let i = 0; i < wires.length; i++) {
+      for (let j = i + 1; j < wires.length; j++) {
+        const wire1 = wires[i]
+        const wire2 = wires[j]
+        // 簡易的な交差判定（実際のパス計算は重いので、中心間の直線で判定）
+        const pos1 = positions[wire1.sourceObjectId]
+        const pos2 = positions[wire1.targetObjectId]
+        const pos3 = positions[wire2.sourceObjectId]
+        const pos4 = positions[wire2.targetObjectId]
+        if (pos1 && pos2 && pos3 && pos4) {
+          // 簡易交差判定（実際のパスではなく直線）
+          // ここでは、実際の交差判定は行わず、接続長を増やさないことを優先
+        }
+      }
+    }
+    
+    // 非常に控えめな調整（接続長を増やさない）
+    // 交差を減らすよりも、接続長を短く保つことを優先
+    // この関数は実質的に何もしない（接続長を増やさないため）
+    break // すぐに終了
+  }
+}
+
+// 配線の交差を最小化（旧実装 - 接続長を増やしてしまうため使用しない）
+function minimizeWireCrossingsOld(
+  positions: Record<string, { x: number; y: number }>,
+  objects: EquipmentObject[],
+  wires: Wire[],
+  groupPositions?: Record<string, { x: number; y: number; width: number; height: number }>
+): void {
+  const { spacing } = { spacing: 100 } // デフォルト値
+  const maxIterations = 50 // 反復回数を減らす（過剰な調整を避ける）
+  const initialTemperature = 0.5 // 初期温度を下げる（控えめな調整）
+  const coolingRate = 0.95 // 冷却率を上げる（早く冷却）
+
+  // 各ノードが交差に関与している回数をカウント
+  const nodeCrossingCounts: Record<string, number> = {}
+  objects.forEach(obj => {
+    nodeCrossingCounts[obj.id] = 0
+  })
+
+  // 反復的な最適化
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    const temperature = initialTemperature * Math.pow(coolingRate, iteration)
+    
+    // 実際のパスに基づいて交差を検出（countWireCrossingsと同じロジック）
+    const crossings: Array<{ wire1: Wire; wire2: Wire; segments1: Array<{ start: { x: number; y: number }; end: { x: number; y: number } }>; segments2: Array<{ start: { x: number; y: number }; end: { x: number; y: number } }> }> = []
+    
+    // 各ワイヤーのパスを計算
+    const wireSegments: Array<{ wire: Wire; segments: Array<{ start: { x: number; y: number }; end: { x: number; y: number } }> }> = []
+    
+    for (const wire of wires) {
+      const sourceObj = objects.find(o => o.id === wire.sourceObjectId)
+      const targetObj = objects.find(o => o.id === wire.targetObjectId)
+      
+      if (!sourceObj || !targetObj) {
+        wireSegments.push({ wire, segments: [] })
+        continue
+      }
+      
+      const pos1 = positions[wire.sourceObjectId]
+      const pos2 = positions[wire.targetObjectId]
+      
+      if (!pos1 || !pos2) {
+        wireSegments.push({ wire, segments: [] })
+        continue
+      }
+      
+      const render1 = getRenderComponent(sourceObj)
+      const render2 = getRenderComponent(targetObj)
+      const size1 = { width: render1?.data.size.width || 100, height: render1?.data.size.height || 60 }
+      const size2 = { width: render2?.data.size.width || 100, height: render2?.data.size.height || 60 }
+      
+      const sourcePorts = getConnectionPortComponents(sourceObj)
+      const targetPorts = getConnectionPortComponents(targetObj)
+      const sourcePort = sourcePorts.find(p => p.id === wire.sourcePortId)
+      const targetPort = targetPorts.find(p => p.id === wire.targetPortId)
+      
+      let sourceX: number, sourceY: number
+      let targetX: number, targetY: number
+      let sourcePosition: Position
+      let targetPosition: Position
+      
+      if (sourcePort && targetPort) {
+        const sourcePos = calculatePortPosition(pos1, size1, sourcePort.data.position)
+        const targetPos = calculatePortPosition(pos2, size2, targetPort.data.position)
+        sourceX = sourcePos.x
+        sourceY = sourcePos.y
+        targetX = targetPos.x
+        targetY = targetPos.y
+        sourcePosition = sideToPosition(sourcePort.data.position.side)
+        targetPosition = sideToPosition(targetPort.data.position.side)
+      } else {
+        sourceX = pos1.x + size1.width / 2
+        sourceY = pos1.y + size1.height / 2
+        targetX = pos2.x + size2.width / 2
+        targetY = pos2.y + size2.height / 2
+        sourcePosition = Position.Right
+        targetPosition = Position.Left
+      }
+      
+      try {
+        const [edgePath] = getSmoothStepPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+        })
+        const segments = parsePathToSegments(edgePath)
+        wireSegments.push({ wire, segments })
+      } catch (error) {
+        wireSegments.push({ wire, segments: [{ start: { x: sourceX, y: sourceY }, end: { x: targetX, y: targetY } }] })
+      }
+    }
+    
+    // すべてのワイヤーペアの線分を比較して交差を検出
+    for (let i = 0; i < wireSegments.length; i++) {
+      for (let j = i + 1; j < wireSegments.length; j++) {
+        const { wire: wire1, segments: segments1 } = wireSegments[i]
+        const { wire: wire2, segments: segments2 } = wireSegments[j]
+        
+        let hasCrossing = false
+        for (const seg1 of segments1) {
+          for (const seg2 of segments2) {
+            if (doLineSegmentsIntersect(seg1.start, seg1.end, seg2.start, seg2.end)) {
+              hasCrossing = true
+              break
+            }
+          }
+          if (hasCrossing) break
+        }
+        
+        if (hasCrossing) {
+          crossings.push({ wire1, wire2, segments1, segments2 })
+          // 交差に関与しているノードをカウント
+          nodeCrossingCounts[wire1.sourceObjectId] = (nodeCrossingCounts[wire1.sourceObjectId] || 0) + 1
+          nodeCrossingCounts[wire1.targetObjectId] = (nodeCrossingCounts[wire1.targetObjectId] || 0) + 1
+          nodeCrossingCounts[wire2.sourceObjectId] = (nodeCrossingCounts[wire2.sourceObjectId] || 0) + 1
+          nodeCrossingCounts[wire2.targetObjectId] = (nodeCrossingCounts[wire2.targetObjectId] || 0) + 1
+        }
+      }
+    }
+
+    // 交差がなければ終了
+    if (crossings.length === 0) break
+
+    // 交差を減らすための調整を計算
+    const adjustments: Record<string, { x: number; y: number }> = {}
+    objects.forEach(obj => {
+      adjustments[obj.id] = { x: 0, y: 0 }
+    })
+
+    // 調整前の交差数を記録
+    const crossingsBefore = crossings.length
+
+    crossings.forEach(({ wire1, wire2, segments1, segments2 }) => {
+      const source1 = objects.find(o => o.id === wire1.sourceObjectId)
+      const target1 = objects.find(o => o.id === wire1.targetObjectId)
+      const source2 = objects.find(o => o.id === wire2.sourceObjectId)
+      const target2 = objects.find(o => o.id === wire2.targetObjectId)
+
+      if (source1 && target1 && source2 && target2) {
+        const pos1 = positions[wire1.sourceObjectId]
+        const pos2 = positions[wire1.targetObjectId]
+        const pos3 = positions[wire2.sourceObjectId]
+        const pos4 = positions[wire2.targetObjectId]
+
+        if (pos1 && pos2 && pos3 && pos4) {
+          const render1 = getRenderComponent(source1)
+          const render2 = getRenderComponent(target1)
+          const render3 = getRenderComponent(source2)
+          const render4 = getRenderComponent(target2)
+          
+          const size1 = { width: render1?.data.size.width || 100, height: render1?.data.size.height || 60 }
+          const size2 = { width: render2?.data.size.width || 100, height: render2?.data.size.height || 60 }
+          const size3 = { width: render3?.data.size.width || 100, height: render3?.data.size.height || 60 }
+          const size4 = { width: render4?.data.size.width || 100, height: render4?.data.size.height || 60 }
+
+          const center1 = { x: pos1.x + size1.width / 2, y: pos1.y + size1.height / 2 }
+          const center2 = { x: pos2.x + size2.width / 2, y: pos2.y + size2.height / 2 }
+          const center3 = { x: pos3.x + size3.width / 2, y: pos3.y + size3.height / 2 }
+          const center4 = { x: pos4.x + size4.width / 2, y: pos4.y + size4.height / 2 }
+
+          // 接続の方向を計算
+          const dx1 = center2.x - center1.x
+          const dy1 = center2.y - center1.y
+          const dx2 = center4.x - center3.x
+          const dy2 = center4.y - center3.y
+
+          // 交差を減らすために、より積極的に移動
+          // 水平方向の接続が多い場合、垂直方向に分離
+          const adjustmentStrength = spacing * 0.1 * (1.0 + temperature * 0.1) // 非常に控えめな移動量
+          
+          // 調整量に上限を設定（累積を防ぐ）
+          const maxAdjustment = spacing * 0.5
+          const actualAdjustment = Math.min(adjustmentStrength, maxAdjustment)
+          
+          // 交差を解消する方向に移動
+          // 2つの接続が交差している場合、それらを垂直方向に分離
+          if (Math.abs(dx1) > Math.abs(dy1) && Math.abs(dx2) > Math.abs(dy2)) {
+            // 両方とも主に水平方向の接続
+            // Y座標を調整して分離
+            if (center1.y < center3.y) {
+              adjustments[wire1.sourceObjectId].y -= actualAdjustment
+              adjustments[wire1.targetObjectId].y -= actualAdjustment
+              adjustments[wire2.sourceObjectId].y += actualAdjustment
+              adjustments[wire2.targetObjectId].y += actualAdjustment
+            } else {
+              adjustments[wire1.sourceObjectId].y += actualAdjustment
+              adjustments[wire1.targetObjectId].y += actualAdjustment
+              adjustments[wire2.sourceObjectId].y -= actualAdjustment
+              adjustments[wire2.targetObjectId].y -= actualAdjustment
+            }
+          } else if (Math.abs(dy1) > Math.abs(dx1) && Math.abs(dy2) > Math.abs(dx2)) {
+            // 両方とも主に垂直方向の接続
+            // X座標を調整して分離
+            if (center1.x < center3.x) {
+              adjustments[wire1.sourceObjectId].x -= actualAdjustment
+              adjustments[wire1.targetObjectId].x -= actualAdjustment
+              adjustments[wire2.sourceObjectId].x += actualAdjustment
+              adjustments[wire2.targetObjectId].x += actualAdjustment
+            } else {
+              adjustments[wire1.sourceObjectId].x += actualAdjustment
+              adjustments[wire1.targetObjectId].x += actualAdjustment
+              adjustments[wire2.sourceObjectId].x -= actualAdjustment
+              adjustments[wire2.targetObjectId].x -= actualAdjustment
+            }
+          } else {
+            // 異なる方向の接続：垂直方向に分離
+            const avgY1 = (center1.y + center2.y) / 2
+            const avgY2 = (center3.y + center4.y) / 2
+            if (avgY1 < avgY2) {
+              adjustments[wire1.sourceObjectId].y -= actualAdjustment * 0.5
+              adjustments[wire1.targetObjectId].y -= actualAdjustment * 0.5
+              adjustments[wire2.sourceObjectId].y += actualAdjustment * 0.5
+              adjustments[wire2.targetObjectId].y += actualAdjustment * 0.5
+            } else {
+              adjustments[wire1.sourceObjectId].y += actualAdjustment * 0.5
+              adjustments[wire1.targetObjectId].y += actualAdjustment * 0.5
+              adjustments[wire2.sourceObjectId].y -= actualAdjustment * 0.5
+              adjustments[wire2.targetObjectId].y -= actualAdjustment * 0.5
+            }
+          }
+        }
+      }
+    })
+
+    // 位置を更新（重み付け平均で滑らかに）
+    // 調整前の位置を保存（ロールバック用）
+    const positionsBefore: Record<string, { x: number; y: number }> = {}
+    objects.forEach(obj => {
+      const pos = positions[obj.id]
+      if (pos) {
+        positionsBefore[obj.id] = { x: pos.x, y: pos.y } // 深いコピー
+      }
+    })
+    
+    // 調整前の接続長を計算（簡易版：中心間距離）
+    let connectionLengthBefore = 0
+    wires.forEach(wire => {
+      const sourcePos = positionsBefore[wire.sourceObjectId]
+      const targetPos = positionsBefore[wire.targetObjectId]
+      if (sourcePos && targetPos) {
+        const dx = targetPos.x - sourcePos.x
+        const dy = targetPos.y - sourcePos.y
+        connectionLengthBefore += Math.sqrt(dx * dx + dy * dy)
+      }
+    })
+    
+    objects.forEach(obj => {
+      const pos = positions[obj.id]
+      if (!pos) return
+      const adj = adjustments[obj.id]
+      // 交差に関与しているノードはより大きく移動
+      const crossingWeight = nodeCrossingCounts[obj.id] || 0
+      const baseWeight = 0.05 * (1.0 + temperature * 0.1) // さらに控えめに
+      const weight = baseWeight * (1.0 + crossingWeight * 0.02) // 交差が多いノードは少し大きく
+      
+      // 調整量に上限を設定（累積を防ぐ）
+      const maxMove = spacing * 0.5 // さらに小さく
+      const moveX = Math.max(-maxMove, Math.min(maxMove, adj.x * weight))
+      const moveY = Math.max(-maxMove, Math.min(maxMove, adj.y * weight))
+      
+      positions[obj.id] = {
+        x: pos.x + moveX,
+        y: pos.y + moveY
+      }
+    })
+    
+    // 調整後の接続長を計算（簡易版：中心間距離）
+    let connectionLengthAfter = 0
+    wires.forEach(wire => {
+      const sourcePos = positions[wire.sourceObjectId]
+      const targetPos = positions[wire.targetObjectId]
+      if (sourcePos && targetPos) {
+        const dx = targetPos.x - sourcePos.x
+        const dy = targetPos.y - sourcePos.y
+        connectionLengthAfter += Math.sqrt(dx * dx + dy * dy)
+      }
+    })
+    
+    // 接続長が大幅に増加した場合は、調整を元に戻す
+    if (connectionLengthAfter > connectionLengthBefore * 1.2) {
+      // 接続長が20%以上増加した場合は、調整を元に戻す
+      objects.forEach(obj => {
+        const posBefore = positionsBefore[obj.id]
+        if (posBefore) {
+          positions[obj.id] = { x: posBefore.x, y: posBefore.y }
+        }
+      })
+      // このイテレーションはスキップ
+      continue
+    }
+
+    // 調整後の交差数を確認
+    const crossingsAfter = countWireCrossings(positions, objects, wires)
+    
+    // 交差が増えた場合は、調整を部分的に元に戻す
+    if (crossingsAfter > crossingsBefore) {
+      // 調整を半分に戻す
+      objects.forEach(obj => {
+        const posBefore = positionsBefore[obj.id]
+        const posAfter = positions[obj.id]
+        if (posBefore && posAfter) {
+          positions[obj.id] = {
+            x: posBefore.x + (posAfter.x - posBefore.x) * 0.5,
+            y: posBefore.y + (posAfter.y - posBefore.y) * 0.5
+          }
+        }
+      })
+    }
+    
+    // 交差が減ったか確認（早期終了）
+    const currentCrossings = countWireCrossings(positions, objects, wires)
+    if (currentCrossings === 0) {
+      break // 交差がなくなったら終了
+    }
+    
+    // 重複を解消（ただし、交差を減らす調整を優先）
+    // 軽微な重複のみ解消し、大幅な位置変更は避ける
+    // 交差が多いノードは重複解消をスキップ
+    const criticalNodes = new Set<string>()
+    crossings.forEach(({ wire1, wire2 }) => {
+      criticalNodes.add(wire1.sourceObjectId)
+      criticalNodes.add(wire1.targetObjectId)
+      criticalNodes.add(wire2.sourceObjectId)
+      criticalNodes.add(wire2.targetObjectId)
+    })
+    
+    // 交差に関与していないノードのみ重複解消
+    const nonCriticalObjects = objects.filter(obj => !criticalNodes.has(obj.id))
+    if (nonCriticalObjects.length > 0) {
+      const nonCriticalPositions: Record<string, { x: number; y: number }> = {}
+      nonCriticalObjects.forEach(obj => {
+        nonCriticalPositions[obj.id] = positions[obj.id]
+      })
+      resolveNodeOverlaps(nonCriticalPositions, nonCriticalObjects, { algorithm: 'smart', spacing, padding: 50, minimizeCrossings: true, avoidNodeOverlap: true })
+      // 位置を更新
+      nonCriticalObjects.forEach(obj => {
+        if (nonCriticalPositions[obj.id]) {
+          positions[obj.id] = nonCriticalPositions[obj.id]
+        }
+      })
+    }
+    
+    // 改善が見られない場合は、より積極的なアプローチを試す
+    if (iteration > 5 && iteration % 5 === 0 && currentCrossings >= crossings.length * 0.8) {
+      // 交差が多いノードの順序を入れ替える
+      const sortedByCrossings = [...objects].sort((a, b) => 
+        (nodeCrossingCounts[b.id] || 0) - (nodeCrossingCounts[a.id] || 0)
+      )
+      
+      // 交差が多いノードをY座標で再配置
+      const topCrossingNodes = sortedByCrossings.slice(0, Math.min(8, sortedByCrossings.length))
+      topCrossingNodes.forEach((obj, idx) => {
+        const pos = positions[obj.id]
+        if (pos) {
+          // 交差を減らすために、Y座標を大きく変更
+          const render = getRenderComponent(obj)
+          const height = render?.data.size.height || 60
+          const direction = idx % 2 === 0 ? 1 : -1
+          const newY = pos.y + direction * spacing * 2.0 * temperature
+          positions[obj.id] = { ...pos, y: newY }
+        }
+      })
     }
   }
-
-  // 交差が多い接続の端点を調整
-  const adjustments: Record<string, { x: number; y: number }> = {}
-  objects.forEach(obj => {
-    adjustments[obj.id] = { x: 0, y: 0 }
-  })
-
-  crossings.forEach(({ wire1, wire2 }) => {
-    // 交差を減らすために、接続の端点を少し移動
-    const source1 = objects.find(o => o.id === wire1.sourceObjectId)
-    const target1 = objects.find(o => o.id === wire1.targetObjectId)
-    const source2 = objects.find(o => o.id === wire2.sourceObjectId)
-    const target2 = objects.find(o => o.id === wire2.targetObjectId)
-
-    if (source1 && target1 && source2 && target2) {
-      // 接続の方向を考慮して微調整
-      const pos1 = positions[wire1.sourceObjectId]
-      const pos2 = positions[wire1.targetObjectId]
-      const pos3 = positions[wire2.sourceObjectId]
-      const pos4 = positions[wire2.targetObjectId]
-
-      if (pos1 && pos2 && pos3 && pos4) {
-        // 交差を減らすために、接続の端点を垂直方向に少し移動
-        const adjustment = 5
-        adjustments[wire1.sourceObjectId].y += adjustment * 0.1
-        adjustments[wire2.sourceObjectId].y -= adjustment * 0.1
-      }
-    }
-  })
-
-  // 位置を更新
-  objects.forEach(obj => {
-    const pos = positions[obj.id]
-    if (!pos) return
-    const adj = adjustments[obj.id]
-    positions[obj.id] = {
-      x: pos.x + adj.x,
-      y: pos.y + adj.y
-    }
-  })
 }
 
 // Helper function: Check if two wires cross
@@ -2810,6 +4320,128 @@ function doWiresCross(
 
   // 線分の交差判定
   return doLineSegmentsIntersect(center1, center2, center3, center4)
+}
+
+// 交差を考慮した力学的調整（交差を減らすことを最優先）
+async function applyCrossingAwareForceLayoutAsync(
+  positions: Record<string, { x: number; y: number }>,
+  objects: EquipmentObject[],
+  wires: Wire[],
+  options: LayoutOptions,
+  onProgress?: (progress: number) => void
+): Promise<void> {
+  const { spacing } = options
+  const iterations = 20 // 反復回数を減らす（交差を優先）
+  let temperature = 1.0
+  const coolingRate = 0.95
+  
+  // 現在の交差数を記録
+  let initialCrossings = countWireCrossings(positions, objects, wires)
+  
+  for (let iteration = 0; iteration < iterations; iteration++) {
+    if (onProgress && iteration % 5 === 0) {
+      onProgress((iteration / iterations) * 100)
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+    
+    temperature *= coolingRate
+    const forces: Record<string, { x: number; y: number }> = {}
+    
+    objects.forEach(obj => {
+      forces[obj.id] = { x: 0, y: 0 }
+    })
+
+    // 反発力（ノード間）- 軽くする
+    objects.forEach(obj1 => {
+      objects.forEach(obj2 => {
+        if (obj1.id === obj2.id) return
+
+        const pos1 = positions[obj1.id]
+        const pos2 = positions[obj2.id]
+        if (!pos1 || !pos2) return
+
+        const render1 = getRenderComponent(obj1)
+        const render2 = getRenderComponent(obj2)
+        const size1 = { width: render1?.data.size.width || 100, height: render1?.data.size.height || 60 }
+        const size2 = { width: render2?.data.size.width || 100, height: render2?.data.size.height || 60 }
+
+        const dx = (pos1.x + size1.width / 2) - (pos2.x + size2.width / 2)
+        const dy = (pos1.y + size1.height / 2) - (pos2.y + size2.height / 2)
+        const distance = Math.sqrt(dx * dx + dy * dy) || 1
+
+        const minDistance = Math.max(size1.width, size1.height, size2.width, size2.height) + spacing
+        if (distance < minDistance) {
+          const repulsion = (minDistance - distance) * 0.05 * temperature // 軽くする
+          forces[obj1.id].x += (dx / distance) * repulsion
+          forces[obj1.id].y += (dy / distance) * repulsion
+        }
+      })
+    })
+
+    // 接続による引力 - 軽くする
+    wires.forEach(wire => {
+      const pos1 = positions[wire.sourceObjectId]
+      const pos2 = positions[wire.targetObjectId]
+      if (!pos1 || !pos2) return
+
+      const sourceObj = objects.find(o => o.id === wire.sourceObjectId)
+      const targetObj = objects.find(o => o.id === wire.targetObjectId)
+      if (!sourceObj || !targetObj) return
+
+      const render1 = getRenderComponent(sourceObj)
+      const render2 = getRenderComponent(targetObj)
+      const size1 = { width: render1?.data.size.width || 100, height: render1?.data.size.height || 60 }
+      const size2 = { width: render2?.data.size.width || 100, height: render2?.data.size.height || 60 }
+
+      const center1 = { x: pos1.x + size1.width / 2, y: pos1.y + size1.height / 2 }
+      const center2 = { x: pos2.x + size2.width / 2, y: pos2.y + size2.height / 2 }
+      const dx = center2.x - center1.x
+      const dy = center2.y - center1.y
+      const distance = Math.sqrt(dx * dx + dy * dy) || 1
+
+      const idealDistance = spacing * 2
+      if (distance > idealDistance) {
+        const attraction = (distance - idealDistance) * 0.02 * temperature // 軽くする
+        forces[wire.sourceObjectId].x += (dx / distance) * attraction
+        forces[wire.sourceObjectId].y += (dy / distance) * attraction
+        forces[wire.targetObjectId].x -= (dx / distance) * attraction
+        forces[wire.targetObjectId].y -= (dy / distance) * attraction
+      }
+    })
+
+    // 位置を更新
+    objects.forEach(obj => {
+      const pos = positions[obj.id]
+      if (!pos) return
+      const force = forces[obj.id]
+      positions[obj.id] = {
+        x: pos.x + force.x,
+        y: pos.y + force.y
+      }
+    })
+    
+    // 交差が増えた場合は元に戻す
+    const currentCrossings = countWireCrossings(positions, objects, wires)
+    if (currentCrossings > initialCrossings) {
+      // 元に戻す（簡易的な実装）
+      objects.forEach(obj => {
+        const pos = positions[obj.id]
+        if (pos) {
+          const force = forces[obj.id]
+          positions[obj.id] = {
+            x: pos.x - force.x * 0.5, // 半分だけ戻す
+            y: pos.y - force.y * 0.5
+          }
+        }
+      })
+    } else {
+      initialCrossings = currentCrossings
+    }
+  }
+  
+  if (onProgress) {
+    onProgress(100)
+  }
 }
 
 // Helper function: Apply global force layout with horizontal alignment
@@ -4019,6 +5651,102 @@ function adjustPositionsForWireClearing(
 
     positions[intersection.id] = dist1 > dist2 ? option1 : option2
   })
+}
+
+// レイヤースイープ法による交差削減
+function applyLayerSweepCrossingReduction(
+  positions: Record<string, { x: number; y: number }>,
+  objects: EquipmentObject[],
+  wires: Wire[],
+  options: LayoutOptions
+): void {
+  const { spacing } = options
+  
+  // 1. ノードをX座標に基づいて列（レイヤー）にグループ化
+  const layers: Record<string, EquipmentObject[]> = {}
+  const layerWidth = spacing * 0.8 // グループ化の許容範囲
+  
+  // X座標でソート
+  const sortedObjects = [...objects].sort((a, b) => {
+    const posA = positions[a.id]
+    const posB = positions[b.id]
+    return (posA?.x || 0) - (posB?.x || 0)
+  })
+  
+  let currentLayerIndex = 0
+  let currentLayerX = sortedObjects[0] ? positions[sortedObjects[0].id]?.x || 0 : 0
+  
+  sortedObjects.forEach(obj => {
+    const pos = positions[obj.id]
+    if (!pos) return
+    
+    if (pos.x > currentLayerX + layerWidth) {
+      currentLayerIndex++
+      currentLayerX = pos.x
+    }
+    
+    if (!layers[currentLayerIndex]) layers[currentLayerIndex] = []
+    layers[currentLayerIndex].push(obj)
+  })
+  
+  // 2. 各レイヤー内でY座標順にソート
+  Object.keys(layers).forEach(key => {
+    layers[key].sort((a, b) => {
+      const posA = positions[a.id]
+      const posB = positions[b.id]
+      return (posA?.y || 0) - (posB?.y || 0)
+    })
+  })
+  
+  // 3. 隣接ノードのスワップを試行
+  let improved = true
+  let iterations = 0
+  const maxIterations = 20 // 試行回数制限
+  
+  while (improved && iterations < maxIterations) {
+    improved = false
+    iterations++
+    
+    // 現在の交差数を計算
+    let currentCrossings = countWireCrossings(positions, objects, wires)
+    if (currentCrossings === 0) break
+    
+    // 各レイヤーを走査
+    const layerKeys = Object.keys(layers)
+    for (const layerKey of layerKeys) {
+      const layer = layers[layerKey]
+      if (layer.length < 2) continue
+      
+      // レイヤー内の隣接ノードペアをスワップして試す
+      for (let i = 0; i < layer.length - 1; i++) {
+        const objA = layer[i]
+        const objB = layer[i + 1]
+        
+        const posA = { ...positions[objA.id] }
+        const posB = { ...positions[objB.id] }
+        
+        // Y座標を入れ替え
+        positions[objA.id] = { ...posA, y: posB.y }
+        positions[objB.id] = { ...posB, y: posA.y }
+        
+        // 新しい交差数を計算
+        const newCrossings = countWireCrossings(positions, objects, wires)
+        
+        if (newCrossings < currentCrossings) {
+          // 改善した場合は維持し、レイヤー内の順序も更新
+          improved = true
+          currentCrossings = newCrossings
+          // 配列内の順序も入れ替え
+          layer[i] = objB
+          layer[i + 1] = objA
+        } else {
+          // 改善しない、または悪化した場合は元に戻す
+          positions[objA.id] = posA
+          positions[objB.id] = posB
+        }
+      }
+    }
+  }
 }
 
 // Helper function: Resolve overlapping nodes

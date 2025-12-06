@@ -46,6 +46,7 @@ interface MenuBarProps {
   onDistributeHorizontal: () => void
   onDistributeVertical: () => void
   onValidateConnections: () => void
+  onRemoveDuplicateWires: () => void
   onShowSettings: () => void
   
   // ヘルプメニュー
@@ -158,6 +159,7 @@ export default function MenuBar({
   onDistributeHorizontal,
   onDistributeVertical,
   onValidateConnections,
+  onRemoveDuplicateWires,
   onShowSettings,
   
   // ヘルプメニュー
@@ -166,10 +168,11 @@ export default function MenuBar({
   onShowAbout
 }: MenuBarProps) {
   const { project, canUndo, canRedo, undo, redo, canPaste } = useProjectStore()
+  const { showScoreCalculation } = useSettingsStore()
   
   // 評価スコアを計算（位置情報も依存配列に含める）
   const layoutScore = useMemo(() => {
-    if (project.objects.length === 0) return null
+    if (!showScoreCalculation || project.objects.length === 0) return null
     
     // 現在の位置から評価スコアを計算
     const positions: Record<string, { x: number; y: number }> = {}
@@ -191,6 +194,7 @@ export default function MenuBar({
       return null
     }
   }, [
+    showScoreCalculation,
     project.objects.length,
     project.wires.length,
     // 位置情報を文字列化して依存配列に含める
@@ -293,6 +297,7 @@ export default function MenuBar({
     { label: '垂直に分散', onClick: onDistributeVertical },
     { separator: true },
     { label: '接続の検証', onClick: onValidateConnections },
+    { label: '重複接続を削除', onClick: onRemoveDuplicateWires },
     { separator: true },
     { label: '設定', onClick: onShowSettings }
   ]

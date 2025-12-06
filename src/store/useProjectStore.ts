@@ -56,6 +56,9 @@ interface ProjectState {
   exportProjectTemplates: () => void
   importProjectTemplates: (templates: EquipmentTemplate[]) => void
   exportSingleTemplate: (templateId: string) => void
+  
+  // 重複接続の削除
+  removeDuplicateWires: () => number
 }
 
 const createDefaultProject = (): Project => ({
@@ -834,5 +837,47 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  },
+
+  // 重複接続を削除（同じsourceObjectId、sourcePortId、targetObjectId、targetPortIdの組み合わせ）
+  removeDuplicateWires: () => {
+    const state = get()
+    const seen = new Map<string, string>() // key: 接続のキー, value: 最初に見つかったwire.id
+    const duplicateIds: string[] = []
+
+    state.project.wires.forEach(wire => {
+      // 接続の一意キーを生成（sourceObjectId, sourcePortId, targetObjectId, targetPortIdの組み合わせ）
+      const connectionKey = `${wire.sourceObjectId}:${wire.sourcePortId}:${wire.targetObjectId}:${wire.targetPortId}`
+      
+      if (seen.has(connectionKey)) {
+        // 重複が見つかった場合、後から見つかった方を削除対象にする
+        duplicateIds.push(wire.id)
+      } else {
+        // 初めて見つかった接続は保持
+        seen.set(connectionKey, wire.id)
+      }
+    })
+
+    if (duplicateIds.length === 0) {
+      return 0
+    }
+
+    // 重複接続を削除
+    const newProject = {
+      ...state.project,
+      wires: state.project.wires.filter(wire => !duplicateIds.includes(wire.id)),
+      updatedAt: new Date()
+    }
+
+    pushToHistory(newProject, true) // 削除は即座に保存
+    set({
+      project: newProject,
+      selectedWireIds: state.selectedWireIds.filter(id => !duplicateIds.includes(id))
+    })
+
+    // 自動保存
+    setTimeout(() => get().autoSaveProject(), 100)
+
+    return duplicateIds.length
   }
 }))

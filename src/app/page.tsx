@@ -12,6 +12,7 @@ import ShortcutsDialog from '@/components/ShortcutsDialog'
 import AboutDialog from '@/components/AboutDialog'
 import ScoreDetailsPanel from '@/components/ScoreDetailsDialog'
 import { useProjectStore } from '@/store/useProjectStore'
+import { useSettingsStore } from '@/store/useSettingsStore'
 import { Project } from '@/types'
 
 export default function Home() {
@@ -30,7 +31,8 @@ export default function Home() {
   const editorRef = useRef<any>(null)
 
   // プロジェクトストアから保存・読み込み機能を取得
-  const { saveProject, loadProject, createNewProject, loadAutoSavedProject, project } = useProjectStore()
+  const { saveProject, loadProject, createNewProject, loadAutoSavedProject, project, removeDuplicateWires } = useProjectStore()
+  const { showScoreCalculation } = useSettingsStore()
 
   // アプリ起動時に自動保存されたプロジェクトを読み込む
   useEffect(() => {
@@ -183,6 +185,14 @@ export default function Home() {
         onDistributeHorizontal={() => editorRef.current?.distributeHorizontal()}
         onDistributeVertical={() => editorRef.current?.distributeVertical()}
         onValidateConnections={() => editorRef.current?.validateConnections()}
+        onRemoveDuplicateWires={() => {
+          const removedCount = removeDuplicateWires()
+          if (removedCount > 0) {
+            alert(`${removedCount}個の重複接続を削除しました`)
+          } else {
+            alert('重複接続は見つかりませんでした')
+          }
+        }}
         onShowSettings={() => setShowSettings(true)}
 
         // ヘルプメニュー
@@ -243,8 +253,10 @@ export default function Home() {
         onClose={() => setShowAbout(false)}
       />
 
-      {/* 評価スコア詳細パネル（常時表示） */}
-      <ScoreDetailsPanel project={project} />
+      {/* 評価スコア詳細パネル（設定で有効化時のみ表示） */}
+      {showScoreCalculation && (
+        <ScoreDetailsPanel project={project} />
+      )}
     </main>
   )
 }

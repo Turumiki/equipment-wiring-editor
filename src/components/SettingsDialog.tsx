@@ -21,7 +21,9 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
     showPortLabels,
     setShowPortLabels,
     showWireLabels,
-    setShowWireLabels
+    setShowWireLabels,
+    showScoreCalculation,
+    setShowScoreCalculation
   } = useSettingsStore()
 
   const [activeTab, setActiveTab] = useState<'ui' | 'portTypes' | 'wireTypes' | 'compatibility'>('ui')
@@ -178,6 +180,21 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
                   </label>
                   <p className="text-sm text-gray-600 mt-1">
                     接続線にポートタイプ（XLR、USB等）のラベルを表示します
+                  </p>
+                </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={showScoreCalculation}
+                      onChange={(e) => setShowScoreCalculation(e.target.checked)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium text-black">評価スコア計算と表示</span>
+                  </label>
+                  <p className="text-sm text-gray-600 mt-1">
+                    レイアウトの評価スコアを計算し、メニューバーと詳細パネルに表示します
                   </p>
                 </div>
               </div>

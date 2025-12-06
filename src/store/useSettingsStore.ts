@@ -19,6 +19,7 @@ interface SettingsState {
   canvasBackgroundColor: string
   gridColor: string
   gridEnabled: boolean
+  showScoreCalculation: boolean
 
   // Actions
   addPortType: (portType: PortTypeDefinition) => void
@@ -43,6 +44,7 @@ interface SettingsState {
   setCanvasBackgroundColor: (color: string) => void
   setGridColor: (color: string) => void
   setGridEnabled: (enabled: boolean) => void
+  setShowScoreCalculation: (enabled: boolean) => void
   resetToDefaults: () => void
   hydrate: () => void
   loadTemplatesFromFiles: () => Promise<void>
@@ -164,7 +166,8 @@ const loadSettingsFromStorage = () => {
           showWireLabels: parsed.showWireLabels !== undefined ? parsed.showWireLabels : true,
           canvasBackgroundColor: parsed.canvasBackgroundColor || '#f3f4f6',
           gridColor: parsed.gridColor || '#d1d5db',
-          gridEnabled: parsed.gridEnabled !== undefined ? parsed.gridEnabled : true
+          gridEnabled: parsed.gridEnabled !== undefined ? parsed.gridEnabled : true,
+          showScoreCalculation: parsed.showScoreCalculation !== undefined ? parsed.showScoreCalculation : false
         }
       }
     } catch (e) {
@@ -180,7 +183,8 @@ const loadSettingsFromStorage = () => {
     showWireLabels: true,
     canvasBackgroundColor: '#f3f4f6',
     gridColor: '#d1d5db',
-    gridEnabled: true
+    gridEnabled: true,
+    showScoreCalculation: false
   }
 }
 
@@ -197,7 +201,8 @@ const saveSettingsToStorage = (state: Partial<SettingsState>) => {
         showWireLabels: state.showWireLabels,
         canvasBackgroundColor: state.canvasBackgroundColor,
         gridColor: state.gridColor,
-        gridEnabled: state.gridEnabled
+        gridEnabled: state.gridEnabled,
+        showScoreCalculation: state.showScoreCalculation
       }
       localStorage.setItem('tee-app-settings', JSON.stringify(stateToSave))
     } catch (e) {
@@ -428,6 +433,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     saveSettingsToStorage({ ...state, ...newState })
     return newState
   }),
+  setShowScoreCalculation: (enabled) => set((state) => {
+    const newState = { showScoreCalculation: enabled }
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
   resetToDefaults: () => {
     const defaultState = {
@@ -438,7 +448,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       showWireLabels: true,
       canvasBackgroundColor: '#f3f4f6',
       gridColor: '#d1d5db',
-      gridEnabled: true
+      gridEnabled: true,
+      showScoreCalculation: false
     }
     set(defaultState)
     saveSettingsToStorage({ ...get(), ...defaultState })

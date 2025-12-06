@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { useProjectStore } from '@/store/useProjectStore'
+import { useSettingsStore } from '@/store/useSettingsStore'
 import { calculateFitnessDetails } from '@/utils/autoLayout'
 
 interface ScoreDetailsPanelProps {
@@ -7,10 +8,11 @@ interface ScoreDetailsPanelProps {
 }
 
 export default function ScoreDetailsPanel({ project }: ScoreDetailsPanelProps) {
+  const { showScoreCalculation } = useSettingsStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
   
   const details = useMemo(() => {
-    if (project.objects.length === 0) return null
+    if (!showScoreCalculation || project.objects.length === 0) return null
     
     const positions: Record<string, { x: number; y: number }> = {}
     project.objects.forEach(obj => {
@@ -30,6 +32,7 @@ export default function ScoreDetailsPanel({ project }: ScoreDetailsPanelProps) {
       return null
     }
   }, [
+    showScoreCalculation,
     project.objects.length,
     project.wires.length,
     JSON.stringify(project.objects.map(obj => ({ id: obj.id, x: obj.position.x, y: obj.position.y })))
