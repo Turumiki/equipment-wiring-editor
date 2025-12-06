@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useMemo } from 'react'
 import { ComponentType, Side, PortType, PortDirection, EquipmentObject, ConnectionPortComponent } from '@/types'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { getRenderComponent, getConnectionPortComponents, createConnectionPortComponent } from '@/utils/componentSystem'
+import { getPortTypeBaseName } from '@/utils/portTypeUtils'
 
 interface EquipmentPortEditorProps {
   equipmentObject: EquipmentObject
@@ -149,11 +150,6 @@ export default function EquipmentPortEditor({
     return portTypeDef?.color || '#3b82f6'
   }
 
-  // ポートタイプの表示名を取得
-  const getPortTypeDisplayName = (portType: PortType) => {
-    const portTypeDef = settings.portTypes.find(pt => pt.id === portType || pt.name === portType)
-    return portTypeDef?.displayName || portType
-  }
 
   // ドラッグ開始
   const handleDragStart = (e: React.MouseEvent, portId: string) => {
@@ -357,7 +353,7 @@ export default function EquipmentPortEditor({
                 <div
                   className="w-4 h-4 rounded-full border-2 border-white shadow-lg"
                   style={{ backgroundColor: color }}
-                  title={`${port.data.label || ''} (${getPortTypeDisplayName(port.data.portType)})`}
+                  title={`${port.data.label || ''} (${getPortTypeBaseName(port.data.portType)})`}
                 />
               </div>
             )

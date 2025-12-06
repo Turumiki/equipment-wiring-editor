@@ -12,6 +12,7 @@ import {
 } from '@/types'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useProjectStore } from '@/store/useProjectStore'
+import { getCompatiblePorts } from '@/utils/portTypeUtils'
 
 // コンポーネント作成ヘルパー関数
 export function createRenderComponent(
@@ -47,26 +48,8 @@ export function createConnectionPortComponent(
   direction: PortDirection = PortDirection.INPUT,
   label?: string
 ): ConnectionPortComponent {
-  // 設定ストアから互換性情報を取得
-  const getCompatiblePorts = (type: PortType): PortType[] => {
-    // 基本的な互換性マトリックス（フォールバック）
-    const basicCompatibility: Partial<Record<PortType, PortType[]>> = {
-      [PortType.XLR_MALE]: [PortType.XLR_FEMALE],
-      [PortType.XLR_FEMALE]: [PortType.XLR_MALE],
-      [PortType.TRS_QUARTER]: [PortType.TRS_QUARTER, PortType.TS_QUARTER],
-      [PortType.TS_QUARTER]: [PortType.TS_QUARTER, PortType.TRS_QUARTER],
-      [PortType.USB_A]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-      [PortType.USB_B]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-      [PortType.USB_C]: [PortType.USB_A, PortType.USB_B, PortType.USB_C],
-      [PortType.ETHERNET]: [PortType.ETHERNET, PortType.DANTE], // ETHERNET同士は確実に互換
-      [PortType.DANTE]: [PortType.DANTE, PortType.ETHERNET],
-      [PortType.HDMI]: [PortType.HDMI],
-      [PortType.TRS_MINI]: [PortType.TRS_MINI],
-      [PortType.POWER_AC]: [PortType.POWER_AC]
-    }
-
-    return basicCompatibility[type] || [type]
-  }
+  // 設定ストアから互換性情報を取得（portTypeUtilsからインポート）
+  // getCompatiblePortsは関数内でインポートできないため、関数外でインポート
 
   // 許可される方向を設定
   const getAllowedDirections = (direction: PortDirection): PortDirection[] => {

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react'
 import { SimpleTemplatePort, PortType, PortDirection, Side } from '@/types'
 import { useSettingsStore } from '@/store/useSettingsStore'
+import { getPortTypeBaseName } from '@/utils/portTypeUtils'
 
 interface PortWithId extends SimpleTemplatePort {
   id: string
@@ -81,12 +82,6 @@ export default function TemplatePortEditor({
   const getPortColor = (portType: string) => {
     const portTypeDef = settings.portTypes.find(pt => pt.id === portType || pt.name === portType)
     return portTypeDef?.color || '#3b82f6'
-  }
-
-  // ポートタイプの表示名を取得
-  const getPortTypeDisplayName = (portType: string) => {
-    const portTypeDef = settings.portTypes.find(pt => pt.id === portType || pt.name === portType)
-    return portTypeDef?.displayName || portType
   }
 
   // マウス位置からサイドとオフセットを計算
@@ -313,7 +308,7 @@ export default function TemplatePortEditor({
                 <div
                   className="w-4 h-4 rounded-full border-2 border-white shadow-lg"
                   style={{ backgroundColor: color }}
-                  title={`${port.label} (${getPortTypeDisplayName(port.type)})`}
+                  title={`${port.label} (${getPortTypeBaseName(port.type)})`}
                 />
               </div>
             )

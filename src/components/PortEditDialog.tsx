@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { PortType, PortDirection } from '@/types'
 import { useSettingsStore } from '@/store/useSettingsStore'
+import { getPortTypeBaseName } from '@/utils/portTypeUtils'
 
 interface PortEditDialogProps {
   isOpen: boolean
@@ -9,13 +10,6 @@ interface PortEditDialogProps {
   initialLabel: string
   initialPortType: PortType
   initialDirection: PortDirection
-}
-
-// ポートタイプの表示名を設定ストアから取得
-function getPortTypeDisplayName(portType: PortType): string {
-  const { settings } = useSettingsStore.getState()
-  const portTypeDefinition = settings.portTypes.find(pt => pt.name === portType || pt.id === portType)
-  return portTypeDefinition?.displayName || portType
 }
 
 export default function PortEditDialog({

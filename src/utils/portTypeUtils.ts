@@ -46,6 +46,15 @@ export function getDirectionDisplayName(direction: string): string {
 }
 
 /**
+ * ポートタイプの互換性を設定ストアから取得
+ */
+export function getCompatiblePorts(type: PortType): PortType[] {
+    const { settings } = useSettingsStore.getState()
+    const portTypeDefinition = settings.portTypes.find(pt => pt.name === type || pt.id === type)
+    return (portTypeDefinition?.compatibleWith as PortType[]) || [type]
+}
+
+/**
  * ワイヤータイプの表示名を取得する（設定ストアを使用）
  */
 export function getWireTypeDisplayName(wireType: string): string {

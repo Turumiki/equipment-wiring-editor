@@ -264,21 +264,7 @@ const EquipmentNode = ({ data, selected }: NodeProps<EquipmentNodeData>) => {
           }
       }
 
-      // ポートタイプの表示名を取得
-      const getPortTypeDisplayName = (portType: string, direction: string) => {
-        // 双方向ポートの場合は方向を表示しない
-        const directionText = direction === 'bidirectional' ? '' :
-          direction === 'input' ? ' Input' : direction === 'output' ? ' Output' : ''
-
-        // 設定ストアからポートタイプ定義を取得
-        const portTypeDefinition = settings.portTypes.find((pt: any) => pt.id === portType)
-        if (portTypeDefinition) {
-          return `${portTypeDefinition.displayName || portTypeDefinition.name}${directionText}`
-        }
-
-        // フォールバック：ポートタイプが見つからない場合
-        return `${portType.toUpperCase()}${directionText}`
-      }
+      // ポートタイプの表示名を取得（portTypeUtilsからインポートした関数を使用）
 
       // ポートの色とスタイルを取得（常に黒色、透明度なし）
       const getPortStyle = () => {
