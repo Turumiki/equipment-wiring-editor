@@ -59,6 +59,7 @@ const WireEdge = ({
       stroke: (style.color && style.color !== '') ? style.color : (wireTypeSettings?.color || '#059669'),
       strokeWidth: (style.strokeWidth && style.strokeWidth > 0) ? style.strokeWidth : (wireTypeSettings?.strokeWidth || 2),
       strokeDasharray: style.strokeDashArray || wireTypeSettings?.strokeDashArray,
+      fill: 'none', // 線の内側が塗りつぶされないようにする
     }
 
     if (selected) {
@@ -89,6 +90,7 @@ const WireEdge = ({
         id={id}
         className="react-flow__edge-path"
         d={edgePath}
+        fill="none"
         style={getWireStyle()}
       />
 

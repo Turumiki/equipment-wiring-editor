@@ -10,8 +10,15 @@ export async function exportCanvasAsPNG(elementId: string, filename: string = 'd
 
     const dataUrl = await toPng(element, {
       quality: 1.0,
-      pixelRatio: 2, // 高解像度
-      backgroundColor: '#ffffff'
+      pixelRatio: 3, // 高解像度（3倍）
+      backgroundColor: '#ffffff',
+      filter: (node) => {
+        // コントロールやミニマップ、グリッドを除外
+        return !node.classList?.contains('react-flow__controls') &&
+               !node.classList?.contains('react-flow__minimap') &&
+               !node.classList?.contains('react-flow__panel') &&
+               !node.classList?.contains('react-flow__background')
+      }
     })
 
     const link = document.createElement('a')
@@ -35,7 +42,14 @@ export async function exportCanvasAsJPEG(elementId: string, filename: string = '
     const dataUrl = await toJpeg(element, {
       quality: 0.95,
       pixelRatio: 2,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      filter: (node) => {
+        // コントロールやミニマップ、グリッドを除外
+        return !node.classList?.contains('react-flow__controls') &&
+               !node.classList?.contains('react-flow__minimap') &&
+               !node.classList?.contains('react-flow__panel') &&
+               !node.classList?.contains('react-flow__background')
+      }
     })
 
     const link = document.createElement('a')
@@ -57,7 +71,14 @@ export async function exportCanvasAsSVG(elementId: string, filename: string = 'd
     }
 
     const dataUrl = await toSvg(element, {
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      filter: (node) => {
+        // コントロールやミニマップ、グリッドを除外
+        return !node.classList?.contains('react-flow__controls') &&
+               !node.classList?.contains('react-flow__minimap') &&
+               !node.classList?.contains('react-flow__panel') &&
+               !node.classList?.contains('react-flow__background')
+      }
     })
 
     const link = document.createElement('a')
@@ -70,45 +91,236 @@ export async function exportCanvasAsSVG(elementId: string, filename: string = 'd
   }
 }
 
-// PDF出力（ブラウザの印刷機能を使用）
-export function exportCanvasAsPDF() {
-  // ReactFlowキャンバスを印刷用に最適化
-  const printStyles = `
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      .react-flow, .react-flow * {
-        visibility: visible;
-      }
-      .react-flow {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100% !important;
-        height: 100% !important;
-      }
-      /* ツールバーやパネルを非表示 */
-      .react-flow__controls,
-      .react-flow__minimap,
-      .react-flow__panel {
-        display: none !important;
-      }
+// PDF出力（SVGを生成してブラウザの印刷機能で出力）
+// これによりベクター品質を維持しつつ、foreignObject内のHTMLも正しく描画できる
+export async function exportCanvasAsPDF(filename: string = 'diagram.pdf') {
+  const reactFlowElement = getReactFlowElement()
+  if (!reactFlowElement) {
+    throw new Error('ReactFlow element not found')
+  }
+
+  // ノードの境界を計算
+  const nodes = reactFlowElement.querySelectorAll('.react-flow__node')
+  if (nodes.length === 0) {
+    throw new Error('No nodes found to export')
+  }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+  nodes.forEach(node => {
+    const rect = node.getBoundingClientRect()
+    const containerRect = reactFlowElement.getBoundingClientRect()
+    
+    const x = rect.left - containerRect.left
+    const y = rect.top - containerRect.top
+    
+    minX = Math.min(minX, x)
+    minY = Math.min(minY, y)
+    maxX = Math.max(maxX, x + rect.width)
+    maxY = Math.max(maxY, y + rect.height)
+  })
+
+  // マージンを追加
+  const margin = 50
+  const contentWidth = maxX - minX + margin * 2
+  const contentHeight = maxY - minY + margin * 2
+
+  // SVGを生成
+  const svgDataUrl = await toSvg(reactFlowElement, {
+    backgroundColor: '#ffffff',
+    filter: (node) => {
+      // コントロールやミニマップ、グリッドを除外
+      return !node.classList?.contains('react-flow__controls') &&
+             !node.classList?.contains('react-flow__minimap') &&
+             !node.classList?.contains('react-flow__panel') &&
+             !node.classList?.contains('react-flow__background')
     }
-  `
+  })
 
-  // 印刷用スタイルを追加
-  const styleElement = document.createElement('style')
-  styleElement.textContent = printStyles
-  document.head.appendChild(styleElement)
+  try {
 
-  // 印刷ダイアログを開く
-  window.print()
+    // SVGをPNGに変換してからPDFとして印刷
+    // ブラウザの印刷機能でSVGが正しく表示されない場合があるため、PNGに変換
+    // ノードの境界に合わせてクロップする
+    const pngDataUrl = await toPng(reactFlowElement, {
+      quality: 1.0,
+      pixelRatio: 2, // 高解像度
+      backgroundColor: '#ffffff',
+      filter: (node) => {
+        // コントロールやミニマップ、グリッドを除外
+        return !node.classList?.contains('react-flow__controls') &&
+               !node.classList?.contains('react-flow__minimap') &&
+               !node.classList?.contains('react-flow__panel') &&
+               !node.classList?.contains('react-flow__background')
+      }
+    })
 
-  // 印刷後にスタイルを削除
-  setTimeout(() => {
-    document.head.removeChild(styleElement)
-  }, 1000)
+    // 画像を読み込む
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    await new Promise((resolve, reject) => {
+      img.onload = () => {
+        console.log('Image loaded, size:', img.width, 'x', img.height)
+        console.log('ReactFlow element size:', reactFlowElement.offsetWidth, 'x', reactFlowElement.offsetHeight)
+        resolve(null)
+      }
+      img.onerror = (error) => {
+        console.error('Image load error:', error)
+        reject(error)
+      }
+      img.src = pngDataUrl
+    })
+
+    // クロップ領域を計算（画像の座標系に変換）
+    const cropX = Math.max(0, minX - margin)
+    const cropY = Math.max(0, minY - margin)
+    
+    // 画像の実際のサイズと要素のサイズの比率を計算
+    const imageScaleX = img.width / reactFlowElement.offsetWidth
+    const imageScaleY = img.height / reactFlowElement.offsetHeight
+    
+    // 画像座標系でのクロップ位置とサイズ
+    const imageCropX = cropX * imageScaleX
+    const imageCropY = cropY * imageScaleY
+    const imageCropWidth = contentWidth * imageScaleX
+    const imageCropHeight = contentHeight * imageScaleY
+    
+    console.log('Crop area:', cropX, cropY, contentWidth, contentHeight)
+    console.log('Image crop area:', imageCropX, imageCropY, imageCropWidth, imageCropHeight)
+    
+    // キャンバスを作成してクロップ
+    const canvas = document.createElement('canvas')
+    canvas.width = contentWidth
+    canvas.height = contentHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas context not found')
+    
+    // 白背景を描画
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, contentWidth, contentHeight)
+    
+    // 画像をクロップして描画（画像座標系を使用）
+    ctx.drawImage(
+      img,
+      imageCropX, imageCropY, imageCropWidth, imageCropHeight,
+      0, 0, contentWidth, contentHeight
+    )
+
+    const croppedDataUrl = canvas.toDataURL('image/png')
+    console.log('Cropped image data URL length:', croppedDataUrl.length)
+    console.log('Content size:', contentWidth, 'x', contentHeight)
+    
+    // A4サイズに収まるようにスケールを計算
+    const isLandscape = contentWidth > contentHeight
+    const a4WidthMM = 210
+    const a4HeightMM = 297
+    const pxToMm = 0.264583 // 1px = 0.264583mm (96 DPI)
+    const contentWidthMM = contentWidth * pxToMm
+    const contentHeightMM = contentHeight * pxToMm
+    
+    // ページサイズ（マージンを考慮）
+    const pageWidthMM = isLandscape ? a4HeightMM : a4WidthMM
+    const pageHeightMM = isLandscape ? a4WidthMM : a4HeightMM
+    const marginMM = 15 // マージンを少し大きく
+    const availableWidthMM = pageWidthMM - marginMM * 2
+    const availableHeightMM = pageHeightMM - marginMM * 2
+    
+    // スケールを計算（拡大はしない）
+    const scaleX = availableWidthMM / contentWidthMM
+    const scaleY = availableHeightMM / contentHeightMM
+    const scale = Math.min(scaleX, scaleY, 1) * 0.95 // 95%にスケールして安全マージンを確保
+    
+    const scaledWidthMM = contentWidthMM * scale
+    const scaledHeightMM = contentHeightMM * scale
+    
+    // ピクセル単位でのサイズも計算（表示用）
+    const dpi = 96
+    const mmToPx = dpi / 25.4 // 1mm = 3.779527559px (96 DPI)
+    const scaledWidthPx = scaledWidthMM * mmToPx
+    const scaledHeightPx = scaledHeightMM * mmToPx
+    
+    console.log('Scale:', scale, 'Scaled size:', scaledWidthMM, 'x', scaledHeightMM, 'mm')
+    console.log('Available size:', availableWidthMM, 'x', availableHeightMM, 'mm')
+    
+    // スタイル調整: ページ中央に配置
+    const pageStyle = `
+      @page {
+        size: ${isLandscape ? 'landscape' : 'portrait'} A4;
+        margin: ${marginMM}mm;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: white;
+      }
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: white;
+        padding: 0;
+        margin: 0;
+      }
+      img {
+        width: ${scaledWidthMM}mm !important;
+        height: ${scaledHeightMM}mm !important;
+        max-width: ${scaledWidthMM}mm !important;
+        max-height: ${scaledHeightMM}mm !important;
+        object-fit: contain;
+        display: block;
+        margin: 0;
+        padding: 0;
+      }
+      @media print {
+        img {
+          width: ${scaledWidthMM}mm !important;
+          height: ${scaledHeightMM}mm !important;
+          max-width: ${scaledWidthMM}mm !important;
+          max-height: ${scaledHeightMM}mm !important;
+        }
+      }
+    `
+
+    // 新しいウィンドウを開いて印刷
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      throw new Error('Failed to open print window')
+    }
+
+    printWindow.document.open()
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${filename}</title>
+          <style>${pageStyle}</style>
+        </head>
+        <body>
+          <img src="${croppedDataUrl}" alt="Diagram" 
+               onload="window.setTimeout(function() { window.print(); }, 1000);" 
+               onerror="console.error('Image load error');" />
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+
+    // ウィンドウが閉じられたらクリーンアップ
+    const checkClosed = setInterval(() => {
+      if (printWindow.closed) {
+        clearInterval(checkClosed)
+      }
+    }, 1000)
+
+  } catch (error) {
+    console.error('PDF export failed:', error)
+    throw error
+  }
 }
 
 // ReactFlowの特定の要素を取得するヘルパー
@@ -166,13 +378,14 @@ export async function exportCanvasWithBounds(
       case 'png':
         dataUrl = await toPng(reactFlowElement, {
           quality: 1.0,
-          pixelRatio: 2,
+          pixelRatio: 3, // 高解像度（3倍）
           backgroundColor: '#ffffff',
           filter: (node) => {
-            // コントロールやミニマップを除外
+            // コントロールやミニマップ、グリッドを除外
             return !node.classList?.contains('react-flow__controls') &&
                    !node.classList?.contains('react-flow__minimap') &&
-                   !node.classList?.contains('react-flow__panel')
+                   !node.classList?.contains('react-flow__panel') &&
+                   !node.classList?.contains('react-flow__background')
           }
         })
         break
@@ -184,7 +397,8 @@ export async function exportCanvasWithBounds(
           filter: (node) => {
             return !node.classList?.contains('react-flow__controls') &&
                    !node.classList?.contains('react-flow__minimap') &&
-                   !node.classList?.contains('react-flow__panel')
+                   !node.classList?.contains('react-flow__panel') &&
+                   !node.classList?.contains('react-flow__background')
           }
         })
         break
@@ -194,7 +408,8 @@ export async function exportCanvasWithBounds(
           filter: (node) => {
             return !node.classList?.contains('react-flow__controls') &&
                    !node.classList?.contains('react-flow__minimap') &&
-                   !node.classList?.contains('react-flow__panel')
+                   !node.classList?.contains('react-flow__panel') &&
+                   !node.classList?.contains('react-flow__background')
           }
         })
         break

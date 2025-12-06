@@ -19,7 +19,8 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
     try {
       if (exportType === 'image') {
         if (format === 'pdf') {
-          exportCanvasAsPDF()
+          const fullFilename = `${filename}.pdf`
+          await exportCanvasAsPDF(fullFilename)
         } else {
           const fullFilename = `${filename}.${format}`
           await exportCanvasWithBounds(format as 'png' | 'jpeg' | 'svg', fullFilename)
@@ -78,7 +79,7 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
                   className="sr-only"
                 />
                 <div className="text-center">
-                  <div className="font-medium text-sm">図面画像</div>
+                  <div className="font-medium text-sm text-gray-900">図面画像</div>
                   <div className="text-xs text-gray-500">PNG/PDF等</div>
                 </div>
               </label>
@@ -99,7 +100,7 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
                   className="sr-only"
                 />
                 <div className="text-center">
-                  <div className="font-medium text-sm">データ</div>
+                  <div className="font-medium text-sm text-gray-900">データ</div>
                   <div className="text-xs text-gray-500">CSV等</div>
                 </div>
               </label>
@@ -151,7 +152,7 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
                     onChange={(e) => setFormat(e.target.value as any)}
                     className="sr-only"
                   />
-                  <span className="font-medium text-sm">{option.label}</span>
+                  <span className="font-medium text-sm text-gray-900">{option.label}</span>
                   <span className="text-xs text-gray-500">{option.desc}</span>
                 </label>
               ))}
