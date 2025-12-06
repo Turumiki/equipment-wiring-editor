@@ -7,6 +7,9 @@ import SettingsDialog from '@/components/SettingsDialog'
 import ExportDialog from '@/components/ExportDialog'
 import CSVImportDialog from '@/components/CSVImportDialog'
 import AutoLayoutDialog from '@/components/AutoLayoutDialog'
+import HelpDialog from '@/components/HelpDialog'
+import ShortcutsDialog from '@/components/ShortcutsDialog'
+import AboutDialog from '@/components/AboutDialog'
 import { useProjectStore } from '@/store/useProjectStore'
 import { Project } from '@/types'
 
@@ -16,6 +19,8 @@ export default function Home() {
   const [showAutoLayout, setShowAutoLayout] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const [showCSVImport, setShowCSVImport] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
@@ -180,8 +185,8 @@ export default function Home() {
         onShowSettings={() => setShowSettings(true)}
 
         // ヘルプメニュー
-        onShowHelp={() => { }}
-        onShowShortcuts={() => { }}
+        onShowHelp={() => setShowHelp(true)}
+        onShowShortcuts={() => setShowShortcuts(true)}
         onShowAbout={() => setShowAbout(true)}
       />
       <div className="flex-1 overflow-hidden">
@@ -221,6 +226,21 @@ export default function Home() {
           editorRef.current?.applyAutoLayout(options)
           setShowAutoLayout(false)
         }}
+      />
+
+      <HelpDialog
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+      />
+
+      <ShortcutsDialog
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+      />
+
+      <AboutDialog
+        isOpen={showAbout}
+        onClose={() => setShowAbout(false)}
       />
     </main>
   )
