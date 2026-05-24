@@ -125,13 +125,15 @@ export function useKeyboardShortcuts() {
           clearSelection()
           break
 
-        // 整列ショートカット (Ctrl + Shift + 矢印キー)
+        // 整列 (Ctrl+Shift+矢印), 分散配置 (Ctrl+Alt+矢印), 移動 (矢印/Shift+矢印)
         case 'ArrowLeft':
           if (isCtrlOrCmd && event.shiftKey) {
             event.preventDefault()
             alignSelected('left')
+          } else if (isCtrlOrCmd && event.altKey) {
+            event.preventDefault()
+            distributeSelected('horizontal')
           } else if (!isCtrlOrCmd && !event.altKey) {
-            // 移動 (矢印キーのみ: 1px, Shift+矢印キー: 10px)
             event.preventDefault()
             const delta = event.shiftKey ? 10 : 1
             moveSelected(-delta, 0)
@@ -141,8 +143,10 @@ export function useKeyboardShortcuts() {
           if (isCtrlOrCmd && event.shiftKey) {
             event.preventDefault()
             alignSelected('right')
+          } else if (isCtrlOrCmd && event.altKey) {
+            event.preventDefault()
+            distributeSelected('horizontal')
           } else if (!isCtrlOrCmd && !event.altKey) {
-            // 移動
             event.preventDefault()
             const delta = event.shiftKey ? 10 : 1
             moveSelected(delta, 0)
@@ -152,8 +156,10 @@ export function useKeyboardShortcuts() {
           if (isCtrlOrCmd && event.shiftKey) {
             event.preventDefault()
             alignSelected('top')
+          } else if (isCtrlOrCmd && event.altKey) {
+            event.preventDefault()
+            distributeSelected('vertical')
           } else if (!isCtrlOrCmd && !event.altKey) {
-            // 移動
             event.preventDefault()
             const delta = event.shiftKey ? 10 : 1
             moveSelected(0, -delta)
@@ -163,27 +169,13 @@ export function useKeyboardShortcuts() {
           if (isCtrlOrCmd && event.shiftKey) {
             event.preventDefault()
             alignSelected('bottom')
+          } else if (isCtrlOrCmd && event.altKey) {
+            event.preventDefault()
+            distributeSelected('vertical')
           } else if (!isCtrlOrCmd && !event.altKey) {
-            // 移動
             event.preventDefault()
             const delta = event.shiftKey ? 10 : 1
             moveSelected(0, delta)
-          }
-          break
-
-        // 分散配置ショートカット (Ctrl + Alt + 矢印キー)
-        case 'ArrowLeft':
-        case 'ArrowRight':
-          if (isCtrlOrCmd && event.altKey) {
-            event.preventDefault()
-            distributeSelected('horizontal')
-          }
-          break
-        case 'ArrowUp':
-        case 'ArrowDown':
-          if (isCtrlOrCmd && event.altKey) {
-            event.preventDefault()
-            distributeSelected('vertical')
           }
           break
       }

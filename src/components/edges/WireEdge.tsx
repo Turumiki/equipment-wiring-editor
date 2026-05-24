@@ -90,8 +90,8 @@ const WireEdge = ({
   // 機材名を取得
   const sourceObject = project.objects.find(obj => obj.id === sourceObjectId)
   const targetObject = project.objects.find(obj => obj.id === targetObjectId)
-  const sourceObjectNameFull = getPropertyComponent(sourceObject!)?.data.properties.name?.value || sourceObject?.name || 'Unknown'
-  const targetObjectNameFull = getPropertyComponent(targetObject!)?.data.properties.name?.value || targetObject?.name || 'Unknown'
+  const sourceObjectNameFull = getPropertyComponent(sourceObject)?.data.properties.name?.value || sourceObject?.name || 'Unknown'
+  const targetObjectNameFull = getPropertyComponent(targetObject)?.data.properties.name?.value || targetObject?.name || 'Unknown'
   
   // 機材名を省略
   const sourceObjectName = truncateEquipmentName(sourceObjectNameFull)
@@ -254,7 +254,7 @@ const WireEdge = ({
             position: 'absolute',
             transform: `${sourceTransform} translate(${sourceOffset.x}px,${sourceOffset.y}px)`,
             pointerEvents: 'none',
-            fontSize: '3px',
+            fontSize: '4px',
             fontWeight: '600',
             color: '#1f2937',
             whiteSpace: 'nowrap',

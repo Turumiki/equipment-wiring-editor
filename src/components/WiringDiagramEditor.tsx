@@ -313,6 +313,8 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
     setSelectedWires(selectedEdgeIds)
   }, [setSelectedObjects, setSelectedWires])
 
+  const editingPortInfo = getEditingPortInfo()
+
   return (
     <div className="h-full w-full flex flex-col lg:flex-row overflow-hidden">
       {/* メインキャンバス */}
@@ -414,9 +416,9 @@ const WiringDiagramEditor = React.forwardRef<WiringDiagramEditorRef, WiringDiagr
           setEditingPortData(null)
         }}
         onSave={handlePortSave}
-        initialLabel={getEditingPortInfo()?.label || ''}
-        initialPortType={getEditingPortInfo()?.portType || PortType.XLR_FEMALE}
-        initialDirection={getEditingPortInfo()?.direction || PortDirection.INPUT}
+        initialLabel={editingPortInfo?.label || ''}
+        initialPortType={editingPortInfo?.portType || PortType.XLR_FEMALE}
+        initialDirection={editingPortInfo?.direction || PortDirection.INPUT}
       />
 
       {/* テンプレート選択ダイアログ */}
