@@ -20,6 +20,7 @@ export function useContextMenu(
   const {
     setSelectedObjects,
     setSelectedWires,
+    copySelected,
     pasteSelected,
     duplicateSelected,
     alignSelected,
@@ -136,7 +137,7 @@ export function useContextMenu(
               if (!isSelected) {
                 setSelectedObjects([contextMenu.targetId!])
               }
-              duplicateSelected()
+              copySelected()
             }
           },
           {
@@ -230,6 +231,7 @@ export function useContextMenu(
     selectedWireIds,
     setSelectedObjects,
     setSelectedWires,
+    copySelected,
     pasteSelected,
     duplicateSelected,
     alignSelected,

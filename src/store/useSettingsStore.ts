@@ -257,44 +257,64 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     return newState
   }),
 
-  updatePortType: (id, updates) => set((state) => ({
-    settings: {
-      ...state.settings,
-      portTypes: state.settings.portTypes.map(pt =>
-        pt.id === id ? { ...pt, ...updates } : pt
-      )
+  updatePortType: (id, updates) => set((state) => {
+    const newState = {
+      settings: {
+        ...state.settings,
+        portTypes: state.settings.portTypes.map(pt =>
+          pt.id === id ? { ...pt, ...updates } : pt
+        )
+      }
     }
-  })),
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
-  removePortType: (id) => set((state) => ({
-    settings: {
-      ...state.settings,
-      portTypes: state.settings.portTypes.filter(pt => pt.id !== id)
+  removePortType: (id) => set((state) => {
+    const newState = {
+      settings: {
+        ...state.settings,
+        portTypes: state.settings.portTypes.filter(pt => pt.id !== id)
+      }
     }
-  })),
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
-  addWireType: (wireType) => set((state) => ({
-    settings: {
-      ...state.settings,
-      wireTypes: [...state.settings.wireTypes, wireType]
+  addWireType: (wireType) => set((state) => {
+    const newState = {
+      settings: {
+        ...state.settings,
+        wireTypes: [...state.settings.wireTypes, wireType]
+      }
     }
-  })),
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
-  updateWireType: (id, updates) => set((state) => ({
-    settings: {
-      ...state.settings,
-      wireTypes: state.settings.wireTypes.map(wt =>
-        wt.id === id ? { ...wt, ...updates } : wt
-      )
+  updateWireType: (id, updates) => set((state) => {
+    const newState = {
+      settings: {
+        ...state.settings,
+        wireTypes: state.settings.wireTypes.map(wt =>
+          wt.id === id ? { ...wt, ...updates } : wt
+        )
+      }
     }
-  })),
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
-  removeWireType: (id) => set((state) => ({
-    settings: {
-      ...state.settings,
-      wireTypes: state.settings.wireTypes.filter(wt => wt.id !== id)
+  removeWireType: (id) => set((state) => {
+    const newState = {
+      settings: {
+        ...state.settings,
+        wireTypes: state.settings.wireTypes.filter(wt => wt.id !== id)
+      }
     }
-  })),
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
   addEquipmentTemplate: (template) => set((state) => {
     const newState = {
@@ -378,15 +398,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     URL.revokeObjectURL(url)
   },
 
-  updateCompatibility: (sourcePortId, targetPortIds) => set((state) => ({
-    settings: {
-      ...state.settings,
-      compatibilityMatrix: {
-        ...state.settings.compatibilityMatrix,
-        [sourcePortId]: targetPortIds
+  updateCompatibility: (sourcePortId, targetPortIds) => set((state) => {
+    const newState = {
+      settings: {
+        ...state.settings,
+        compatibilityMatrix: {
+          ...state.settings.compatibilityMatrix,
+          [sourcePortId]: targetPortIds
+        }
       }
     }
-  })),
+    saveSettingsToStorage({ ...state, ...newState })
+    return newState
+  }),
 
   getPortTypeById: (id) => {
     const { settings } = get()
