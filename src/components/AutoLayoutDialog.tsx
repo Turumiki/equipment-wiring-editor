@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { LayoutOptions, LayoutProgress, LayoutCancelToken } from '@/utils/autoLayout'
 
 // スコアグラフコンポーネント
@@ -263,9 +263,16 @@ export default function AutoLayoutDialog({ isOpen, onClose, onApply }: AutoLayou
     onClose()
   }
 
+  useEffect(() => {
+    if (!isOpen || isProcessing) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, isProcessing])
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-100 border border-gray-400 w-full max-w-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={isProcessing ? undefined : handleClose}>
+      <div className="bg-gray-100 border border-gray-400 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
           <div className="flex justify-between items-center">
             <h2 className="text-sm font-bold text-black uppercase tracking-wide">Auto Layout</h2>

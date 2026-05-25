@@ -33,6 +33,13 @@ export default function PortEditDialog({
     }
   }, [isOpen, initialLabel, initialPortType, initialDirection])
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onClose])
+
   const handleSave = () => {
     onSave(label, portType, direction)
     onClose()
@@ -49,8 +56,8 @@ export default function PortEditDialog({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-4 w-80 max-w-full mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-lg p-4 w-80 max-w-full mx-4" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-base font-semibold text-gray-900 mb-3">ポート設定</h2>
         
         <div className="space-y-3">

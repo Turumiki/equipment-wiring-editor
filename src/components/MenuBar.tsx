@@ -167,7 +167,7 @@ export default function MenuBar({
   onShowShortcuts,
   onShowAbout
 }: MenuBarProps) {
-  const { project, canUndo, canRedo, undo, redo, canPaste } = useProjectStore()
+  const { project, canUndo, canRedo, undo, redo, canPaste, setProjectName } = useProjectStore()
   const { showScoreCalculation } = useSettingsStore()
   
   // 評価スコアを計算（位置情報も依存配列に含める）
@@ -201,6 +201,30 @@ export default function MenuBar({
     JSON.stringify(project.objects.map(obj => ({ id: obj.id, x: obj.position.x, y: obj.position.y })))
   ])
   
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleValue, setTitleValue] = useState('')
+  const titleInputRef = useRef<HTMLInputElement>(null)
+
+  const startTitleEdit = () => {
+    setTitleValue(project.name || '新規プロジェクト')
+    setEditingTitle(true)
+  }
+
+  const commitTitleEdit = () => {
+    const trimmed = titleValue.trim()
+    if (trimmed) setProjectName(trimmed)
+    setEditingTitle(false)
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') commitTitleEdit()
+    else if (e.key === 'Escape') setEditingTitle(false)
+  }
+
+  useEffect(() => {
+    if (editingTitle) titleInputRef.current?.select()
+  }, [editingTitle])
+
   const [internalOpenMenu, setInternalOpenMenu] = useState<string | null>(null)
   const openMenu = externalOpenMenu !== undefined ? externalOpenMenu : internalOpenMenu
   // setOpenMenuをuseRefで保持して安定した参照を確保
@@ -352,9 +376,26 @@ export default function MenuBar({
         onClose={() => setOpenMenu(null)}
       />
       
-      {/* プロジェクト名表示 */}
-      <div className="flex-1 text-center text-xs text-gray-800 font-medium">
-        {project.name || '無題のプロジェクト'}
+      {/* プロジェクト名（クリックで編集） */}
+      <div className="flex-1 flex justify-center">
+        {editingTitle ? (
+          <input
+            ref={titleInputRef}
+            value={titleValue}
+            onChange={(e) => setTitleValue(e.target.value)}
+            onBlur={commitTitleEdit}
+            onKeyDown={handleTitleKeyDown}
+            className="text-xs text-gray-800 font-medium bg-white border border-blue-400 px-1 rounded outline-none w-48 text-center"
+          />
+        ) : (
+          <button
+            onClick={startTitleEdit}
+            className="text-xs text-gray-800 font-medium hover:bg-gray-100 px-2 py-0.5 rounded"
+            title="クリックしてプロジェクト名を編集"
+          >
+            {project.name || '新規プロジェクト'}
+          </button>
+        )}
       </div>
       
       {/* 評価スコア表示 */}

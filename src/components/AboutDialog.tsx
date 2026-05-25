@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
 interface AboutDialogProps {
   isOpen: boolean
@@ -6,11 +6,18 @@ interface AboutDialogProps {
 }
 
 export default function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg w-full max-w-md flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* ヘッダー */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">

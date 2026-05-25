@@ -59,6 +59,9 @@ interface ProjectState {
   
   // 重複接続の削除
   removeDuplicateWires: () => number
+
+  // プロジェクト名の変更
+  setProjectName: (name: string) => void
 }
 
 const createDefaultProject = (): Project => ({
@@ -879,5 +882,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     setTimeout(() => get().autoSaveProject(), 100)
 
     return duplicateIds.length
-  }
+  },
+
+  setProjectName: (name) => set((state) => {
+    const newProject = { ...state.project, name, updatedAt: new Date() }
+    return { project: newProject }
+  })
 }))

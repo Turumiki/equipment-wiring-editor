@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
 interface HelpDialogProps {
   isOpen: boolean
@@ -6,11 +6,18 @@ interface HelpDialogProps {
 }
 
 export default function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-3xl h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg w-full max-w-3xl h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* ヘッダー */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
@@ -33,7 +40,7 @@ export default function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
               <div className="space-y-3 text-sm text-gray-700">
                 <div>
                   <h4 className="font-medium text-black mb-1">機材の追加</h4>
-                  <p>テンプレートライブラリから機材をドラッグ＆ドロップしてキャンバスに配置します。</p>
+                  <p>テンプレートライブラリの機材をクリックしてキャンバスに追加できます。ドラッグ＆ドロップでキャンバスの任意の場所に配置することもできます。</p>
                 </div>
                 <div>
                   <h4 className="font-medium text-black mb-1">機材の移動</h4>

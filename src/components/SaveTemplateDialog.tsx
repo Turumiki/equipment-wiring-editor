@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { EquipmentObject, EquipmentTemplate, ComponentType } from '@/types'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useProjectStore } from '@/store/useProjectStore'
@@ -93,11 +93,18 @@ export default function SaveTemplateDialog({ isOpen, equipmentObject, onClose }:
     onClose()
   }
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen])
+
   if (!isOpen || !equipmentObject) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleClose}>
+      <div className="bg-white rounded-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-black">テンプレートとして保存</h2>
           <button

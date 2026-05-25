@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { exportCanvasWithBounds, exportCanvasAsPDF, exportConnectionsAsCSV, exportProjectAsCSV } from '@/utils/exportUtils'
 import { useProjectStore } from '@/store/useProjectStore'
 
@@ -41,11 +41,18 @@ export default function ExportDialog({ isOpen, onClose }: ExportDialogProps) {
     }
   }
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-100 border border-gray-400 w-full max-w-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-gray-100 border border-gray-400 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="px-2 py-1 border-b border-gray-400 bg-gray-200">
           <div className="flex justify-between items-center">
             <h2 className="text-sm font-bold text-black uppercase tracking-wide">Export</h2>

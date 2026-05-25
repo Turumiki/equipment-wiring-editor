@@ -42,6 +42,22 @@ export default function Home() {
     }
   }, []) // 初回マウント時のみ実行
 
+  // Escapeキーでモーダルを閉じる
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (showSettings) { setShowSettings(false); return }
+      if (showHelp) { setShowHelp(false); return }
+      if (showShortcuts) { setShowShortcuts(false); return }
+      if (showAbout) { setShowAbout(false); return }
+      if (showCSVImport) { setShowCSVImport(false); return }
+      if (showExport) { setShowExport(false); return }
+      if (showAutoLayout) { setShowAutoLayout(false); return }
+    }
+    document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [showSettings, showHelp, showShortcuts, showAbout, showCSVImport, showExport, showAutoLayout])
+
   // プロジェクトが変更されたときに自動保存（Zustandのsubscribeを使用）
   useEffect(() => {
     // デバウンス用のタイマー

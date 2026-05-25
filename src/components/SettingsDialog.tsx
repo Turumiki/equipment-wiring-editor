@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { PortTypeDefinition, WireTypeDefinition, PortDirection } from '@/types'
 
@@ -29,6 +29,13 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   const [activeTab, setActiveTab] = useState<'ui' | 'portTypes' | 'wireTypes' | 'compatibility'>('ui')
   const [editingPortType, setEditingPortType] = useState<PortTypeDefinition | null>(null)
   const [editingWireType, setEditingWireType] = useState<WireTypeDefinition | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -72,8 +79,8 @@ export default function SettingsDialog({ isOpen, onClose }: SettingsDialogProps)
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* ヘッダー */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">

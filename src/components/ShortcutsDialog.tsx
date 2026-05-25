@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
 interface ShortcutsDialogProps {
   isOpen: boolean
@@ -6,6 +6,13 @@ interface ShortcutsDialogProps {
 }
 
 export default function ShortcutsDialog({ isOpen, onClose }: ShortcutsDialogProps) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   const shortcuts = [
@@ -79,8 +86,8 @@ export default function ShortcutsDialog({ isOpen, onClose }: ShortcutsDialogProp
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-2xl h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg w-full max-w-2xl h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* ヘッダー */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">

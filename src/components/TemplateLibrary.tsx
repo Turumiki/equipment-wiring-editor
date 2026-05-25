@@ -114,43 +114,41 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
     setEditingTemplate(null)
   }
 
+  const getNextPosition = () => {
+    const base = { x: 80, y: 80 }
+    const offset = 30
+    const cols = 4
+    const n = project.objects.length
+    return {
+      x: base.x + (n % cols) * (160 + offset),
+      y: base.y + Math.floor(n / cols) * (80 + offset)
+    }
+  }
+
   const handleAddTemplate = (template: EquipmentTemplate) => {
     let equipmentObject
 
-    console.log('Creating equipment from template:', template.id, {
-      hasPorts: template.ports && Array.isArray(template.ports) && template.ports.length > 0,
-      hasDefaultComponents: template.defaultComponents && template.defaultComponents.length > 0,
-      portsLength: template.ports?.length || 0,
-      defaultComponentsLength: template.defaultComponents?.length || 0
-    })
-
     // portsが定義されている場合は新しいシンプルテンプレート形式を使用
     if (template.ports && Array.isArray(template.ports) && template.ports.length > 0) {
-      console.log('Using simple template format with ports')
       equipmentObject = createEquipmentFromTemplate(template)
     }
     // defaultComponentsが定義されて実際にコンポーネントがある場合は汎用テンプレート関数を使用
     else if (template.defaultComponents && template.defaultComponents.length > 0) {
-      console.log('Using default components format')
       equipmentObject = createEquipmentFromTemplate(template)
     }
     // それ以外は従来の機材タイプベースの生成
     else {
-      console.log('Using equipment type based generation for:', template.id)
       const shape = getShapeForTemplate(template.id)
       equipmentObject = createBasicEquipmentObject(
         template.name,
-        { x: Math.random() * 300 + 100, y: Math.random() * 200 + 100 },
+        { x: 100, y: 100 },
         shape,
-        template.id // 機材タイプを渡す
+        template.id
       )
     }
 
-    // ランダムな位置に配置
-    equipmentObject.position = {
-      x: Math.random() * 300 + 100,
-      y: Math.random() * 200 + 100
-    }
+    // カスケード配置（既存機材と重ならないようにオフセット）
+    equipmentObject.position = getNextPosition()
 
     equipmentObject.templateId = template.id
     addEquipmentObject(equipmentObject)
@@ -196,7 +194,7 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
       {/* ヘッダー */}
       <div className="px-2 py-2 border-b border-gray-300 bg-gray-100">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-sm font-medium text-gray-800">Template Library</h2>
+          <h2 className="text-sm font-medium text-gray-800">テンプレートライブラリ</h2>
           <button
             onClick={onClose}
             className="text-gray-600 hover:bg-gray-200 px-2 py-1 text-xs"
@@ -214,7 +212,7 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
               : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
           >
-            Global ({globalTemplates.length})
+            グローバル ({globalTemplates.length})
           </button>
           <button
             onClick={() => setTemplateSource('project')}
@@ -223,14 +221,14 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
               : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
           >
-            Project ({project.customTemplates.length})
+            プロジェクト ({project.customTemplates.length})
           </button>
         </div>
 
         {/* 管理ボタン */}
         <div className="flex gap-1 mb-2">
           <label className="flex-1 px-2 py-1 text-xs font-medium bg-gray-500 text-white border border-gray-600 hover:bg-gray-600 cursor-pointer text-center">
-            Import
+            インポート
             <input
               type="file"
               accept=".json"
@@ -243,14 +241,14 @@ export default function TemplateLibrary({ onClose, onAddEquipment }: TemplateLib
             className="flex-1 px-2 py-1 text-xs font-medium bg-gray-500 text-white border border-gray-600 hover:bg-gray-600"
             disabled={currentTemplates.length === 0}
           >
-            Export
+            エクスポート
           </button>
         </div>
 
         {/* 検索 */}
         <input
           type="text"
-          placeholder="Search templates..."
+          placeholder="テンプレートを検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-2 py-1 border border-gray-300 bg-white text-gray-800 text-xs focus:outline-none focus:border-gray-500"
